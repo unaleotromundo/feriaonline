@@ -14,8 +14,13 @@
         .product-card:hover {
             transform: translateY(-5px);
         }
+        /* Botón de Guardar/Añadir Producto */
         .submit-button-style {
             @apply w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105;
+        }
+        /* Botón de Editar Información del Puesto */
+        .edit-info-button {
+            @apply bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105;
         }
         .message-box {
             @apply p-4 rounded-lg text-sm text-center font-medium;
@@ -23,6 +28,10 @@
         .message-box.success { @apply bg-green-100 text-green-700; }
         .message-box.error { @apply bg-red-100 text-red-700; }
         .message-box.info { @apply bg-teal-100 text-teal-700; }
+
+        .input-field {
+            @apply w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -50,7 +59,13 @@
 
             <!-- Sección para la información del puesto del comerciante -->
             <section class="bg-white p-6 rounded-lg shadow-lg mb-8">
-                <h3 class="text-2xl font-bold mb-4 text-gray-800">Información de tu Puesto</h3>
+                <h3 class="text-2xl font-bold mb-4 text-gray-800 flex justify-between items-center">
+                    Información de tu Puesto
+                    <button id="edit-comerciante-button" class="edit-info-button">
+                        Editar Información del Puesto
+                    </button>
+                </h3>
+                
                 <div id="comerciante-details" class="space-y-3">
                     <p><strong class="font-semibold">Nombre del Negocio:</strong> <span id="detail-business-name"></span></p>
                     <p><strong class="font-semibold">Correo Electrónico:</strong> <span id="detail-email"></span></p>
@@ -58,7 +73,43 @@
                     <p><strong class="font-semibold">Descripción:</strong> <span id="detail-description" class="block bg-gray-50 p-3 rounded-md mt-2 text-gray-600 italic"></span></p>
                     <p><strong class="font-semibold">Logo URL:</strong> <span id="detail-logo-url" class="block bg-gray-50 p-3 rounded-md mt-2 text-gray-600 italic"></span></p>
                     <p><strong class="font-semibold">Fecha de Registro:</strong> <span id="detail-registration-date"></span></p>
-                    <!-- <button class="submit-button-style mt-4">Editar Información</button> -->
+                </div>
+
+                <!-- Formulario de Edición del Puesto (Inicialmente oculto) -->
+                <div id="edit-comerciante-form-container" class="hidden mt-6 bg-gray-50 p-6 rounded-lg">
+                    <h4 class="text-xl font-bold text-gray-700 mb-4">Editar Datos del Puesto</h4>
+                    <form id="comerciante-edit-form" class="space-y-4">
+                        <div>
+                            <label for="editBusinessName" class="block text-sm font-medium text-gray-700">Nombre del Negocio</label>
+                            <input type="text" id="editBusinessName" name="editBusinessName" class="input-field" required>
+                        </div>
+                        <div>
+                            <label for="editEmail" class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
+                            <input type="email" id="editEmail" name="editEmail" class="input-field" readonly disabled>
+                            <p class="text-xs text-gray-500 mt-1">El correo electrónico no se puede cambiar aquí.</p>
+                        </div>
+                        <div>
+                            <label for="editWhatsapp" class="block text-sm font-medium text-gray-700">Número de WhatsApp</label>
+                            <input type="tel" id="editWhatsapp" name="editWhatsapp" class="input-field">
+                        </div>
+                        <div>
+                            <label for="editDescription" class="block text-sm font-medium text-gray-700">Descripción del Negocio</label>
+                            <textarea id="editDescription" name="editDescription" rows="3" class="input-field"></textarea>
+                        </div>
+                        <div>
+                            <label for="editLogoUrl" class="block text-sm font-medium text-gray-700">URL del Logo de tu Puesto</label>
+                            <input type="url" id="editLogoUrl" name="editLogoUrl" class="input-field">
+                            <p class="text-xs text-gray-500 mt-1">Sube el logo de tu negocio a un servicio de hosting y pega la URL aquí.</p>
+                        </div>
+                        <div class="flex justify-end space-x-4 mt-6">
+                            <button type="button" id="cancel-edit-comerciante" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-colors duration-200">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="submit-button-style bg-blue-600 hover:bg-blue-700">
+                                Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </section>
 
@@ -101,11 +152,22 @@
         </div>
     </main>
 
+    <!-- Pie de página -->
+    <footer class="bg-gray-800 text-white py-8 mt-auto">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2025 Feria Online. Todos los derechos reservados.</p>
+            <p class="text-sm mt-2">
+                <a href="#" class="hover:underline">Política de Privacidad</a> | 
+                <a href="#" class="hover:underline">Términos de Servicio</a>
+            </p>
+        </div>
+    </footer>
+
     <!-- Script de Firebase y lógica del panel -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, addDoc, getDocs, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, getDocs, deleteDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         import { firebaseConfig, appId } from "./firebase-config.js";
 
@@ -114,11 +176,48 @@
         let db;
         let userId = null;
         let businessName = null;
-        let unsubscribeComercianteData = null; // Listener para datos del comerciante
-        let unsubscribeProducts = null; // Listener para productos
+        let unsubscribeComercianteData = null;
+        let unsubscribeProducts = null;
+
+        // Elementos del DOM del Panel Principal
+        const messageContainer = document.getElementById('message-container');
+        const businessNameDisplay = document.getElementById('business-name-display');
+        const loadingContainer = document.getElementById('loading-container');
+        const contentContainer = document.getElementById('content');
+        const comercianteDetails = document.getElementById('comerciante-details');
+        const editComercianteButton = document.getElementById('edit-comerciante-button');
+        const editComercianteFormContainer = document.getElementById('edit-comerciante-form-container');
+        const comercianteEditForm = document.getElementById('comerciante-edit-form');
+
+        // Campos del formulario de edición
+        const editBusinessName = document.getElementById('editBusinessName');
+        const editEmail = document.getElementById('editEmail');
+        const editWhatsapp = document.getElementById('editWhatsapp');
+        const editDescription = document.getElementById('editDescription');
+        const editLogoUrl = document.getElementById('editLogoUrl');
+        const cancelEditComercianteButton = document.getElementById('cancel-edit-comerciante');
+
+        // Elementos de visualización de detalles del comerciante
+        const detailBusinessName = document.getElementById('detail-business-name');
+        const detailEmail = document.getElementById('detail-email');
+        const detailWhatsapp = document.getElementById('detail-whatsapp');
+        const detailDescription = document.getElementById('detail-description');
+        const detailLogoUrl = document.getElementById('detail-logo-url');
+        const detailRegistrationDate = document.getElementById('detail-registration-date');
+
+
+        // Elementos del Editor de Productos
+        const addProductForm = document.getElementById('add-product-form');
+        const productNameInput = document.getElementById('productName');
+        const productPriceInput = document.getElementById('productPrice');
+        const productDescriptionInput = document.getElementById('productDescription');
+        const productImageInput = document.getElementById('productImage');
+        const productsContainer = document.getElementById('products-container');
+        const noProductsMessage = document.getElementById('no-products-message');
+        const logoutButton = document.getElementById('logout-button');
+
 
         function showMessage(message, type = 'info') {
-            const messageContainer = document.getElementById('message-container');
             messageContainer.innerHTML = message;
             messageContainer.className = `message-box ${type}`;
             messageContainer.classList.remove('hidden');
@@ -136,8 +235,6 @@
                 }
 
                 onAuthStateChanged(auth, async (user) => {
-                    const loadingContainer = document.getElementById('loading-container');
-                    const contentContainer = document.getElementById('content');
                     if (user) {
                         userId = user.uid;
                         console.log("Usuario autenticado:", userId);
@@ -169,22 +266,29 @@
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     businessName = data.businessName;
-                    document.getElementById('business-name-display').textContent = businessName;
-                    document.getElementById('detail-business-name').textContent = data.businessName || "No definido";
-                    document.getElementById('detail-email').textContent = data.email || "No definido";
-                    document.getElementById('detail-whatsapp').textContent = data.whatsapp || "No definido";
-                    document.getElementById('detail-description').textContent = data.description || "Sin descripción.";
-                    document.getElementById('detail-logo-url').textContent = data.logoUrl || "Sin URL de Logo";
+                    businessNameDisplay.textContent = businessName;
+                    detailBusinessName.textContent = data.businessName || "No definido";
+                    detailEmail.textContent = data.email || "No definido";
+                    detailWhatsapp.textContent = data.whatsapp || "No definido";
+                    detailDescription.textContent = data.description || "Sin descripción.";
+                    detailLogoUrl.textContent = data.logoUrl || "Sin URL de Logo";
                     
                     if (data.registrationDate && data.registrationDate.toDate) {
-                        document.getElementById('detail-registration-date').textContent = data.registrationDate.toDate().toLocaleDateString('es-ES');
+                        detailRegistrationDate.textContent = data.registrationDate.toDate().toLocaleDateString('es-ES');
                     } else {
-                        document.getElementById('detail-registration-date').textContent = "Fecha no disponible";
+                        detailRegistrationDate.textContent = "Fecha no disponible";
                     }
+
+                    editBusinessName.value = data.businessName || '';
+                    editEmail.value = data.email || '';
+                    editWhatsapp.value = data.whatsapp || '';
+                    editDescription.value = data.description || '';
+                    editLogoUrl.value = data.logoUrl || '';
+
                     console.log("Datos del comerciante cargados/actualizados:", data);
                 } else {
                     console.error("No se encontraron datos del comerciante para el usuario:", uid);
-                    document.getElementById('business-name-display').textContent = 'Nombre del Negocio';
+                    businessNameDisplay.textContent = 'Nombre del Negocio';
                     showMessage("No se encontró la información de tu puesto. Asegúrate de registrarte.", 'error');
                 }
             }, (error) => {
@@ -199,8 +303,6 @@
             }
             const productsCollectionRef = collection(db, `artifacts/${appId}/users/${uid}/productos`);
             unsubscribeProducts = onSnapshot(productsCollectionRef, (querySnapshot) => {
-                const productsContainer = document.getElementById('products-container');
-                const noProductsMessage = document.getElementById('no-products-message');
                 productsContainer.innerHTML = ''; 
 
                 if (querySnapshot.empty) {
@@ -261,7 +363,7 @@
             }
         }
 
-        document.getElementById('add-product-form').addEventListener('submit', async (e) => {
+        addProductForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             if (!userId) {
@@ -269,10 +371,10 @@
                 return;
             }
 
-            const productName = document.getElementById('productName').value;
-            const productPrice = parseFloat(document.getElementById('productPrice').value);
-            const productDescription = document.getElementById('productDescription').value;
-            const productImage = document.getElementById('productImage').value;
+            const productName = productNameInput.value;
+            const productPrice = parseFloat(productPriceInput.value);
+            const productDescription = productDescriptionInput.value;
+            const productImage = productImageInput.value;
 
             try {
                 const productsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/productos`);
@@ -287,7 +389,7 @@
                 });
 
                 showMessage('Producto añadido con éxito.', 'success');
-                document.getElementById('add-product-form').reset(); 
+                addProductForm.reset(); 
 
             } catch (error) {
                 console.error("Error al añadir el producto:", error);
@@ -295,7 +397,52 @@
             }
         });
 
-        document.getElementById('logout-button').addEventListener('click', async () => {
+        // --- Lógica de Edición de Información del Puesto ---
+        editComercianteButton.addEventListener('click', () => {
+            comercianteDetails.classList.add('hidden'); // Ocultar vista de detalles
+            editComercianteFormContainer.classList.remove('hidden'); // Mostrar formulario de edición
+        });
+
+        cancelEditComercianteButton.addEventListener('click', () => {
+            editComercianteFormContainer.classList.add('hidden'); // Ocultar formulario de edición
+            comercianteDetails.classList.remove('hidden'); // Mostrar vista de detalles
+        });
+
+        comercianteEditForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!userId) {
+                showMessage("No estás autenticado para editar tu puesto.", 'error');
+                return;
+            }
+
+            const updatedBusinessName = editBusinessName.value;
+            const updatedWhatsapp = editWhatsapp.value;
+            const updatedDescription = editDescription.value;
+            const updatedLogoUrl = editLogoUrl.value;
+
+            try {
+                showMessage('Guardando cambios del puesto...', 'info');
+                const comercianteDocRef = doc(db, `artifacts/${appId}/users/${userId}/comerciantes`, userId);
+                await updateDoc(comercianteDocRef, {
+                    businessName: updatedBusinessName,
+                    whatsapp: updatedWhatsapp,
+                    description: updatedDescription,
+                    logoUrl: updatedLogoUrl
+                });
+
+                showMessage('Información del puesto actualizada con éxito. 🎉', 'success');
+                editComercianteFormContainer.classList.add('hidden');
+                comercianteDetails.classList.remove('hidden');
+            } catch (error) {
+                console.error("Error al actualizar la información del puesto:", error);
+                showMessage(`Error al actualizar el puesto: ${error.message}`, 'error');
+            }
+        });
+        // --- Fin Lógica de Edición ---
+
+
+        logoutButton.addEventListener('click', async () => {
             try {
                 if (unsubscribeComercianteData) unsubscribeComercianteData();
                 if (unsubscribeProducts) unsubscribeProducts();

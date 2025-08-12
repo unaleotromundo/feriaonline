@@ -151,7 +151,7 @@
             const password = document.getElementById('password').value;
             const whatsapp = document.getElementById('whatsapp').value;
             const description = document.getElementById('description').value;
-            const logoUrl = document.getElementById('logoUrl').value; // Nuevo campo
+            const logoUrl = document.getElementById('logoUrl').value;
 
             if (password.length < 6) {
                 showMessage('La contraseña debe tener al menos 6 caracteres.', 'error');
@@ -173,7 +173,7 @@
                     email: email,
                     whatsapp: whatsapp,
                     description: description,
-                    logoUrl: logoUrl || 'https://placehold.co/150x150/cccccc/333333?text=Logo', // Guardar logo, con placeholder
+                    logoUrl: logoUrl || 'https://placehold.co/150x150/cccccc/333333?text=Logo',
                     registrationDate: new Date()
                 });
 

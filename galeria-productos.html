@@ -89,6 +89,66 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Estilos del modal/área de chat de IA */
+        .ai-chat-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .ai-chat-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.75rem; /* rounded-lg */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ai-chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb; /* gray-200 */
+            border-radius: 0.5rem; /* rounded-md */
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: #f9fafb; /* gray-50 */
+        }
+
+        .ai-chat-message p {
+            margin-bottom: 0.5rem;
+        }
+        .ai-chat-message strong {
+            color: #1f2937; /* gray-900 */
+        }
+
+        .ai-chat-input-area {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .ai-chat-input {
+            flex-grow: 1;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db; /* gray-300 */
+            border-radius: 0.5rem; /* rounded-md */
+        }
+        .ai-chat-button {
+            @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200;
+        }
+        .ai-chat-close-button {
+            @apply bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-3 rounded-md transition-colors duration-200;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -130,10 +190,30 @@
         </section>
 
 
-        <!-- CAMBIO AQUI: Pie de página con fondo azul oscuro -->
-        <footer class="text-center text-white text-sm mt-12 pt-8 border-t border-blue-700 bg-blue-800 py-4 rounded-b-lg">
+        <!-- CAMBIO AQUI: Pie de página con fondo azul MUY oscuro -->
+        <footer class="text-center text-white text-sm mt-12 pt-8 border-t border-blue-800 bg-blue-900 py-4 rounded-b-lg">
             &copy; 2025 Feria Online. Todos los derechos reservados.
         </footer>
+    </div>
+
+    <!-- Overlay y Modal para el asistente de IA -->
+    <div id="ai-chat-overlay" class="ai-chat-overlay hidden">
+        <div class="ai-chat-box">
+            <div class="flex justify-between items-center mb-4">
+                <h4 class="text-xl font-bold text-gray-800">Preguntar al Experto sobre <span id="ai-product-name" class="text-blue-700"></span></h4>
+                <button id="ai-chat-close" class="ai-chat-close-button">X</button>
+            </div>
+            <div id="ai-chat-messages" class="ai-chat-messages">
+                <!-- Mensajes del chat irán aquí -->
+            </div>
+            <div class="ai-chat-input-area">
+                <input type="text" id="ai-chat-question-input" class="ai-chat-input" placeholder="Haz tu pregunta...">
+                <button id="ai-chat-send-button" class="ai-chat-button">
+                    <span id="ai-chat-loading-spinner" class="loader hidden w-5 h-5 border-blue-200 border-t-white"></span>
+                    Enviar
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Script para Firebase y lógica de la galería -->
@@ -151,6 +231,7 @@
         let db;
         let unsubscribeProducts = null;
         let unsubscribeComerciantes = null;
+        let currentProductData = null; // Para guardar el producto actual en el modal de IA
 
         // Elementos del DOM
         const productsGrid = document.getElementById('products-grid');
@@ -158,6 +239,16 @@
         const loadingMessage = document.getElementById('loading-message');
         const noProductsFoundMessage = document.getElementById('no-products-found');
         const noStallsFoundMessage = document.getElementById('no-stalls-found');
+
+        // Elementos del chat de IA
+        const aiChatOverlay = document.getElementById('ai-chat-overlay');
+        const aiChatCloseButton = document.getElementById('ai-chat-close');
+        const aiProductNameDisplay = document.getElementById('ai-product-name');
+        const aiChatMessages = document.getElementById('ai-chat-messages');
+        const aiChatQuestionInput = document.getElementById('ai-chat-question-input');
+        const aiChatSendButton = document.getElementById('ai-chat-send-button');
+        const aiChatLoadingSpinner = document.getElementById('ai-chat-loading-spinner');
+
 
         // Función de inicialización de Firebase
         async function initializeFirebase() {
@@ -274,10 +365,21 @@
                                     <p class="product-card-price">$${product.price ? product.price.toFixed(2) : '0.00'}</p>
                                     <p class="product-card-description">${product.description || 'Sin descripción.'}</p>
                                     <p class="product-card-comerciante">Vendido por: <strong>${comercianteName}</strong></p>
+                                    <button class="ask-ai-button bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md mt-3 w-full" data-product='${JSON.stringify(product)}'>
+                                        Preguntar al Experto ✨
+                                    </button>
                                 </div>
                             </div>
                         `;
                         productsGrid.insertAdjacentHTML('beforeend', productCard);
+                    });
+
+                    // Añadir listeners a los nuevos botones de IA
+                    document.querySelectorAll('.ask-ai-button').forEach(button => {
+                        button.addEventListener('click', (event) => {
+                            const productData = JSON.parse(event.target.dataset.product);
+                            openAIChat(productData);
+                        });
                     });
                 }
             }, (error) => {
@@ -287,7 +389,113 @@
             });
         }
 
-        // Llama a la inicialización cuando la ventana cargue
+        // --- Lógica del Asistente de IA (Gemini API) ---
+        aiChatCloseButton.addEventListener('click', () => {
+            aiChatOverlay.classList.add('hidden');
+            aiChatMessages.innerHTML = ''; // Limpiar mensajes al cerrar
+            aiChatQuestionInput.value = ''; // Limpiar input al cerrar
+            currentProductData = null;
+        });
+
+        aiChatSendButton.addEventListener('click', () => {
+            const question = aiChatQuestionInput.value.trim();
+            if (question && currentProductData) {
+                sendQuestionToAI(currentProductData, question);
+                aiChatQuestionInput.value = ''; // Limpiar input
+            }
+        });
+
+        aiChatQuestionInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                aiChatSendButton.click();
+            }
+        });
+
+        function openAIChat(productData) {
+            currentProductData = productData;
+            aiProductNameDisplay.textContent = productData.name;
+            aiChatMessages.innerHTML = `
+                <div class="ai-chat-message">
+                    <p><strong>Asistente:</strong> ¡Hola! Soy tu experto en productos. Pregúntame lo que quieras sobre <strong>${productData.name}</strong>.</p>
+                    <p class="text-xs text-gray-500 mt-1">Precio: $${productData.price.toFixed(2)}</p>
+                    <p class="text-xs text-gray-500">Descripción: ${productData.description || 'Sin descripción.'}</p>
+                </div>
+            `;
+            aiChatOverlay.classList.remove('hidden');
+        }
+
+        async function sendQuestionToAI(product, question) {
+            addMessageToChat('user', question);
+            aiChatLoadingSpinner.classList.remove('hidden');
+            aiChatSendButton.disabled = true;
+
+            const prompt = `Como asistente experto en productos de feria, responde la siguiente pregunta sobre el producto "${product.name}" (Descripción: "${product.description}", Precio: ${product.price}):\n\nPregunta: "${question}"\n\nRespuesta detallada y útil:`;
+
+            let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+            const payload = { contents: chatHistory };
+            const apiKey = ""; // La clave se inyecta en tiempo de ejecución por el entorno
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            try {
+                // Implementación de reintentos con backoff exponencial
+                let response;
+                let delay = 1000; // 1 segundo
+                const maxRetries = 3;
+                for (let i = 0; i < maxRetries; i++) {
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        break; // Salir del bucle si la respuesta es exitosa
+                    } else if (response.status === 429) { // Demasiadas solicitudes (Too Many Requests)
+                        console.warn(`Intento ${i + 1}/${maxRetries}: Demasiadas solicitudes. Reintentando en ${delay / 1000}s...`);
+                        await new Promise(res => setTimeout(res, delay));
+                        delay *= 2; // Duplicar el retraso
+                    } else {
+                        // Para otros errores que no sean 429, no reintentar
+                        const errorData = await response.json();
+                        console.error("Error de la API de Gemini (sin reintento):", errorData);
+                        throw new Error(`Error ${response.status}: ${errorData.error?.message || 'Error desconocido de la API.'}`);
+                    }
+                }
+
+                if (!response.ok) {
+                    throw new Error("La API de Gemini no respondió correctamente después de varios reintentos.");
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    addMessageToChat('ai', text);
+                } else {
+                    addMessageToChat('ai', 'Lo siento, no pude generar una respuesta. Por favor, intenta de nuevo con una pregunta diferente.');
+                    console.error("Respuesta inesperada de Gemini API:", result);
+                }
+            } catch (error) {
+                console.error("Error al llamar a la API de Gemini:", error);
+                addMessageToChat('ai', `Lo siento, hubo un error: ${error.message}. Por favor, inténtalo más tarde.`);
+            } finally {
+                aiChatLoadingSpinner.classList.add('hidden');
+                aiChatSendButton.disabled = false;
+            }
+        }
+
+        function addMessageToChat(sender, text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('ai-chat-message', sender === 'user' ? 'text-right' : 'text-left');
+            messageDiv.innerHTML = `<p><strong>${sender === 'user' ? 'Tú' : 'Asistente'}:</strong> ${text}</p>`;
+            aiChatMessages.appendChild(messageDiv);
+            aiChatMessages.scrollTop = aiChatMessages.scrollHeight; // Auto-scroll
+        }
+        // --- Fin Lógica Asistente de IA ---
+
         window.onload = initializeFirebase;
     </script>
 </body>
