@@ -271,8 +271,6 @@
         async function loadComercianteData(currentUserId) {
             if (!db || !currentUserId) {
                 console.warn("Firestore no inicializado o userId no disponible.");
-                // Esto podría ocurrir si el usuario no está autenticado o hay un problema con Firebase
-                // Redirigir o mostrar un mensaje claro aquí si el panel no puede cargar
                 return;
             }
 
@@ -499,17 +497,18 @@
                 console.warn("Firestore o userId no disponibles para cargar productos.");
                 return;
             }
-            console.log("Cargando productos para el userId:", currentUserId); // LOG 12
+            console.log("LOG: loadProducts llamado. Configurando onSnapshot para userId:", currentUserId); // LOG A
 
             // Desuscribirse del listener anterior si existe para evitar duplicados
             if (unsubscribeProducts) {
                 unsubscribeProducts();
+                console.log("LOG: Listener de productos anterior desuscrito."); // LOG B
             }
 
             const productsCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/productos`);
 
             unsubscribeProducts = onSnapshot(productsCollectionRef, (snapshot) => {
-                console.log("Snapshot de productos recibido. Número de productos:", snapshot.size); // LOG 13
+                console.log("LOG: Callback de onSnapshot disparado para productos. Número de productos en snapshot:", snapshot.size); // LOG C
                 productsList.innerHTML = ''; // Limpiar la lista actual
                 const products = [];
                 snapshot.forEach(doc => {
@@ -518,10 +517,10 @@
 
                 if (products.length === 0) {
                     noProductsMessage.classList.remove('hidden');
-                    console.log("No hay productos para mostrar."); // LOG 14
+                    console.log("LOG: No hay productos para mostrar. Mostrando mensaje de vacío."); // LOG D
                 } else {
                     noProductsMessage.classList.add('hidden');
-                    console.log("Mostrando productos:", products); // LOG 15
+                    console.log("LOG: Mostrando productos. Cantidad:", products.length, products); // LOG E
                     products.forEach(product => {
                         const productCard = `
                             <div class="product-card">
@@ -548,7 +547,7 @@
                     });
                 }
             }, (error) => {
-                console.error("Error al cargar productos en tiempo real:", error); // LOG 16
+                console.error("LOG: Error en onSnapshot de productos:", error); // LOG F
                 showMessage(`Error al cargar tus productos: ${error.message}`, 'error');
             });
         }
