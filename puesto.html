@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Puesto</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .card-cmyk {
+      border-radius: 0.5rem;
+      padding: 1rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: all 0.2s ease;
+      background: white;
+    }
+    .card-cmyk:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+    }
+    .card-cyan { background-color: #06b6d4; color: white; }
+    .card-magenta { background-color: #c026d3; color: white; }
+  </style>
+</head>
+<body class="bg-gray-100">
+
+  <div class="max-w-5xl mx-auto p-4">
+    <!-- Info del puesto -->
+    <div id="puesto-info" class="card-cmyk card-magenta mb-6"></div>
+
+    <!-- Producto destacado -->
+    <div id="producto-destacado" class="mb-8"></div>
+
+    <!-- Lista de productos -->
+    <h2 class="text-2xl font-bold mb-4">Todos los productos</h2>
+    <div id="productos-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAlqGoYrHkASbhmE2aBKIOXqkkNBBEEiGU",
+      authDomain: "feria-online-ec7c6.firebaseapp.com",
+      projectId: "feria-online-ec7c6",
+      storageBucket: "feria-online-ec7c6.appspot.com",
+      messagingSenderId: "1001881267179",
+      appId: "1:1001881267179:web:fc5ac0fd940964537887ae"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Obtener parámetros de URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get("userId");
+    const productoId = urlParams.get("productoId");
+
+    if (!userId) {
+      document.body.innerHTML = "<p class='text-center text-red-500'>Falta el ID del puesto.</p>";
+      throw new Error("No se proporcionó userId en la URL");
+    }
+
+    // Cargar datos del comerciante
+    db.collectionGroup("comerciantes")
+      .where("userId", "==", userId)
+      .get()
+      .then(snapshot => {
+        if (!snapshot.empty) {
+          const data = snapshot.docs[0].data();
+          document.getElementById("puesto-info").innerHTML = `
+            <img src="${data.logoUrl || 'https://via.placeholder.com/300'}" class="w-full h-40 object-cover rounded mb-2">
+            <h1 class="text-3xl font-bold">${data.businessName || 'Puesto sin nombre'}</h1>
+            <p>${data.description || ''}</p>
+            ${data.whatsapp ? `<a href="https://wa.me/${data.whatsapp}" target="_blank" class="block mt-2 text-white underline">Contactar por WhatsApp</a>` : ''}
+          `;
+        }
+      });
+
+    // Cargar productos del puesto
+    db.collectionGroup("productos")
+      .where("userId", "==", userId)
+      .get()
+      .then(snapshot => {
+        const productos = [];
+        snapshot.forEach(doc => {
+          productos.push({ id: doc.id, ...doc.data() });
+        });
+
+        let destacado = null;
+        if (productoId) {
+          destacado = productos.find(p => p.id === productoId);
+        }
+
+        // Mostrar producto destacado
+        if (destacado) {
+          document.getElementById("producto-destacado").innerHTML = `
+            <div class="card-cmyk card-cyan">
+              <h2 class="text-2xl font-bold mb-2">Producto destacado</h2>
+              <img src="${destacado.imagen || 'https://via.placeholder.com/300'}" class="w-full h-48 object-cover rounded mb-2">
+              <h3 class="text-xl font-bold">${destacado.nombre || 'Sin nombre'}</h3>
+              <p>${destacado.descripcion || ''}</p>
+              <p class="text-lg font-semibold mt-2">$${destacado.precio || '0.00'}</p>
+            </div>
+          `;
+          // Filtrar para que no aparezca dos veces
+          productos.splice(productos.indexOf(destacado), 1);
+        }
+
+        // Mostrar lista de productos
+        const grid = document.getElementById("productos-grid");
+        productos.forEach(producto => {
+          const card = document.createElement("div");
+          card.className = "card-cmyk";
+          card.innerHTML = `
+            <img src="${producto.imagen || 'https://via.placeholder.com/300'}" class="w-full h-40 object-cover rounded mb-2">
+            <h3 class="text-xl font-bold">${producto.nombre || 'Sin nombre'}</h3>
+            <p>${producto.descripcion || ''}</p>
+            <p class="text-lg font-semibold mt-2">$${producto.precio || '0.00'}</p>
+          `;
+          grid.appendChild(card);
+        });
+      });
+  </script>
+
+</body>
+</html>
