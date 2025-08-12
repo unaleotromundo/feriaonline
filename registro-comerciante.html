@@ -36,6 +36,9 @@
         .message-box.error {
             @apply bg-red-100 text-red-700;
         }
+        .message-box.info {
+            @apply bg-teal-100 text-teal-700; /* Nuevo color para mensajes de info */
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -83,43 +86,31 @@
 
     <!-- Script para Firebase y lógica de registro -->
     <script type="module">
-        // Importa las funciones necesarias de Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Importamos la configuración de Firebase y el appId desde nuestro archivo local 'firebase-config.js'
         import { firebaseConfig, appId } from "./firebase-config.js";
-
-        // Las variables __app_id, __firebase_config, __initial_auth_token no se usan en el entorno local
-        // ya que la configuración se importa directamente de firebase-config.js.
-        const initialAuthToken = null; // No necesario en esta configuración local
-
+        
         let app;
         let auth;
         let db;
-        let userId = null; // Para almacenar el ID del usuario autenticado
+        let userId = null; 
 
-        // Función para mostrar mensajes al usuario
         function showMessage(message, type = 'info') {
             const messageContainer = document.getElementById('message-container');
             messageContainer.innerHTML = message;
             messageContainer.className = `message-box ${type}`;
             messageContainer.classList.remove('hidden');
             setTimeout(() => {
-                messageContainer.classList.add('hidden'); // Ocultar después de 5 segundos
+                messageContainer.classList.add('hidden');
             }, 5000);
         }
 
-        // Función de inicialización de Firebase
         async function initializeFirebase() {
             try {
-                // Si la app ya está inicializada, no la inicializamos de nuevo
                 if (!app) {
-                    // **VERIFICACIÓN IMPORTANTE:** Imprime la configuración de Firebase
                     console.log("Configuración de Firebase al inicializar:", firebaseConfig);
-
-                    // Asegúrate de que firebaseConfig no esté vacío
                     if (!firebaseConfig || !firebaseConfig.apiKey || !firebaseConfig.projectId) {
                         throw new Error("La configuración de Firebase es inválida o está vacía.");
                     }
@@ -128,7 +119,6 @@
                     auth = getAuth(app);
                     db = getFirestore(app);
 
-                    // Escucha cambios en el estado de autenticación
                     onAuthStateChanged(auth, (user) => {
                         if (user) {
                             userId = user.uid;
@@ -138,13 +128,6 @@
                             console.log("Usuario no autenticado.");
                         }
                     });
-
-                    // Inicia sesión anónimamente para permitir el acceso a Firestore
-                    // Esto permite que el código interactúe con la base de datos incluso si el usuario no se registra/loguea
-                    // con email/password.
-                    await signInAnonymously(auth);
-                    console.warn("Autenticación anónima iniciada para permitir el uso de Firestore.");
-
                 }
             } catch (error) {
                 console.error("Error al inicializar Firebase o autenticar:", error);
@@ -152,12 +135,10 @@
             }
         }
 
-        // Llama a la inicialización cuando la ventana cargue
         window.onload = initializeFirebase;
 
-        // Manejo del formulario de registro
         document.getElementById('register-form').addEventListener('submit', async (e) => {
-            e.preventDefault(); // Previene el envío por defecto del formulario
+            e.preventDefault(); 
 
             const businessName = document.getElementById('businessName').value;
             const email = document.getElementById('email').value;
@@ -165,7 +146,6 @@
             const whatsapp = document.getElementById('whatsapp').value;
             const description = document.getElementById('description').value;
 
-            // Simple validación de contraseña
             if (password.length < 6) {
                 showMessage('La contraseña debe tener al menos 6 caracteres.', 'error');
                 return;
@@ -174,14 +154,10 @@
             try {
                 showMessage('Registrando tu puesto...', 'info');
 
-                // 1. Crear usuario con Email y Contraseña en Firebase Authentication
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
-                const newUserId = user.uid; // El ID único del usuario en Firebase Auth
+                const newUserId = user.uid; 
 
-                // 2. Guardar información adicional del comerciante en Cloud Firestore
-                // Usamos el UID de Firebase Auth como ID del documento en Firestore
-                // Ruta para datos privados del usuario: /artifacts/{appId}/users/{userId}/comerciantes/{documentId}
                 const comercianteDocRef = doc(db, `artifacts/${appId}/users/${newUserId}/comerciantes`, newUserId);
                 
                 await setDoc(comercianteDocRef, {
@@ -196,10 +172,9 @@
                 showMessage('¡Tu puesto ha sido registrado con éxito! Redirigiendo al panel...', 'success');
                 console.log("Comerciante registrado y datos guardados:", newUserId);
 
-                // Redirigir al usuario a su panel de control después de un registro exitoso
                 setTimeout(() => {
                     window.location.href = 'panel-comerciante.html'; 
-                }, 3000); // Redirige después de 3 segundos
+                }, 3000);
 
             } catch (error) {
                 console.error("Error al registrar el comerciante:", error);
@@ -217,9 +192,6 @@
             }
         });
 
-        // Manejo del enlace de "Iniciar Sesión"
-        // NOTA: Usar prompt() para credenciales NO es seguro ni una buena UX en producción.
-        // Se recomienda implementar un modal o una página de inicio de sesión dedicada.
         document.getElementById('login-link').addEventListener('click', (e) => {
             e.preventDefault();
             const email = prompt("Por favor, introduce tu email:");
