@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel del Comerciante - Feria Online</title>
-    <!-- Incluye Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -94,10 +93,8 @@
         </header>
 
         <div id="message-container" class="mb-6 hidden">
-            <!-- Mensajes se mostrarán aquí -->
-        </div>
+            </div>
 
-        <!-- Sección de Información del Puesto -->
         <section class="section-card">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">Información de tu Puesto 📋</h2>
             <div id="loading-spinner" class="text-center text-gray-500 hidden">
@@ -113,7 +110,6 @@
             </div>
         </section>
 
-        <!-- Sección de Gestión de Productos -->
         <section class="section-card">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">Gestión de Productos 📦</h2>
             <p class="text-gray-700 mb-4">
@@ -122,7 +118,6 @@
             
             <button id="toggle-add-product-form" class="button-primary mb-4">Añadir Nuevo Producto</button>
 
-            <!-- Formulario para Añadir Nuevo Producto (inicialmente oculto) -->
             <div id="add-product-form-container" class="bg-blue-50 p-6 rounded-lg mb-6 hidden">
                 <h3 class="text-xl font-bold text-blue-800 mb-4">Añadir Nuevo Producto</h3>
                 <form id="product-form" class="space-y-4">
@@ -150,18 +145,15 @@
                 </form>
             </div>
 
-            <!-- Lista de Productos -->
             <h3 class="text-xl font-bold text-gray-800 mt-8 mb-4">Tus Productos Publicados</h3>
             <div id="products-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <p id="no-products-message" class="col-span-full text-center text-gray-500 hidden">
                     Aún no tienes productos. ¡Añade el primero!
                 </p>
-                <!-- Las tarjetas de productos se inyectarán aquí -->
-            </div>
+                </div>
 
             <hr class="my-6 border-gray-200">
 
-            <!-- Nueva Sección: Generador de Descripción de Producto ✨ -->
             <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 Generador de Descripción de Producto ✨
             </h3>
@@ -188,7 +180,6 @@
             </div>
         </section>
 
-        <!-- Sección de Promociones (Placeholder) -->
         <section class="section-card">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">Tus Promociones ✨</h2>
             <p class="text-gray-700 mb-4">
@@ -197,31 +188,28 @@
             <button class="button-primary">Crear Nueva Promoción</button>
         </section>
 
-        <!-- Pie de página -->
         <footer class="text-center text-gray-500 text-sm mt-8 pt-6 border-t border-gray-200">
             &copy; 2025 Feria Online. Panel del Comerciante.
         </footer>
     </div>
 
-    <!-- Script para Firebase y lógica del panel -->
     <script type="module">
         // Importa las funciones necesarias de Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, collection, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Importamos la configuración de Firebase y el appId desde nuestro archivo local 'firebase-config.js'
         import { firebaseConfig, appId } from "./firebase-config.js";
 
-        // Las variables __app_id, __firebase_config, __initial_auth_token no se usan en el entorno local
-        const initialAuthToken = null; // No necesario en esta configuración local
+        const initialAuthToken = null; 
 
         let app;
         let auth;
         let db;
-        let userId = null; // Para almacenar el ID del usuario autenticado
-        let unsubscribeComercianteData = null; // Para desuscribirse del listener de datos del comerciante
-        let unsubscribeProducts = null; // Para desuscribirse del listener de productos
+        let userId = null; 
+        let unsubscribeComercianteData = null; 
+        let unsubscribeProducts = null; 
 
         // Elementos del DOM del Panel Principal
         const messageContainer = document.getElementById('message-container');
@@ -261,26 +249,22 @@
             messageContainer.innerHTML = message;
             messageContainer.className = `message-box ${type}`;
             messageContainer.classList.remove('hidden');
-            // Ocultar el mensaje después de 5 segundos
             setTimeout(() => {
                 messageContainer.classList.add('hidden');
             }, 5000);
         }
 
-        // Función para cargar los datos del comerciante
         async function loadComercianteData(currentUserId) {
             if (!db || !currentUserId) {
                 console.warn("Firestore no inicializado o userId no disponible.");
                 return;
             }
 
-            loadingSpinner.classList.remove('hidden'); // Mostrar spinner
-            comercianteDetails.classList.add('hidden'); // Ocultar detalles
+            loadingSpinner.classList.remove('hidden');
+            comercianteDetails.classList.add('hidden');
 
-            // Ruta del documento del comerciante: /artifacts/{appId}/users/{userId}/comerciantes/{userId}
             const comercianteDocRef = doc(db, `artifacts/${appId}/users/${currentUserId}/comerciantes`, currentUserId);
 
-            // Escuchar cambios en tiempo real con onSnapshot
             unsubscribeComercianteData = onSnapshot(comercianteDocRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
@@ -296,13 +280,12 @@
                         detailRegistrationDate.textContent = "Fecha no disponible";
                     }
 
-                    userIdDisplay.textContent = `ID de Usuario: ${currentUserId}`; // Mostrar el userId completo
-                    userIdDisplay.classList.remove('hidden'); // Asegurarse de que el userId sea visible
+                    userIdDisplay.textContent = `ID de Usuario: ${currentUserId}`;
+                    userIdDisplay.classList.remove('hidden');
 
                     comercianteDetails.classList.remove('hidden');
                     loadingSpinner.classList.add('hidden');
 
-                    // Cargar productos una vez que los datos del comerciante estén disponibles
                     loadProducts(currentUserId);
 
                 } else {
@@ -310,8 +293,6 @@
                     showMessage('No se encontró la información de tu puesto. Por favor, asegúrate de haberte registrado correctamente.', 'error');
                     businessNameDisplay.textContent = "Puesto No Encontrado";
                     loadingSpinner.classList.add('hidden');
-                    // Opcional: Redirigir si no hay datos de comerciante para este usuario
-                    // setTimeout(() => window.location.href = 'registro-comerciante.html', 3000);
                 }
             }, (error) => {
                 console.error("Error al obtener datos del comerciante en tiempo real:", error);
@@ -320,18 +301,9 @@
             });
         }
 
-        // Función de inicialización de Firebase
         async function initializeFirebase() {
             try {
                 if (!app) {
-                    // **VERIFICACIÓN IMPORTANTE:** Imprime la configuración de Firebase
-                    console.log("Configuración de Firebase al inicializar:", firebaseConfig);
-
-                    // Asegúrate de que firebaseConfig no esté vacío
-                    if (!firebaseConfig || !firebaseConfig.apiKey || !firebaseConfig.projectId) {
-                        throw new Error("La configuración de Firebase es inválida o está vacía.");
-                    }
-
                     app = initializeApp(firebaseConfig);
                     auth = getAuth(app);
                     db = getFirestore(app);
@@ -340,7 +312,7 @@
                         if (user) {
                             userId = user.uid;
                             console.log("Usuario autenticado en el panel:", userId);
-                            loadComercianteData(userId); // Cargar datos del comerciante
+                            loadComercianteData(userId);
                         } else {
                             userId = null;
                             console.log("No hay usuario autenticado. Redirigiendo a registro/login.");
@@ -350,13 +322,6 @@
                             }, 3000);
                         }
                     });
-
-                    // Eliminar la llamada a signInAnonymously aquí para evitar sobrescribir la autenticación del usuario registrado.
-                    // La autenticación se maneja exclusivamente por onAuthStateChanged.
-                    // Solo es necesaria en galeria-productos.html para acceso público.
-                    // await signInAnonymously(auth); 
-                    // console.warn("Autenticación anónima iniciada para permitir el uso de Firestore y comprobar el estado de autenticación.");
-                    
                 }
             } catch (error) {
                 console.error("Error al inicializar Firebase o autenticar:", error);
@@ -373,16 +338,16 @@
                 return;
             }
 
-            generatedDescriptionTextarea.value = ''; // Limpiar textarea
-            generateLoadingSpinner.classList.remove('hidden'); // Mostrar spinner
-            generateDescriptionButton.disabled = true; // Desactivar botón
+            generatedDescriptionTextarea.value = '';
+            generateLoadingSpinner.classList.remove('hidden');
+            generateDescriptionButton.disabled = true;
 
             const prompt = `Genera una descripción de producto atractiva y persuasiva para un comercio online, basándote en las siguientes palabras clave: "${keywords}". Incluye detalles sobre sus características, beneficios y el valor que aporta al cliente. Sé conciso pero completo.`;
 
             let chatHistory = [];
             chatHistory.push({ role: "user", parts: [{ text: prompt }] });
             const payload = { contents: chatHistory };
-            const apiKey = ""; // La API key será proporcionada por Canvas en runtime
+            const apiKey = ""; 
 
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
@@ -409,18 +374,15 @@
                 console.error("Error al llamar a la API de Gemini:", error);
                 showMessage(`Error al generar la descripción: ${error.message}.`, 'error');
             } finally {
-                generateLoadingSpinner.classList.add('hidden'); // Ocultar spinner
-                generateDescriptionButton.disabled = false; // Habilitar botón
+                generateLoadingSpinner.classList.add('hidden');
+                generateDescriptionButton.disabled = false;
             }
         }
 
         generateDescriptionButton.addEventListener('click', generateProductDescription);
 
-        // --- Fin de la Lógica del Generador de Descripción ---
-
         // --- Lógica del Editor de Productos ---
 
-        // Toggle del formulario de añadir producto
         toggleAddProductFormButton.addEventListener('click', () => {
             addProductFormContainer.classList.toggle('hidden');
             if (!addProductFormContainer.classList.contains('hidden')) {
@@ -430,86 +392,84 @@
             }
         });
 
-        // Manejo del envío del formulario de producto
         productForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            console.log("Formulario de producto enviado."); // LOG 1
+            console.log("Formulario de producto enviado.");
 
             if (!userId) {
                 showMessage('Debes iniciar sesión para añadir productos.', 'error');
-                console.error("Error: userId no disponible al intentar añadir producto."); // LOG 2
                 return;
             }
-            console.log("UserId disponible:", userId); // LOG 3
 
             const productName = productNameInput.value.trim();
             const productPrice = parseFloat(productPriceInput.value);
             const productImageUrl = productImageUrlInput.value.trim();
             const productDescription = productDescriptionInput.value.trim();
 
-            console.log("Valores del formulario:", { productName, productPrice, productImageUrl, productDescription }); // LOG 4
-
             if (!productName || isNaN(productPrice)) {
                 showMessage('Por favor, completa el nombre y el precio del producto.', 'error');
-                console.error("Error: Nombre o precio del producto inválido."); // LOG 5
                 return;
             }
-            console.log("Validación de formulario exitosa."); // LOG 6
-
 
             addProductLoadingSpinner.classList.remove('hidden');
             productForm.querySelector('button[type="submit"]').disabled = true;
-            console.log("Spinner mostrado y botón deshabilitado."); // LOG 7
 
             try {
-                // Ruta para guardar productos: /artifacts/{appId}/users/{userId}/productos
-                console.log(`Intentando guardar producto en Firestore en: artifacts/${appId}/users/${userId}/productos`); // LOG 8
                 const productsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/productos`);
                 
                 await addDoc(productsCollectionRef, {
                     name: productName,
                     price: productPrice,
-                    imageUrl: productImageUrl || 'https://placehold.co/400x250/cccccc/333333?text=Sin+Imagen', // Placeholder si no hay URL
+                    imageUrl: productImageUrl || 'https://placehold.co/400x250/cccccc/333333?text=Sin+Imagen',
                     description: productDescription,
                     createdAt: new Date(),
-                    comercianteId: userId // Referencia al comerciante
+                    comercianteId: userId
                 });
 
                 showMessage('Producto añadido con éxito. 🎉', 'success');
-                productForm.reset(); // Limpiar formulario
-                addProductFormContainer.classList.add('hidden'); // Ocultar formulario
+                productForm.reset();
+                addProductFormContainer.classList.add('hidden');
                 toggleAddProductFormButton.textContent = 'Añadir Nuevo Producto';
-                console.log("Producto guardado y formulario limpiado."); // LOG 9
 
             } catch (error) {
-                console.error("Error al añadir el producto:", error); // LOG 10: Si hay un error de Firebase
+                console.error("Error al añadir el producto:", error);
                 showMessage(`Error al añadir el producto: ${error.message}`, 'error');
             } finally {
                 addProductLoadingSpinner.classList.add('hidden');
                 productForm.querySelector('button[type="submit"]').disabled = false;
-                console.log("Proceso de guardado finalizado."); // LOG 11
             }
         });
 
-        // Función para cargar y mostrar productos
+        function createProductCard(product) {
+            return `
+                <div class="product-card">
+                    <img src="${product.imageUrl}" alt="${product.name}" onerror="this.onerror=null;this.src='https://placehold.co/400x250/cccccc/333333?text=Imagen+No+Disp.';">
+                    <div class="product-card-content">
+                        <h4 class="product-card-title">${product.name}</h4>
+                        <p class="product-card-price">$${product.price.toFixed(2)}</p>
+                        <p class="product-card-description">${product.description || 'Sin descripción.'}</p>
+                        <button data-id="${product.id}" class="button-secondary text-red-600 hover:text-red-800 mt-4 delete-product-button">
+                            Eliminar
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
         async function loadProducts(currentUserId) {
             if (!db || !currentUserId) {
                 console.warn("Firestore o userId no disponibles para cargar productos.");
                 return;
             }
-            console.log("LOG: loadProducts llamado. Configurando onSnapshot para userId:", currentUserId); // LOG A
 
-            // Desuscribirse del listener anterior si existe para evitar duplicados
             if (unsubscribeProducts) {
                 unsubscribeProducts();
-                console.log("LOG: Listener de productos anterior desuscrito."); // LOG B
             }
 
             const productsCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/productos`);
 
             unsubscribeProducts = onSnapshot(productsCollectionRef, (snapshot) => {
-                console.log("LOG: Callback de onSnapshot disparado para productos. Número de productos en snapshot:", snapshot.size); // LOG C
-                productsList.innerHTML = ''; // Limpiar la lista actual
+                productsList.innerHTML = '';
                 const products = [];
                 snapshot.forEach(doc => {
                     products.push({ id: doc.id, ...doc.data() });
@@ -517,28 +477,13 @@
 
                 if (products.length === 0) {
                     noProductsMessage.classList.remove('hidden');
-                    console.log("LOG: No hay productos para mostrar. Mostrando mensaje de vacío."); // LOG D
                 } else {
                     noProductsMessage.classList.add('hidden');
-                    console.log("LOG: Mostrando productos. Cantidad:", products.length, products); // LOG E
                     products.forEach(product => {
-                        const productCard = `
-                            <div class="product-card">
-                                <img src="${product.imageUrl}" alt="${product.name}" onerror="this.onerror=null;this.src='https://placehold.co/400x250/cccccc/333333?text=Imagen+No+Disp.';">
-                                <div class="product-card-content">
-                                    <h4 class="product-card-title">${product.name}</h4>
-                                    <p class="product-card-price">$${product.price.toFixed(2)}</p>
-                                    <p class="product-card-description">${product.description || 'Sin descripción.'}</p>
-                                    <button data-id="${product.id}" class="button-secondary text-red-600 hover:text-red-800 mt-4 delete-product-button">
-                                        Eliminar
-                                    </button>
-                                </div>
-                            </div>
-                        `;
+                        const productCard = createProductCard(product);
                         productsList.insertAdjacentHTML('beforeend', productCard);
                     });
 
-                    // Añadir event listeners a los botones de eliminar dinámicamente
                     document.querySelectorAll('.delete-product-button').forEach(button => {
                         button.addEventListener('click', (e) => {
                             const productId = e.target.dataset.id;
@@ -547,15 +492,13 @@
                     });
                 }
             }, (error) => {
-                console.error("LOG: Error en onSnapshot de productos:", error); // LOG F
+                console.error("Error en onSnapshot de productos:", error);
                 showMessage(`Error al cargar tus productos: ${error.message}`, 'error');
             });
         }
 
-        // Función para confirmar y eliminar un producto
         async function confirmAndDeleteProduct(productId) {
-            // Reemplaza esto con un modal de confirmación en el futuro, no uses alert()
-            const confirmation = confirm("¿Estás seguro de que quieres eliminar este producto?"); // Placeholder, DEBE ser reemplazado por un modal
+            const confirmation = confirm("¿Estás seguro de que quieres eliminar este producto?");
             if (!confirmation) {
                 return;
             }
@@ -575,9 +518,6 @@
             }
         }
 
-        // --- Fin de la Lógica del Editor de Productos ---
-
-        // Event listener para el botón de cerrar sesión
         logoutButton.addEventListener('click', async () => {
             try {
                 if (unsubscribeComercianteData) {
@@ -597,7 +537,6 @@
             }
         });
 
-        // Llama a la inicialización cuando la ventana cargue
         window.onload = initializeFirebase;
 
     </script>
