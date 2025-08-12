@@ -11,7 +11,7 @@
             font-family: "Inter", sans-serif;
             background-color: #f3f4f6;
             display: flex;
-            flex-direction: column; /* Alinea los elementos verticalmente */
+            flex-direction: column;
             align-items: center;
             min-height: 100vh;
             padding: 2rem 0;
@@ -22,8 +22,36 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             @apply bg-white rounded-lg p-8 md:p-10;
         }
+        /* Estilo para las tarjetas de Puesto/Comerciante */
+        .stall-card {
+            @apply bg-white border border-gray-300 rounded-lg overflow-hidden shadow-md flex flex-col md:flex-row items-center p-6 mb-8;
+            transition: transform 0.2s;
+        }
+        .stall-card:hover {
+            transform: translateY(-5px);
+        }
+        .stall-card img {
+            @apply w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-blue-200 shadow-md;
+            flex-shrink: 0; /* Evita que la imagen se encoja */
+            margin-right: 1.5rem;
+        }
+        .stall-card-content {
+            @apply flex-grow text-center md:text-left;
+        }
+        .stall-card-title {
+            @apply text-2xl font-bold text-blue-800 mb-2;
+        }
+        .stall-card-description {
+            @apply text-gray-700 text-sm;
+        }
+
+        /* Estilo para las tarjetas de Producto */
         .product-card {
             @apply bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm flex flex-col;
+            transition: transform 0.2s;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
         }
         .product-card img {
             @apply w-full h-48 object-cover;
@@ -40,7 +68,7 @@
         .product-card-description {
             @apply text-gray-700 text-sm mb-2;
             display: -webkit-box;
-            -webkit-line-clamp: 3; /* Limita a 3 líneas */
+            -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
@@ -66,8 +94,9 @@
 <body class="bg-gray-100 text-gray-800">
 
     <div class="gallery-container">
-        <header class="text-center mb-8 pb-4 border-b border-gray-200">
-            <h1 class="text-4xl md:text-5xl font-extrabold text-purple-700 mb-4">
+        <!-- CAMBIO AQUI: Color del encabezado y título principal -->
+        <header class="text-center mb-8 pb-4 border-b border-gray-200 bg-blue-100 rounded-lg p-4">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-blue-700 mb-4">
                 Explora Nuestra Feria Online 🎨
             </h1>
             <p class="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
@@ -76,16 +105,31 @@
         </header>
 
         <div id="loading-message" class="text-center text-gray-500 mb-6">
-            <span class="loader"></span> Cargando productos de la feria...
+            <span class="loader"></span> Cargando la feria...
         </div>
 
-        <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Las tarjetas de productos se inyectarán aquí -->
-        </div>
+        <!-- Nueva Sección: Puestos de la Feria -->
+        <section class="mb-12">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Nuestros Puestos</h2>
+            <div id="stalls-grid" class="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Las tarjetas de puestos se inyectarán aquí -->
+            </div>
+            <p id="no-stalls-found" class="text-center text-gray-500 mt-8 hidden">
+                Aún no hay puestos registrados en la feria.
+            </p>
+        </section>
 
-        <p id="no-products-found" class="text-center text-gray-500 mt-8 hidden">
-            Parece que aún no hay productos en la feria. ¡Vuelve pronto!
-        </p>
+        <!-- Sección: Todos los Productos -->
+        <section>
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Todos los Productos</h2>
+            <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Las tarjetas de productos se inyectarán aquí -->
+            </div>
+            <p id="no-products-found" class="text-center text-gray-500 mt-8 hidden">
+                Parece que aún no hay productos en la feria. ¡Vuelve pronto!
+            </p>
+        </section>
+
 
         <!-- Pie de página -->
         <footer class="text-center text-gray-500 text-sm mt-12 pt-8 border-t border-gray-200">
@@ -98,22 +142,23 @@
         // Importa las funciones necesarias de Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collectionGroup, getDocs, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, collectionGroup, getDocs, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Importamos la configuración de Firebase y el appId desde nuestro archivo local 'firebase-config.js'
         import { firebaseConfig, appId } from "./firebase-config.js";
-
-        const initialAuthToken = null; // No necesitamos un token inicial en esta configuración local
 
         let app;
         let auth;
         let db;
         let unsubscribeProducts = null; // Para desuscribirse de los listeners de productos
+        let unsubscribeComerciantes = null; // Para desuscribirse de los listeners de comerciantes
 
         // Elementos del DOM
         const productsGrid = document.getElementById('products-grid');
+        const stallsGrid = document.getElementById('stalls-grid'); // Nuevo
         const loadingMessage = document.getElementById('loading-message');
         const noProductsFoundMessage = document.getElementById('no-products-found');
+        const noStallsFoundMessage = document.getElementById('no-stalls-found'); // Nuevo
 
         // Función de inicialización de Firebase
         async function initializeFirebase() {
@@ -128,7 +173,7 @@
                     // puedan acceder a Firestore con las reglas de seguridad adecuadas.
                     await signInAnonymously(auth);
                     console.log("Sesión anónima iniciada para ver la galería.");
-                    loadAllProducts(); // Cargar productos una vez que Firebase esté listo
+                    loadAllFairData(); // Cargar puestos y productos una vez que Firebase esté listo
                 }
             } catch (error) {
                 console.error("Error al inicializar Firebase o autenticar:", error);
@@ -137,72 +182,103 @@
             }
         }
 
-        // Función para cargar todos los productos de todos los comerciantes
-        async function loadAllProducts() {
+        // Función para cargar todos los datos de la feria (puestos y productos)
+        async function loadAllFairData() {
             if (!db) {
-                console.warn("Firestore no inicializado para cargar productos.");
+                console.warn("Firestore no inicializado para cargar datos de la feria.");
                 loadingMessage.textContent = 'Error: No se pudo conectar a la base de datos.';
                 loadingMessage.classList.add('text-red-700');
                 return;
             }
 
             loadingMessage.classList.remove('hidden');
-            productsGrid.innerHTML = ''; // Limpiar cualquier contenido anterior
+            productsGrid.innerHTML = '';
+            stallsGrid.innerHTML = ''; // Limpiar puestos también
             noProductsFoundMessage.classList.add('hidden');
+            noStallsFoundMessage.classList.add('hidden'); // Ocultar mensaje de no puestos
 
-            // Desuscribirse del listener anterior si existe para evitar duplicados
-            if (unsubscribeProducts) {
-                unsubscribeProducts();
-            }
+            // Desuscribirse de listeners anteriores
+            if (unsubscribeProducts) unsubscribeProducts();
+            if (unsubscribeComerciantes) unsubscribeComerciantes();
 
-            // Usamos collectionGroup para consultar la subcolección 'productos' de todos los usuarios
-            // La ruta sería 'artifacts/{appId}/users/{userId}/productos'
-            // Firestore requiere un índice para consultas de collectionGroup.
-            // Para fines de esta demo, asumimos que se configurará un índice adecuado si hay errores de consulta.
-            const productsQuery = collectionGroup(db, 'productos');
-
-            unsubscribeProducts = onSnapshot(productsQuery, async (snapshot) => {
-                const products = [];
-                const comercianteIds = new Set(); // Para obtener los nombres de los comerciantes
-
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    products.push({ id: doc.id, ...data });
-                    if (data.comercianteId) {
-                        comercianteIds.add(data.comercianteId);
+            // --- Cargar Puestos (Comerciantes) ---
+            const comerciantesCollectionRef = collection(db, `artifacts/${appId}/users`);
+            unsubscribeComerciantes = onSnapshot(comerciantesCollectionRef, async (usersSnapshot) => {
+                const fetchedStalls = [];
+                for (const userDoc of usersSnapshot.docs) {
+                    // Cada documento en 'users' es una carpeta para un userId, dentro de ella buscamos 'comerciantes'
+                    const comercianteDocRef = doc(db, `artifacts/${appId}/users/${userDoc.id}/comerciantes`, userDoc.id);
+                    const comercianteSnap = await getDoc(comercianteDocRef);
+                    if (comercianteSnap.exists()) {
+                        fetchedStalls.push({ id: comercianteSnap.id, ...comercianteSnap.data() });
                     }
-                });
-
-                // Obtener los nombres de los comerciantes en paralelo
-                const comercianteNames = new Map();
-                if (comercianteIds.size > 0) {
-                    const fetchComerciantePromises = Array.from(comercianteIds).map(async (id) => {
-                        const comercianteDocRef = doc(db, `artifacts/${appId}/users/${id}/comerciantes`, id);
-                        const docSnap = await getDoc(comercianteDocRef);
-                        if (docSnap.exists()) {
-                            comercianteNames.set(id, docSnap.data().businessName || "Comerciante Desconocido");
-                        } else {
-                            comercianteNames.set(id, "Comerciante Desconocido");
-                        }
-                    });
-                    await Promise.all(fetchComerciantePromises);
                 }
 
-                productsGrid.innerHTML = ''; // Limpiar la lista actual
-                loadingMessage.classList.add('hidden'); // Ocultar mensaje de carga
+                stallsGrid.innerHTML = '';
+                if (fetchedStalls.length === 0) {
+                    noStallsFoundMessage.classList.remove('hidden');
+                } else {
+                    noStallsFoundMessage.classList.add('hidden');
+                    fetchedStalls.forEach(stall => {
+                        const stallCardHtml = `
+                            <div class="stall-card">
+                                <img src="${stall.logoUrl || 'https://placehold.co/150x150/cccccc/333333?text=Logo'}" alt="${stall.businessName || 'Puesto'}" class="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-blue-200 shadow-md">
+                                <div class="stall-card-content">
+                                    <h3 class="stall-card-title">${stall.businessName || 'Puesto Sin Nombre'}</h3>
+                                    <p class="stall-card-description">${stall.description || 'Este puesto no tiene una descripción.'}</p>
+                                </div>
+                            </div>
+                        `;
+                        stallsGrid.insertAdjacentHTML('beforeend', stallCardHtml);
+                    });
+                }
+            }, (error) => {
+                console.error("Error al cargar puestos en tiempo real:", error);
+                noStallsFoundMessage.textContent = `Error al cargar los puestos: ${error.message}`;
+                noStallsFoundMessage.classList.remove('hidden');
+            });
 
-                if (products.length === 0) {
+            // --- Cargar Productos (desde collectionGroup) ---
+            const productsQuery = collectionGroup(db, 'productos');
+            unsubscribeProducts = onSnapshot(productsQuery, async (productsSnapshot) => {
+                const fetchedProducts = [];
+                const comercianteNamesMap = new Map(); // Para evitar re-fetch de nombres de comerciantes si ya los tenemos
+
+                productsSnapshot.forEach(doc => {
+                    fetchedProducts.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Recopilar nombres de comerciantes para los productos
+                const uniqueComercianteIds = new Set(fetchedProducts.map(p => p.comercianteId).filter(Boolean));
+                const fetchPromises = Array.from(uniqueComercianteIds).map(async (comercianteId) => {
+                    if (!comercianteNamesMap.has(comercianteId)) {
+                        const comercianteDocRef = doc(db, `artifacts/${appId}/users/${comercianteId}/comerciantes`, comercianteId);
+                        const comercianteSnap = await getDoc(comercianteDocRef);
+                        if (comercianteSnap.exists()) {
+                            comercianteNamesMap.set(comercianteId, comercianteSnap.data().businessName || "Comerciante Desconocido");
+                        } else {
+                            comercianteNamesMap.set(comercianteId, "Comerciante Desconocido");
+                        }
+                    }
+                });
+                await Promise.all(fetchPromises);
+
+
+                productsGrid.innerHTML = '';
+                loadingMessage.classList.add('hidden'); // Ocultar mensaje de carga general
+
+                if (fetchedProducts.length === 0) {
                     noProductsFoundMessage.classList.remove('hidden');
                 } else {
                     noProductsFoundMessage.classList.add('hidden');
-                    products.forEach(product => {
-                        const comercianteName = comercianteNames.get(product.comercianteId) || "Comerciante Desconocido";
+                    fetchedProducts.forEach(product => {
+                        const comercianteName = comercianteNamesMap.get(product.comercianteId) || product.businessName || "Comerciante Desconocido";
                         const productCard = `
                             <div class="product-card">
-                                <img src="${product.imageUrl}" alt="${product.name}" onerror="this.onerror=null;this.src='https://placehold.co/400x250/cccccc/333333?text=Imagen+No+Disp.';">
+                                <img src="${product.imageUrl || 'https://placehold.co/400x250/cccccc/333333?text=Imagen+No+Disp.';}" alt="${product.name}">
                                 <div class="product-card-content">
                                     <h4 class="product-card-title">${product.name}</h4>
-                                    <p class="product-card-price">$${product.price.toFixed(2)}</p>
+                                    <p class="product-card-price">$${product.price ? product.price.toFixed(2) : '0.00'}</p>
                                     <p class="product-card-description">${product.description || 'Sin descripción.'}</p>
                                     <p class="product-card-comerciante">Vendido por: <strong>${comercianteName}</strong></p>
                                 </div>

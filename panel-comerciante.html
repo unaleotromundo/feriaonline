@@ -48,6 +48,21 @@
             
             <div id="message-container" class="mb-6 hidden"></div>
 
+            <!-- Sección para la información del puesto del comerciante -->
+            <section class="bg-white p-6 rounded-lg shadow-lg mb-8">
+                <h3 class="text-2xl font-bold mb-4 text-gray-800">Información de tu Puesto</h3>
+                <div id="comerciante-details" class="space-y-3">
+                    <p><strong class="font-semibold">Nombre del Negocio:</strong> <span id="detail-business-name"></span></p>
+                    <p><strong class="font-semibold">Correo Electrónico:</strong> <span id="detail-email"></span></p>
+                    <p><strong class="font-semibold">WhatsApp:</strong> <span id="detail-whatsapp"></span></p>
+                    <p><strong class="font-semibold">Descripción:</strong> <span id="detail-description" class="block bg-gray-50 p-3 rounded-md mt-2 text-gray-600 italic"></span></p>
+                    <p><strong class="font-semibold">Logo URL:</strong> <span id="detail-logo-url" class="block bg-gray-50 p-3 rounded-md mt-2 text-gray-600 italic"></span></p>
+                    <p><strong class="font-semibold">Fecha de Registro:</strong> <span id="detail-registration-date"></span></p>
+                    <!-- <button class="submit-button-style mt-4">Editar Información</button> -->
+                </div>
+            </section>
+
+            <!-- Sección para añadir nuevo producto -->
             <section class="bg-white p-6 rounded-lg shadow-lg mb-8">
                 <h3 class="text-2xl font-bold mb-4 text-gray-800">Añadir Nuevo Producto</h3>
                 <form id="add-product-form" class="space-y-4">
@@ -73,10 +88,12 @@
                 </form>
             </section>
 
+            <!-- Sección de productos del comerciante -->
             <section>
                 <h3 class="text-2xl font-bold mb-4 text-gray-800">Tus Productos Publicados</h3>
                 <div id="products-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    </div>
+                    <!-- Las tarjetas de productos se inyectarán aquí -->
+                </div>
                 <div id="no-products-message" class="text-center py-10 text-gray-500 hidden">
                     <p>Aún no tienes productos publicados.</p>
                 </div>
@@ -84,12 +101,12 @@
         </div>
     </main>
 
+    <!-- Script de Firebase y lógica del panel -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, addDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, getDocs, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Importamos la configuración de Firebase y el appId
         import { firebaseConfig, appId } from "./firebase-config.js";
 
         let app;
@@ -97,6 +114,8 @@
         let db;
         let userId = null;
         let businessName = null;
+        let unsubscribeComercianteData = null; // Listener para datos del comerciante
+        let unsubscribeProducts = null; // Listener para productos
 
         function showMessage(message, type = 'info') {
             const messageContainer = document.getElementById('message-container');
@@ -116,7 +135,6 @@
                     db = getFirestore(app);
                 }
 
-                // Asegúrate de que el usuario esté autenticado
                 onAuthStateChanged(auth, async (user) => {
                     const loadingContainer = document.getElementById('loading-container');
                     const contentContainer = document.getElementById('content');
@@ -124,17 +142,16 @@
                         userId = user.uid;
                         console.log("Usuario autenticado:", userId);
                         
-                        // Cargar datos del comerciante
-                        await loadComercianteData(userId);
+                        // Configurar listener para datos del comerciante
+                        setupComercianteDataListener(userId);
 
-                        // Cargar los productos del comerciante
-                        await loadProducts(userId);
+                        // Configurar listener para productos
+                        setupProductsListener(userId);
                         
                         loadingContainer.classList.add('hidden');
                         contentContainer.classList.remove('hidden');
 
                     } else {
-                        // Si no hay usuario, redirigir a la página de registro
                         console.log("Usuario no autenticado, redirigiendo a registro.");
                         window.location.href = 'registro-comerciante.html';
                     }
@@ -146,37 +163,50 @@
             }
         }
 
-        // Función para cargar los datos del comerciante (nombre del negocio)
-        async function loadComercianteData(uid) {
-            try {
-                // Usamos el mismo appId que en el registro
-                const comercianteDocRef = doc(db, `artifacts/${appId}/users/${uid}/comerciantes`, uid);
-                const docSnap = await getDoc(comercianteDocRef);
-
+        // Función para configurar el listener de datos del comerciante
+        function setupComercianteDataListener(uid) {
+            if (unsubscribeComercianteData) {
+                unsubscribeComercianteData(); // Desuscribirse del anterior si existe
+            }
+            const comercianteDocRef = doc(db, `artifacts/${appId}/users/${uid}/comerciantes`, uid);
+            unsubscribeComercianteData = onSnapshot(comercianteDocRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     businessName = data.businessName;
                     document.getElementById('business-name-display').textContent = businessName;
-                    console.log("Datos del comerciante cargados:", data);
+                    document.getElementById('detail-business-name').textContent = data.businessName || "No definido";
+                    document.getElementById('detail-email').textContent = data.email || "No definido";
+                    document.getElementById('detail-whatsapp').textContent = data.whatsapp || "No definido";
+                    document.getElementById('detail-description').textContent = data.description || "Sin descripción.";
+                    document.getElementById('detail-logo-url').textContent = data.logoUrl || "Sin URL de Logo";
+                    
+                    if (data.registrationDate && data.registrationDate.toDate) {
+                        document.getElementById('detail-registration-date').textContent = data.registrationDate.toDate().toLocaleDateString('es-ES');
+                    } else {
+                        document.getElementById('detail-registration-date').textContent = "Fecha no disponible";
+                    }
+                    console.log("Datos del comerciante cargados/actualizados:", data);
                 } else {
                     console.error("No se encontraron datos del comerciante para el usuario:", uid);
                     document.getElementById('business-name-display').textContent = 'Nombre del Negocio';
+                    showMessage("No se encontró la información de tu puesto. Asegúrate de registrarte.", 'error');
                 }
-            } catch (error) {
-                console.error("Error al cargar los datos del comerciante:", error);
-                showMessage(`Error al cargar los datos del negocio: ${error.message}`, 'error');
-            }
+            }, (error) => {
+                console.error("Error en el listener de datos del comerciante:", error);
+                showMessage(`Error al cargar datos del negocio: ${error.message}`, 'error');
+            });
         }
 
-        // Función para cargar y mostrar los productos
-        async function loadProducts(uid) {
-            const productsContainer = document.getElementById('products-container');
-            const noProductsMessage = document.getElementById('no-products-message');
-            productsContainer.innerHTML = ''; // Limpiar productos existentes
-
-            try {
-                const productsCollectionRef = collection(db, `artifacts/${appId}/users/${uid}/productos`);
-                const querySnapshot = await getDocs(productsCollectionRef);
+        // Función para configurar el listener de productos
+        function setupProductsListener(uid) {
+            if (unsubscribeProducts) {
+                unsubscribeProducts(); // Desuscribirse del anterior si existe
+            }
+            const productsCollectionRef = collection(db, `artifacts/${appId}/users/${uid}/productos`);
+            unsubscribeProducts = onSnapshot(productsCollectionRef, (querySnapshot) => {
+                const productsContainer = document.getElementById('products-container');
+                const noProductsMessage = document.getElementById('no-products-message');
+                productsContainer.innerHTML = ''; // Limpiar productos existentes
 
                 if (querySnapshot.empty) {
                     noProductsMessage.classList.remove('hidden');
@@ -206,15 +236,13 @@
                     productsContainer.innerHTML += cardHtml;
                 });
 
-                // Añadir event listeners a los botones de eliminar
                 productsContainer.querySelectorAll('.delete-button').forEach(button => {
                     button.addEventListener('click', deleteProduct);
                 });
-
-            } catch (error) {
-                console.error("Error al cargar los productos:", error);
+            }, (error) => {
+                console.error("Error en el listener de productos:", error);
                 showMessage(`Error al cargar tus productos: ${error.message}`, 'error');
-            }
+            });
         }
         
         // Función para eliminar un producto
@@ -225,6 +253,7 @@
                 return;
             }
 
+            // NOTA: En un entorno de producción, reemplazar `confirm()` por un modal de confirmación personalizado
             if (!confirm("¿Estás seguro de que quieres eliminar este producto?")) {
                 return;
             }
@@ -233,8 +262,7 @@
                 const productDocRef = doc(db, `artifacts/${appId}/users/${userId}/productos`, productId);
                 await deleteDoc(productDocRef);
                 showMessage('Producto eliminado con éxito.', 'success');
-                // Recargar la lista de productos
-                loadProducts(userId);
+                // loadProducts(userId); // onSnapshot se encargará de la actualización
             } catch (error) {
                 console.error("Error al eliminar el producto:", error);
                 showMessage(`Error al eliminar el producto: ${error.message}`, 'error');
@@ -263,12 +291,13 @@
                     description: productDescription,
                     imageUrl: productImage,
                     createdAt: new Date(),
-                    businessName: businessName
+                    comercianteId: userId, // Guardamos el ID del comerciante
+                    businessName: businessName // Guardamos el nombre del negocio (para fácil acceso en la galería)
                 });
 
                 showMessage('Producto añadido con éxito.', 'success');
                 document.getElementById('add-product-form').reset(); // Limpiar formulario
-                loadProducts(userId); // Recargar la lista de productos
+                // loadProducts(userId); // onSnapshot se encargará de la actualización
 
             } catch (error) {
                 console.error("Error al añadir el producto:", error);
@@ -279,6 +308,8 @@
         // Manejo del botón de cerrar sesión
         document.getElementById('logout-button').addEventListener('click', async () => {
             try {
+                if (unsubscribeComercianteData) unsubscribeComercianteData();
+                if (unsubscribeProducts) unsubscribeProducts();
                 await signOut(auth);
                 // La redirección ocurrirá automáticamente por el listener onAuthStateChanged
             } catch (error) {
