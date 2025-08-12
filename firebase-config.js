@@ -1,21 +1,18 @@
-// firebase-config.js
-// Esta configuración es específica para tu proyecto de Firebase.
-// Proviene de la consola de Firebase cuando registraste tu aplicación web.
+    // firebase-config.js
+    // **IMPORTANTE**: Reemplaza los placeholders con la información REAL de tu proyecto Firebase
+    export const firebaseConfig = {
+        apiKey: "AIzaSyAlqGoYrHkASbhmE2aBKIOXqkkNBBEEiGU", // Tu API Key
+        authDomain: "feria-online-ec7c6.firebaseapp.com", // Tu Dominio de Autenticación
+        projectId: "feria-online-ec7c6", // Tu ID de Proyecto
+        storageBucket: "feria-online-ec7c6.firebasestorage.app", // Tu Storage Bucket
+        messagingSenderId: "1001881267179", // Tu Messaging Sender ID
+        appId: "1:1001881267179:web:fc5ac0fd940964537887ae" // TU APP ID REAL de Firebase
+    };
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAlqGoYrHkASbhmE2aBKIOXqkkNBBEEiGU",
-  authDomain: "feria-online-ec7c6.firebaseapp.com",
-  projectId: "feria-online-ec7c6",
-  storageBucket: "feria-online-ec7c6.firebasestorage.app",
-  messagingSenderId: "1001881267179",
-  appId: "1:1001881267179:web:fc5ac0fd940964537887ae",
-  measurementId: "G-GQZZQMNVPH" // Este ID es para Google Analytics, si lo activaste.
-};
+    // CRUCIAL: Definimos 'appId' para las rutas de Firestore.
+    // Aseguramos que siempre use el 'appId' que viene de la configuración de Firebase,
+    // garantizando consistencia en todas las páginas.
+    export const appId = firebaseConfig.appId;
 
-// Exportamos la configuración como un objeto para que pueda ser importada en otros archivos.
-export { firebaseConfig };
-
-// También exportamos el 'appId' por separado, ya que lo usamos directamente para las rutas de Firestore.
-// Puedes extraerlo del objeto firebaseConfig o definirlo aquí si te es más claro.
-const appId = "1:1001881267179:web:fc5ac0fd940964537887ae"; // Tu 'appId' específico
-export { appId };
+    console.log("FirebaseConfig cargada. Usando appId para rutas:", appId); // Nuevo log de confirmación
+    
