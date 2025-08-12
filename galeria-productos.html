@@ -10,7 +10,7 @@
             font-family: "Inter", sans-serif;
             background-color: #f3f4f6;
             display: flex;
-            flex-direction: column;
+            flex-direction: column; /* Alinea los elementos verticalmente */
             align-items: center;
             min-height: 100vh;
             padding: 2rem 0;
@@ -67,7 +67,7 @@
         .product-card-description {
             @apply text-gray-700 text-sm mb-2;
             display: -webkit-box;
-            -webkit-line-clamp: 3;
+            -webkit-line-clamp: 3; /* Limita a 3 líneas */
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
@@ -364,6 +364,7 @@
 
             // --- Cargar Puestos (Comerciantes) ---
             // Consulta la colección 'users' para obtener los IDs de los comerciantes
+            // La regla de seguridad en Firestore para /artifacts/{appId}/users/{userId} debe ser 'allow read: if request.auth != null;'
             const usersCollectionRef = collection(db, `artifacts/${appId}/users`);
             unsubscribeComerciantes = onSnapshot(usersCollectionRef, async (usersSnapshot) => {
                 const fetchedStalls = [];
@@ -407,9 +408,14 @@
                 const comercianteNamesMap = new Map();
 
                 productsSnapshot.forEach(doc => {
-                    fetchedProducts.push({ id: doc.id, ...doc.data() });
+                    const data = doc.data();
+                    products.push({ id: doc.id, ...data });
+                    if (data.comercianteId) {
+                        comercianteIds.add(data.comercianteId);
+                    }
                 });
 
+                // Obtener los nombres de los comerciantes en paralelo para mostrar en las tarjetas de producto
                 const uniqueComercianteIds = new Set(fetchedProducts.map(p => p.comercianteId).filter(Boolean));
                 const fetchPromises = Array.from(uniqueComercianteIds).map(async (comercianteId) => {
                     if (!comercianteNamesMap.has(comercianteId)) {
