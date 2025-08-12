@@ -1,166 +1,102 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Puesto</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .card-cmyk {
-      border-radius: 0.5rem;
-      padding: 1rem;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      transition: all 0.2s ease;
-      background: white;
-    }
-    .card-cmyk:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 12px rgba(0,0,0,0.15);
-    }
-    .card-cyan { background-color: #06b6d4; color: white; }
-    .card-magenta { background-color: #c026d3; color: white; }
+<!-- Dentro del mismo puesto.html, reemplaza el bloque JS desde la línea donde carga el comerciante -->
 
-    /* Botón flotante WhatsApp */
-    .whatsapp-float {
-      position: fixed;
-      width: 60px;
-      height: 60px;
-      bottom: 20px;
-      right: 20px;
-      background-color: #25d366;
-      color: white;
-      border-radius: 50%;
-      text-align: center;
-      font-size: 30px;
-      box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.2s ease;
-    }
-    .whatsapp-float:hover {
-      transform: scale(1.1);
-    }
-  </style>
-</head>
-<body class="bg-gray-100">
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAlqGoYrHkASbhmE2aBKIOXqkkNBBEEiGU",
+    authDomain: "feria-online-ec7c6.firebaseapp.com",
+    projectId: "feria-online-ec7c6",
+    storageBucket: "feria-online-ec7c6.appspot.com",
+    messagingSenderId: "1001881267179",
+    appId: "1:1001881267179:web:fc5ac0fd940964537887ae"
+  };
 
-  <div class="max-w-5xl mx-auto p-4">
-    <!-- Info del puesto -->
-    <div id="puesto-info" class="card-cmyk card-magenta mb-6"></div>
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-    <!-- Producto destacado -->
-    <div id="producto-destacado" class="mb-8"></div>
+  const urlParams = new URLSearchParams(window.location.search);
+  const userId = urlParams.get("userId");
+  const productoId = urlParams.get("productoId");
 
-    <!-- Lista de productos -->
-    <h2 class="text-2xl font-bold mb-4">Todos los productos</h2>
-    <div id="productos-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
-  </div>
+  if (!userId) {
+    document.body.innerHTML = "<p class='text-center text-red-500'>Falta el ID del puesto.</p>";
+    throw new Error("No se proporcionó userId en la URL");
+  }
 
-  <!-- Botón flotante de WhatsApp -->
-  <a id="whatsapp-btn" href="#" target="_blank" class="whatsapp-float hidden">
-    <i class="fab fa-whatsapp"></i>
-  </a>
+  let whatsappNumber = null;
+  let nombreProducto = null;
 
-  <!-- Font Awesome para icono de WhatsApp -->
-  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAlqGoYrHkASbhmE2aBKIOXqkkNBBEEiGU",
-      authDomain: "feria-online-ec7c6.firebaseapp.com",
-      projectId: "feria-online-ec7c6",
-      storageBucket: "feria-online-ec7c6.appspot.com",
-      messagingSenderId: "1001881267179",
-      appId: "1:1001881267179:web:fc5ac0fd940964537887ae"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    // Obtener parámetros de URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const userId = urlParams.get("userId");
-    const productoId = urlParams.get("productoId");
-
-    if (!userId) {
-      document.body.innerHTML = "<p class='text-center text-red-500'>Falta el ID del puesto.</p>";
-      throw new Error("No se proporcionó userId en la URL");
-    }
-
-    let whatsappNumber = null;
-
-    // Cargar datos del comerciante
-    db.collectionGroup("comerciantes")
-      .where("userId", "==", userId)
-      .get()
-      .then(snapshot => {
-        if (!snapshot.empty) {
-          const data = snapshot.docs[0].data();
-          whatsappNumber = data.whatsapp ? data.whatsapp.replace(/\D/g, "") : null;
-
-          document.getElementById("puesto-info").innerHTML = `
-            <img src="${data.logoUrl || 'https://via.placeholder.com/300'}" class="w-full h-40 object-cover rounded mb-2">
-            <h1 class="text-3xl font-bold">${data.businessName || 'Puesto sin nombre'}</h1>
-            <p>${data.description || ''}</p>
-          `;
-
-          // Mostrar botón flotante de WhatsApp
-          if (whatsappNumber) {
-            const whatsappBtn = document.getElementById("whatsapp-btn");
-            whatsappBtn.href = `https://wa.me/${whatsappNumber}?text=Hola%20vi%20tu%20puesto%20en%20la%20feria%20online%20y%20me%20interesa`;
-            whatsappBtn.classList.remove("hidden");
-          }
-        }
+  // Cargar productos primero para saber si hay uno seleccionado
+  db.collectionGroup("productos")
+    .where("userId", "==", userId)
+    .get()
+    .then(snapshot => {
+      const productos = [];
+      snapshot.forEach(doc => {
+        productos.push({ id: doc.id, ...doc.data() });
       });
 
-    // Cargar productos del puesto
-    db.collectionGroup("productos")
-      .where("userId", "==", userId)
-      .get()
-      .then(snapshot => {
-        const productos = [];
-        snapshot.forEach(doc => {
-          productos.push({ id: doc.id, ...doc.data() });
-        });
-
-        let destacado = null;
-        if (productoId) {
-          destacado = productos.find(p => p.id === productoId);
-        }
-
-        // Mostrar producto destacado
+      let destacado = null;
+      if (productoId) {
+        destacado = productos.find(p => p.id === productoId);
         if (destacado) {
-          document.getElementById("producto-destacado").innerHTML = `
-            <div class="card-cmyk card-cyan">
-              <h2 class="text-2xl font-bold mb-2">Producto destacado</h2>
-              <img src="${destacado.imagen || 'https://via.placeholder.com/300'}" class="w-full h-48 object-cover rounded mb-2">
-              <h3 class="text-xl font-bold">${destacado.nombre || 'Sin nombre'}</h3>
-              <p>${destacado.descripcion || ''}</p>
-              <p class="text-lg font-semibold mt-2">$${destacado.precio || '0.00'}</p>
-            </div>
-          `;
-          productos.splice(productos.indexOf(destacado), 1);
+          nombreProducto = destacado.nombre || "este producto";
         }
+      }
 
-        // Mostrar lista de productos
-        const grid = document.getElementById("productos-grid");
-        productos.forEach(producto => {
-          const card = document.createElement("div");
-          card.className = "card-cmyk";
-          card.innerHTML = `
-            <img src="${producto.imagen || 'https://via.placeholder.com/300'}" class="w-full h-40 object-cover rounded mb-2">
-            <h3 class="text-xl font-bold">${producto.nombre || 'Sin nombre'}</h3>
-            <p>${producto.descripcion || ''}</p>
-            <p class="text-lg font-semibold mt-2">$${producto.precio || '0.00'}</p>
-          `;
-          grid.appendChild(card);
-        });
+      // Mostrar producto destacado
+      if (destacado) {
+        document.getElementById("producto-destacado").innerHTML = `
+          <div class="card-cmyk card-cyan">
+            <h2 class="text-2xl font-bold mb-2">Producto destacado</h2>
+            <img src="${destacado.imagen || 'https://via.placeholder.com/300'}" class="w-full h-48 object-cover rounded mb-2">
+            <h3 class="text-xl font-bold">${destacado.nombre || 'Sin nombre'}</h3>
+            <p>${destacado.descripcion || ''}</p>
+            <p class="text-lg font-semibold mt-2">$${destacado.precio || '0.00'}</p>
+          </div>
+        `;
+        productos.splice(productos.indexOf(destacado), 1);
+      }
+
+      // Mostrar lista de productos
+      const grid = document.getElementById("productos-grid");
+      productos.forEach(producto => {
+        const card = document.createElement("div");
+        card.className = "card-cmyk";
+        card.innerHTML = `
+          <img src="${producto.imagen || 'https://via.placeholder.com/300'}" class="w-full h-40 object-cover rounded mb-2">
+          <h3 class="text-xl font-bold">${producto.nombre || 'Sin nombre'}</h3>
+          <p>${producto.descripcion || ''}</p>
+          <p class="text-lg font-semibold mt-2">$${producto.precio || '0.00'}</p>
+        `;
+        grid.appendChild(card);
       });
-  </script>
+    });
 
-</body>
-</html>
+  // Cargar datos del comerciante después
+  db.collectionGroup("comerciantes")
+    .where("userId", "==", userId)
+    .get()
+    .then(snapshot => {
+      if (!snapshot.empty) {
+        const data = snapshot.docs[0].data();
+        whatsappNumber = data.whatsapp ? data.whatsapp.replace(/\D/g, "") : null;
+
+        document.getElementById("puesto-info").innerHTML = `
+          <img src="${data.logoUrl || 'https://via.placeholder.com/300'}" class="w-full h-40 object-cover rounded mb-2">
+          <h1 class="text-3xl font-bold">${data.businessName || 'Puesto sin nombre'}</h1>
+          <p>${data.description || ''}</p>
+        `;
+
+        // Botón de WhatsApp con mensaje personalizado
+        if (whatsappNumber) {
+          const whatsappBtn = document.getElementById("whatsapp-btn");
+          let mensaje = "Hola, vi tu puesto en la feria online";
+          if (nombreProducto) {
+            mensaje += ` y me interesa "${nombreProducto}"`;
+          }
+          whatsappBtn.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`;
+          whatsappBtn.classList.remove("hidden");
+        }
+      }
+    });
+</script>
