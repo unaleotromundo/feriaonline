@@ -1,586 +1,107 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Galería de Productos - Feria Online</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            font-family: "Inter", sans-serif;
-            background-color: #f3f4f6;
-            display: flex;
-            flex-direction: column; /* Alinea los elementos verticalmente */
-            align-items: center;
-            min-height: 100vh;
-            padding: 2rem 0;
-        }
-        .gallery-container {
-            max-width: 1200px;
-            width: 95%;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            @apply bg-white rounded-lg p-8 md:p-10;
-        }
-        /* Estilos para las tarjetas de Puesto/Comerciante */
-        .stall-card {
-            @apply bg-white border border-gray-300 rounded-lg overflow-hidden shadow-md flex flex-col md:flex-row items-center p-6 mb-8;
-            transition: transform 0.2s;
-        }
-        .stall-card:hover {
-            transform: translateY(-5px);
-        }
-        .stall-card img {
-            @apply w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-cyan-300 shadow-md; /* Borde cian */
-            flex-shrink: 0;
-            margin-right: 1.5rem;
-        }
-        .stall-card-content {
-            @apply flex-grow text-center md:text-left;
-        }
-        .stall-card-title {
-            @apply text-2xl font-bold text-cyan-800 mb-2; /* Texto cian oscuro */
-        }
-        .stall-card-description {
-            @apply text-gray-700 text-sm;
-        }
-
-        /* Estilo para las tarjetas de Producto */
-        .product-card {
-            @apply bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm flex flex-col;
-            transition: transform 0.2s;
-        }
-        .product-card:hover {
-            transform: translateY(-5px);
-        }
-        .product-card img {
-            @apply w-full h-48 object-cover;
-        }
-        .product-card-content {
-            @apply p-4 flex-grow;
-        }
-        .product-card-title {
-            @apply text-lg font-semibold text-gray-900 mb-1;
-        }
-        .product-card-price {
-            @apply text-xl font-bold text-green-600 mb-2;
-        }
-        .product-card-description {
-            @apply text-gray-700 text-sm mb-2;
-            display: -webkit-box;
-            -webkit-line-clamp: 3; /* Limita a 3 líneas */
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        .product-card-comerciante {
-            @apply text-xs text-gray-500 mt-auto pt-2 border-t border-gray-100;
-        }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 2s linear infinite;
-            display: inline-block;
-            vertical-align: middle;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Estilos de botones 3D con CMYK */
-        .btn-cmyk {
-            @apply font-bold py-2 px-4 rounded-lg relative overflow-hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: all 0.2s ease;
-            position: relative;
-            z-index: 1;
-        }
-        .btn-cmyk::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border-radius: 0.5rem;
-            background: rgba(0,0,0,0.1); /* Sombra sutil para efecto 3D */
-            transform: scaleY(0);
-            transform-origin: bottom;
-            transition: transform 0.2s ease;
-            z-index: -1;
-        }
-        .btn-cmyk:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
-        }
-        .btn-cmyk:hover::after {
-            transform: scaleY(1);
-        }
-        .btn-cmyk:active {
-            transform: translateY(1px);
-            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
-        }
-        
-        /* Colores específicos CMYK para botones */
-        .btn-cyan { @apply bg-cyan-500 text-white; }
-        .btn-magenta { @apply bg-fuchsia-600 text-white; }
-        .btn-yellow { @apply bg-yellow-400 text-gray-800; }
-        .btn-black { @apply bg-gray-800 text-white; }
-
-        /* Estilos para tooltips */
-        [data-tooltip]:hover::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #333;
-            color: #fff;
-            padding: 0.5rem 0.75rem;
-            border-radius: 0.25rem;
-            font-size: 0.875rem;
-            white-space: nowrap;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s, visibility 0.2s;
-            z-index: 20;
-            margin-bottom: 0.5rem;
-        }
-        [data-tooltip]:hover::before {
-            content: '';
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%) translateY(0.25rem);
-            border-width: 5px;
-            border-style: solid;
-            border-color: #333 transparent transparent transparent;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s, visibility 0.2s;
-            z-index: 20;
-        }
-        [data-tooltip]:hover::after,
-        [data-tooltip]:hover::before {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        /* Estilos del modal/área de chat de IA */
-        .ai-chat-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .ai-chat-box {
-            background: white;
-            padding: 2rem;
-            border-radius: 0.75rem;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            width: 90%;
-            max-width: 600px;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .ai-chat-messages {
-            flex-grow: 1;
-            overflow-y: auto;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            background-color: #f9fafb;
-        }
-
-        .ai-chat-message p {
-            margin-bottom: 0.5rem;
-        }
-        .ai-chat-message strong {
-            color: #1f2937;
-        }
-
-        .ai-chat-input-area {
-            display: flex;
-            gap: 0.5rem;
-        }
-        .ai-chat-input {
-            flex-grow: 1;
-            padding: 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.5rem;
-        }
-        .ai-chat-button {
-            @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200;
-        }
-        .ai-chat-close-button {
-            @apply bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-3 rounded-md transition-colors duration-200;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Galería de Productos y Puestos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" type="module"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" type="module"></script>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="bg-gray-100">
 
-    <div class="gallery-container">
-        <!-- Cabecera con colores CMYK y botón de navegación -->
-        <header class="text-center mb-8 pb-4 border-b border-gray-200 bg-cyan-500 rounded-lg p-4 flex justify-between items-center">
-            <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-4">
-                Explora Nuestra Feria Online 🎨
-            </h1>
-            <button id="go-to-home-button" class="btn-cmyk btn-yellow text-base py-1 px-3" data-tooltip="Vuelve a la página principal de la feria">
-                Página Principal
-            </button>
-        </header>
+  <div class="max-w-6xl mx-auto p-4 space-y-8">
+    <h1 class="text-3xl font-bold">Galería de la Feria</h1>
 
-        <div id="loading-message" class="text-center text-gray-500 mb-6">
-            <span class="loader"></span> Cargando la feria...
-        </div>
+    <!-- Sección de Puestos -->
+    <section>
+      <h2 class="text-2xl font-semibold mb-4">Puestos</h2>
+      <div id="puestos-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+    </section>
 
-        <!-- Sección: Puestos de la Feria -->
-        <section class="mb-12">
-            <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Nuestros Puestos</h2>
-            <div id="stalls-grid" class="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Las tarjetas de puestos se inyectarán aquí -->
-            </div>
-            <p id="no-stalls-found" class="text-center text-gray-500 mt-8 hidden">
-                Aún no hay puestos registrados en la feria. ¡Sé el primero!
-            </p>
-        </section>
+    <!-- Buscador -->
+    <section>
+      <h2 class="text-2xl font-semibold mb-4">Productos</h2>
+      <input type="text" id="search-input" placeholder="Buscar productos..." class="w-full p-2 mb-4 border border-gray-300 rounded"/>
+      <div id="productos-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+    </section>
+  </div>
 
-        <!-- Sección: Todos los Productos -->
-        <section>
-            <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Todos los Productos</h2>
-            <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Las tarjetas de productos se inyectarán aquí -->
-            </div>
-            <p id="no-products-found" class="text-center text-gray-500 mt-8 hidden">
-                Parece que aún no hay productos en la feria. ¡Vuelve pronto!
-            </p>
-        </section>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { firebaseConfig, appId } from "./firebase-config.js";
 
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        <!-- Pie de página con fondo gris oscuro -->
-        <footer class="text-center text-white text-sm mt-12 pt-8 border-t border-gray-700 bg-gray-800 py-4 rounded-b-lg">
-            &copy; 2025 Feria Online. Todos los derechos reservados.
-        </footer>
-    </div>
+    const puestosGrid = document.getElementById("puestos-grid");
+    const productosGrid = document.getElementById("productos-grid");
+    const searchInput = document.getElementById("search-input");
 
-    <!-- Overlay y Modal para el asistente de IA -->
-    <div id="ai-chat-overlay" class="ai-chat-overlay hidden">
-        <div class="ai-chat-box">
-            <div class="flex justify-between items-center mb-4">
-                <h4 class="text-xl font-bold text-gray-800">Preguntar al Experto sobre <span id="ai-product-name" class="text-cyan-700"></span></h4>
-                <button id="ai-chat-close" class="ai-chat-close-button" data-tooltip="Cerrar esta conversación con el asistente">X</button>
-            </div>
-            <div id="ai-chat-messages" class="ai-chat-messages">
-                <!-- Mensajes del chat irán aquí -->
-            </div>
-            <div class="ai-chat-input-area">
-                <input type="text" id="ai-chat-question-input" class="ai-chat-input" placeholder="Haz tu pregunta...">
-                <button id="ai-chat-send-button" class="ai-chat-button" data-tooltip="Envía tu pregunta al asistente de IA">
-                    <span id="ai-chat-loading-spinner" class="loader hidden w-5 h-5 border-cyan-200 border-t-white"></span>
-                    Enviar
-                </button>
-            </div>
-        </div>
-    </div>
+    // Render puestos
+    async function loadPuestos() {
+      const puestosRef = collection(db, `artifacts/${appId}/users`);
+      const snapshot = await getDocs(puestosRef);
 
-    <!-- Script para Firebase y lógica de la galería -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, collectionGroup, getDocs, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        import { firebaseConfig, appId } from "./firebase-config.js";
-
-        let app;
-        let auth;
-        let db;
-        let unsubscribeProducts = null;
-        let unsubscribeComerciantes = null;
-        let currentProductData = null;
-
-        const productsGrid = document.getElementById('products-grid');
-        const stallsGrid = document.getElementById('stalls-grid');
-        const loadingMessage = document.getElementById('loading-message');
-        const noProductsFoundMessage = document.getElementById('no-products-found');
-        const noStallsFoundMessage = document.getElementById('no-stalls-found');
-
-        const aiChatOverlay = document.getElementById('ai-chat-overlay');
-        const aiChatCloseButton = document.getElementById('ai-chat-close');
-        const aiProductNameDisplay = document.getElementById('ai-product-name');
-        const aiChatMessages = document.getElementById('ai-chat-messages');
-        const aiChatQuestionInput = document.getElementById('ai-chat-question-input');
-        const aiChatSendButton = document.getElementById('ai-chat-send-button');
-        const aiChatLoadingSpinner = document.getElementById('ai-chat-loading-spinner');
-        const goToHomeButton = document.getElementById('go-to-home-button');
-
-
-        async function initializeFirebase() {
-            try {
-                if (!app) {
-                    app = initializeApp(firebaseConfig);
-                    auth = getAuth(app);
-                    db = getFirestore(app);
-
-                    // La galería inicia sesión anónimamente para tener un request.auth para las reglas de lectura
-                    await signInAnonymously(auth);
-                    console.log("Sesión anónima iniciada para ver la galería.");
-                    loadAllFairData(); 
-                }
-            } catch (error) {
-                console.error("Error al inicializar Firebase o autenticar:", error);
-                loadingMessage.textContent = `Error al cargar la feria: ${error.message}. Asegúrate de que tus reglas de Firebase sean correctas.`;
-                loadingMessage.classList.add('text-red-700');
-            }
-        }
-
-        async function loadAllFairData() {
-            if (!db) {
-                console.warn("Firestore no inicializado para cargar datos de la feria.");
-                loadingMessage.textContent = 'Error: No se pudo conectar a la base de datos.';
-                loadingMessage.classList.add('text-red-700');
-                return;
-            }
-
-            loadingMessage.classList.remove('hidden');
-            productsGrid.innerHTML = '';
-            stallsGrid.innerHTML = '';
-            noProductsFoundMessage.classList.add('hidden');
-            noStallsFoundMessage.classList.add('hidden');
-
-            if (unsubscribeProducts) unsubscribeProducts();
-            if (unsubscribeComerciantes) unsubscribeComerciantes();
-
-            // --- Cargar Puestos (Comerciantes) ---
-            // Consulta la colección 'users' para obtener los IDs de los comerciantes
-            // La regla de seguridad en Firestore para /artifacts/{appId}/users/{userId} debe ser 'allow read: if request.auth != null;'
-            const usersCollectionRef = collection(db, `artifacts/${appId}/users`);
-            unsubscribeComerciantes = onSnapshot(usersCollectionRef, async (usersSnapshot) => {
-                const fetchedStalls = [];
-                // Por cada documento de usuario, intenta obtener su documento de comerciante
-                for (const userDoc of usersSnapshot.docs) {
-                    const comercianteDocRef = doc(db, `artifacts/${appId}/users/${userDoc.id}/comerciantes`, userDoc.id);
-                    const comercianteSnap = await getDoc(comercianteDocRef);
-                    if (comercianteSnap.exists()) {
-                        fetchedStalls.push({ id: comercianteSnap.id, ...comercianteSnap.data() });
-                    }
-                }
-
-                stallsGrid.innerHTML = '';
-                if (fetchedStalls.length === 0) {
-                    noStallsFoundMessage.classList.remove('hidden');
-                } else {
-                    noStallsFoundMessage.classList.add('hidden');
-                    fetchedStalls.forEach(stall => {
-                        const stallCardHtml = `
-                            <div class="stall-card">
-                                <img src="${stall.logoUrl || 'https://placehold.co/150x150/cccccc/333333?text=Logo'}" alt="${stall.businessName || 'Puesto'}" class="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-cyan-300 shadow-md">
-                                <div class="stall-card-content">
-                                    <h3 class="stall-card-title">${stall.businessName || 'Puesto Sin Nombre'}</h3>
-                                    <p class="stall-card-description">${stall.description || 'Este puesto no tiene una descripción.'}</p>
-                                </div>
-                            </div>
-                        `;
-                        stallsGrid.insertAdjacentHTML('beforeend', stallCardHtml);
-                    });
-                }
-            }, (error) => {
-                console.error("Error al cargar puestos en tiempo real:", error);
-                noStallsFoundMessage.textContent = `Error al cargar los puestos: ${error.message}. Asegúrate de que tus reglas de Firebase permitan leer la colección 'users'.`;
-                noStallsFoundMessage.classList.remove('hidden');
-            });
-
-            // --- Cargar Productos (desde collectionGroup) ---
-            const productsQuery = collectionGroup(db, 'productos');
-            unsubscribeProducts = onSnapshot(productsQuery, async (productsSnapshot) => {
-                const fetchedProducts = [];
-                const comercianteNamesMap = new Map();
-
-                productsSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    products.push({ id: doc.id, ...data });
-                    if (data.comercianteId) {
-                        comercianteIds.add(data.comercianteId);
-                    }
-                });
-
-                // Obtener los nombres de los comerciantes en paralelo para mostrar en las tarjetas de producto
-                const uniqueComercianteIds = new Set(fetchedProducts.map(p => p.comercianteId).filter(Boolean));
-                const fetchPromises = Array.from(uniqueComercianteIds).map(async (comercianteId) => {
-                    if (!comercianteNamesMap.has(comercianteId)) {
-                        const comercianteDocRef = doc(db, `artifacts/${appId}/users/${comercianteId}/comerciantes`, comercianteId);
-                        const comercianteSnap = await getDoc(comercianteDocRef);
-                        if (comercianteSnap.exists()) {
-                            comercianteNamesMap.set(comercianteId, comercianteSnap.data().businessName || "Comerciante Desconocido");
-                        } else {
-                            comercianteNamesMap.set(comercianteId, "Comerciante Desconocido");
-                        }
-                    }
-                });
-                await Promise.all(fetchPromises);
-
-
-                productsGrid.innerHTML = '';
-                loadingMessage.classList.add('hidden');
-
-                if (fetchedProducts.length === 0) {
-                    noProductsFoundMessage.classList.remove('hidden');
-                } else {
-                    noProductsFoundMessage.classList.add('hidden');
-                    fetchedProducts.forEach(product => {
-                        const comercianteName = comercianteNamesMap.get(product.comercianteId) || product.businessName || "Comerciante Desconocido";
-                        const productCard = `
-                            <div class="product-card">
-                                <img src="${product.imageUrl || 'https://placehold.co/400x250/cccccc/333333?text=Sin+Imagen'}" alt="${product.name}" onerror="this.onerror=null;this.src='https://placehold.co/400x250/cccccc/333333?text=No+Disponible';">
-                                <div class="p-4">
-                                    <h4 class="product-card-title">${product.name}</h4>
-                                    <p class="product-card-price">$${product.price ? product.price.toFixed(2) : '0.00'}</p>
-                                    <p class="product-card-description">${product.description || 'Sin descripción.'}</p>
-                                    <p class="product-card-comerciante">Vendido por: <strong>${comercianteName}</strong></p>
-                                    <button class="ask-ai-button btn-cmyk btn-magenta mt-3 w-full" data-product='${JSON.stringify(product)}' data-tooltip="Haz una pregunta sobre este producto al asistente de IA">
-                                        Preguntar al Experto ✨
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                        productsGrid.insertAdjacentHTML('beforeend', productCard);
-                    });
-
-                    document.querySelectorAll('.ask-ai-button').forEach(button => {
-                        button.addEventListener('click', (event) => {
-                            const productData = JSON.parse(event.target.dataset.product);
-                            openAIChat(productData);
-                        });
-                    });
-                }
-            }, (error) => {
-                console.error("Error al cargar productos de la galería en tiempo real:", error);
-                loadingMessage.textContent = `Error al cargar los productos: ${error.message}. Asegúrate de que tus reglas de Firebase permitan leer la colección 'productos' y que tengas los índices correctos.`;
-                loadingMessage.classList.add('text-red-700');
-            });
-        }
-
-        // --- Lógica del Asistente de IA (Gemini API) ---
-        aiChatCloseButton.addEventListener('click', () => {
-            aiChatOverlay.classList.add('hidden');
-            aiChatMessages.innerHTML = '';
-            aiChatQuestionInput.value = '';
-            currentProductData = null;
+      puestosGrid.innerHTML = "";
+      snapshot.forEach(async (userDoc) => {
+        const comerciantesRef = collection(db, `artifacts/${appId}/users/${userDoc.id}/comerciantes`);
+        const comerciantesSnap = await getDocs(comerciantesRef);
+        comerciantesSnap.forEach((doc) => {
+          const data = doc.data();
+          const card = document.createElement("div");
+          card.className = "bg-white p-4 rounded shadow hover:shadow-lg transition";
+          card.innerHTML = `
+            <img src="${data.logoUrl || 'https://placehold.co/300'}" alt="${data.businessName}" class="w-full h-32 object-cover rounded mb-2">
+            <h3 class="text-lg font-bold">${data.businessName}</h3>
+            <p class="text-gray-600">${data.description || ''}</p>
+          `;
+          puestosGrid.appendChild(card);
         });
+      });
+    }
 
-        aiChatSendButton.addEventListener('click', () => {
-            const question = aiChatQuestionInput.value.trim();
-            if (question && currentProductData) {
-                sendQuestionToAI(currentProductData, question);
-                aiChatQuestionInput.value = '';
-            }
-        });
+    // Render productos
+    let allProducts = [];
+    async function loadProductos() {
+      const productosSnap = await getDocs(collectionGroup(db, "productos"));
+      allProducts = [];
+      productosSnap.forEach((doc) => {
+        allProducts.push(doc.data());
+      });
+      renderProductos(allProducts);
+    }
 
-        aiChatQuestionInput.addEventListener('keypress', (event) => {
-            if (event.key === 'Enter') {
-                aiChatSendButton.click();
-            }
-        });
+    function renderProductos(products) {
+      productosGrid.innerHTML = "";
+      products.forEach((p) => {
+        const card = document.createElement("div");
+        card.className = "bg-white p-4 rounded shadow hover:shadow-lg transition";
+        card.innerHTML = `
+          <img src="${p.imagen || 'https://placehold.co/300'}" alt="${p.nombre}" class="w-full h-48 object-cover rounded mb-2">
+          <h3 class="text-lg font-bold">${p.nombre}</h3>
+          <p class="text-gray-600">${p.descripcion || ''}</p>
+          <p class="text-lg font-semibold mt-2">$${p.precio || '0.00'}</p>
+        `;
+        productosGrid.appendChild(card);
+      });
+    }
 
-        function openAIChat(productData) {
-            currentProductData = productData;
-            aiProductNameDisplay.textContent = productData.name;
-            aiChatMessages.innerHTML = `
-                <div class="ai-chat-message">
-                    <p><strong>Asistente:</strong> ¡Hola! Soy tu experto en productos. Pregúntame lo que quieras sobre <strong>${productData.name}</strong>.</p>
-                    <p class="text-xs text-gray-500 mt-1">Precio: $${productData.price.toFixed(2)}</p>
-                    <p class="text-xs text-gray-500">Descripción: ${productData.description || 'Sin descripción.'}</p>
-                </div>
-            `;
-            aiChatOverlay.classList.remove('hidden');
-        }
+    // Filtrar productos
+    searchInput.addEventListener("input", (e) => {
+      const term = e.target.value.toLowerCase();
+      const filtered = allProducts.filter((p) =>
+        p.nombre?.toLowerCase().includes(term) ||
+        p.descripcion?.toLowerCase().includes(term)
+      );
+      renderProductos(filtered);
+    });
 
-        async function sendQuestionToAI(product, question) {
-            addMessageToChat('user', question);
-            aiChatLoadingSpinner.classList.remove('hidden');
-            aiChatSendButton.disabled = true;
+    // Cargar datos
+    loadPuestos();
+    loadProductos();
+  </script>
 
-            const prompt = `Como asistente experto en productos de feria, responde la siguiente pregunta sobre el producto "${product.name}" (Descripción: "${product.description}", Precio: ${product.price}):\n\nPregunta: "${question}"\n\nRespuesta detallada y útil:`;
-
-            let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-            const payload = { contents: chatHistory };
-            const apiKey = "";
-
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-
-            try {
-                let response;
-                let delay = 1000;
-                const maxRetries = 3;
-                for (let i = 0; i < maxRetries; i++) {
-                    response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (response.ok) {
-                        break;
-                    } else if (response.status === 429) {
-                        console.warn(`Intento ${i + 1}/${maxRetries}: Demasiadas solicitudes. Reintentando en ${delay / 1000}s...`);
-                        await new Promise(res => setTimeout(res, delay));
-                        delay *= 2;
-                    } else {
-                        const errorData = await response.json();
-                        console.error("Error de la API de Gemini (sin reintento):", errorData);
-                        throw new Error(`Error ${response.status}: ${errorData.error?.message || 'Error desconocido de la API.'}`);
-                    }
-                }
-
-                if (!response.ok) {
-                    throw new Error("La API de Gemini no respondió correctamente después de varios reintentos.");
-                }
-
-                const result = await response.json();
-
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const text = result.candidates[0].content.parts[0].text;
-                    addMessageToChat('ai', text);
-                } else {
-                    addMessageToChat('ai', 'Lo siento, no pude generar una respuesta. Por favor, intenta de nuevo con una pregunta diferente.');
-                    console.error("Respuesta inesperada de Gemini API:", result);
-                }
-            } catch (error) {
-                console.error("Error al llamar a la API de Gemini:", error);
-                addMessageToChat('ai', `Lo siento, hubo un error: ${error.message}. Por favor, inténtalo más tarde.`);
-            } finally {
-                aiChatLoadingSpinner.classList.add('hidden');
-                aiChatSendButton.disabled = false;
-            }
-        }
-
-        function addMessageToChat(sender, text) {
-            const messageDiv = document.createElement('div');
-            messageDiv.classList.add('ai-chat-message', sender === 'user' ? 'text-right' : 'text-left');
-            messageDiv.innerHTML = `<p><strong>${sender === 'user' ? 'Tú' : 'Asistente'}:</strong> ${text}</p>`;
-            aiChatMessages.appendChild(messageDiv);
-            aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
-        }
-
-        // Interconexión de botones de navegación
-        goToHomeButton.addEventListener('click', () => {
-            window.location.href = 'index.html';
-        });
-
-        window.onload = initializeFirebase;
-    </script>
 </body>
 </html>
