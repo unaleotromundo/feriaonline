@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel del Comerciante - Feria Online</title>
+    <!-- Incluye Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+        .panel-container {
+            max-width: 900px;
+            width: 95%;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .section-card {
+            @apply bg-white p-6 rounded-lg shadow-md mb-6;
+        }
+        .button-primary {
+            @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-all duration-300 transform hover:scale-105;
+        }
+        .button-secondary {
+            @apply bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-md transition-all duration-300;
+        }
+        .message-box {
+            @apply p-4 rounded-md text-sm text-center;
+        }
+        .message-box.info {
+            @apply bg-blue-100 text-blue-700;
+        }
+        .message-box.error {
+            @apply bg-red-100 text-red-700;
+        }
+        /* Estilos para el spinner de carga */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 2s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .input-field {
+            @apply w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200;
+        }
+        .product-card {
+            @apply bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm flex flex-col;
+        }
+        .product-card img {
+            @apply w-full h-48 object-cover;
+        }
+        .product-card-content {
+            @apply p-4 flex-grow;
+        }
+        .product-card-title {
+            @apply text-lg font-semibold text-gray-900 mb-1;
+        }
+        .product-card-price {
+            @apply text-xl font-bold text-green-600 mb-2;
+        }
+        .product-card-description {
+            @apply text-gray-700 text-sm;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="panel-container bg-white rounded-lg p-8 md:p-10">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 pb-4 border-b border-gray-200">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-blue-700 mb-4 md:mb-0">
+                Panel de <span id="business-name-display">Tu Puesto</span>
+            </h1>
+            <div class="flex items-center space-x-4">
+                <span id="user-id-display" class="bg-gray-200 text-gray-700 text-xs px-3 py-1 rounded-full hidden md:block"></span>
+                <button id="logout-button" class="button-secondary">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </header>
+
+        <div id="message-container" class="mb-6 hidden">
+            <!-- Mensajes se mostrarán aquí -->
+        </div>
+
+        <!-- Sección de Información del Puesto -->
+        <section class="section-card">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Información de tu Puesto 📋</h2>
+            <div id="loading-spinner" class="text-center text-gray-500 hidden">
+                Cargando información del puesto...
+            </div>
+            <div id="comerciante-details" class="space-y-3 hidden">
+                <p><strong class="font-semibold">Nombre del Negocio:</strong> <span id="detail-business-name"></span></p>
+                <p><strong class="font-semibold">Correo Electrónico:</strong> <span id="detail-email"></span></p>
+                <p><strong class="font-semibold">WhatsApp:</strong> <span id="detail-whatsapp"></span></p>
+                <p><strong class="font-semibold">Descripción:</strong> <span id="detail-description" class="block bg-gray-50 p-3 rounded-md mt-2 text-gray-600 italic"></span></p>
+                <p><strong class="font-semibold">Fecha de Registro:</strong> <span id="detail-registration-date"></span></p>
+                <button class="button-primary mt-4">Editar Información</button>
+            </div>
+        </section>
+
+        <!-- Sección de Gestión de Productos -->
+        <section class="section-card">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Gestión de Productos 📦</h2>
+            <p class="text-gray-700 mb-4">
+                Aquí podrás armar y organizar el catálogo de tus productos, subir imágenes, definir precios y descripciones.
+            </p>
+            
+            <button id="toggle-add-product-form" class="button-primary mb-4">Añadir Nuevo Producto</button>
+
+            <!-- Formulario para Añadir Nuevo Producto (inicialmente oculto) -->
+            <div id="add-product-form-container" class="bg-blue-50 p-6 rounded-lg mb-6 hidden">
+                <h3 class="text-xl font-bold text-blue-800 mb-4">Añadir Nuevo Producto</h3>
+                <form id="product-form" class="space-y-4">
+                    <div>
+                        <label for="product-name" class="block text-gray-700 text-sm font-bold mb-2">Nombre del Producto:</label>
+                        <input type="text" id="product-name" class="input-field" required placeholder="Nombre del producto">
+                    </div>
+                    <div>
+                        <label for="product-price" class="block text-gray-700 text-sm font-bold mb-2">Precio:</label>
+                        <input type="number" id="product-price" class="input-field" step="0.01" min="0" required placeholder="Ej: 29.99">
+                    </div>
+                    <div>
+                        <label for="product-image-url" class="block text-gray-700 text-sm font-bold mb-2">URL de la Imagen del Producto:</label>
+                        <input type="url" id="product-image-url" class="input-field" placeholder="https://ejemplo.com/imagen.jpg">
+                        <p class="text-xs text-gray-500 mt-1">Sube la imagen a un servicio de hosting de imágenes y pega la URL aquí.</p>
+                    </div>
+                    <div>
+                        <label for="product-description" class="block text-gray-700 text-sm font-bold mb-2">Descripción del Producto:</label>
+                        <textarea id="product-description" rows="4" class="input-field" placeholder="Describe tu producto..."></textarea>
+                    </div>
+                    <button type="submit" class="button-primary w-full flex items-center justify-center">
+                        <span id="add-product-loading-spinner" class="loader hidden"></span>
+                        Guardar Producto
+                    </button>
+                </form>
+            </div>
+
+            <!-- Lista de Productos -->
+            <h3 class="text-xl font-bold text-gray-800 mt-8 mb-4">Tus Productos Publicados</h3>
+            <div id="products-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <p id="no-products-message" class="col-span-full text-center text-gray-500 hidden">
+                    Aún no tienes productos. ¡Añade el primero!
+                </p>
+                <!-- Las tarjetas de productos se inyectarán aquí -->
+            </div>
+
+            <hr class="my-6 border-gray-200">
+
+            <!-- Nueva Sección: Generador de Descripción de Producto ✨ -->
+            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                Generador de Descripción de Producto ✨
+            </h3>
+            <p class="text-gray-700 mb-4">
+                Usa la inteligencia artificial para crear descripciones atractivas para tus productos.
+            </p>
+            <div class="space-y-4">
+                <div>
+                    <label for="product-keywords" class="block text-gray-700 text-sm font-bold mb-2">
+                        Palabras clave o nombre del producto (ej: "collar de plata artesanal, diseño único")
+                    </label>
+                    <input type="text" id="product-keywords" class="input-field" placeholder="Ingresa palabras clave sobre tu producto">
+                </div>
+                <div>
+                    <label for="generated-description" class="block text-gray-700 text-sm font-bold mb-2">
+                        Descripción Generada:
+                    </label>
+                    <textarea id="generated-description" rows="6" class="input-field" placeholder="Tu descripción aparecerá aquí..." readonly></textarea>
+                </div>
+                <button id="generate-description-button" class="button-primary flex items-center justify-center">
+                    <span id="generate-loading-spinner" class="loader hidden"></span>
+                    Generar Descripción
+                </button>
+            </div>
+        </section>
+
+        <!-- Sección de Promociones (Placeholder) -->
+        <section class="section-card">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Tus Promociones ✨</h2>
+            <p class="text-gray-700 mb-4">
+                Crea y gestiona tus ofertas especiales y descuentos para atraer más clientes.
+            </p>
+            <button class="button-primary">Crear Nueva Promoción</button>
+        </section>
+
+        <!-- Pie de página -->
+        <footer class="text-center text-gray-500 text-sm mt-8 pt-6 border-t border-gray-200">
+            &copy; 2025 Feria Online. Panel del Comerciante.
+        </footer>
+    </div>
+
+    <!-- Script para Firebase y lógica del panel -->
+    <script type="module">
+        // Importa las funciones necesarias de Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, onSnapshot, collection, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Importamos la configuración de Firebase y el appId desde nuestro archivo local 'firebase-config.js'
+        import { firebaseConfig, appId } from "./firebase-config.js";
+
+        // El token inicial no lo usaremos para esta configuración local
+        const initialAuthToken = null;
+
+        let app;
+        let auth;
+        let db;
+        let userId = null; // Para almacenar el ID del usuario autenticado
+        let unsubscribeComercianteData = null; // Para desuscribirse del listener de datos del comerciante
+        let unsubscribeProducts = null; // Para desuscribirse del listener de productos
+
+        // Elementos del DOM del Panel Principal
+        const messageContainer = document.getElementById('message-container');
+        const businessNameDisplay = document.getElementById('business-name-display');
+        const userIdDisplay = document.getElementById('user-id-display');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const comercianteDetails = document.getElementById('comerciante-details');
+
+        const detailBusinessName = document.getElementById('detail-business-name');
+        const detailEmail = document.getElementById('detail-email');
+        const detailWhatsapp = document.getElementById('detail-whatsapp');
+        const detailDescription = document.getElementById('detail-description');
+        const detailRegistrationDate = document.getElementById('detail-registration-date');
+        const logoutButton = document.getElementById('logout-button');
+
+        // Elementos del Generador de Descripción
+        const productKeywordsInput = document.getElementById('product-keywords');
+        const generatedDescriptionTextarea = document.getElementById('generated-description');
+        const generateDescriptionButton = document.getElementById('generate-description-button');
+        const generateLoadingSpinner = document.getElementById('generate-loading-spinner');
+
+        // Elementos del Editor de Productos
+        const toggleAddProductFormButton = document.getElementById('toggle-add-product-form');
+        const addProductFormContainer = document.getElementById('add-product-form-container');
+        const productForm = document.getElementById('product-form');
+        const productNameInput = document.getElementById('product-name');
+        const productPriceInput = document.getElementById('product-price');
+        const productImageUrlInput = document.getElementById('product-image-url');
+        const productDescriptionInput = document.getElementById('product-description');
+        const addProductLoadingSpinner = document.getElementById('add-product-loading-spinner');
+        const productsList = document.getElementById('products-list');
+        const noProductsMessage = document.getElementById('no-products-message');
+
+
+        // Función para mostrar mensajes al usuario
+        function showMessage(message, type = 'info') {
+            messageContainer.innerHTML = message;
+            messageContainer.className = `message-box ${type}`;
+            messageContainer.classList.remove('hidden');
+            // Ocultar el mensaje después de 5 segundos
+            setTimeout(() => {
+                messageContainer.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Función para cargar los datos del comerciante
+        async function loadComercianteData(currentUserId) {
+            if (!db || !currentUserId) {
+                console.warn("Firestore no inicializado o userId no disponible.");
+                return;
+            }
+
+            loadingSpinner.classList.remove('hidden'); // Mostrar spinner
+            comercianteDetails.classList.add('hidden'); // Ocultar detalles
+
+            // Ruta del documento del comerciante: /artifacts/{appId}/users/{userId}/comerciantes/{userId}
+            const comercianteDocRef = doc(db, `artifacts/${appId}/users/${currentUserId}/comerciantes`, currentUserId);
+
+            // Escuchar cambios en tiempo real con onSnapshot
+            unsubscribeComercianteData = onSnapshot(comercianteDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    businessNameDisplay.textContent = data.businessName || "Tu Puesto";
+                    detailBusinessName.textContent = data.businessName || "No definido";
+                    detailEmail.textContent = data.email || "No definido";
+                    detailWhatsapp.textContent = data.whatsapp || "No definido";
+                    detailDescription.textContent = data.description || "Sin descripción.";
+                    
+                    if (data.registrationDate && data.registrationDate.toDate) {
+                        detailRegistrationDate.textContent = data.registrationDate.toDate().toLocaleDateString('es-ES');
+                    } else {
+                        detailRegistrationDate.textContent = "Fecha no disponible";
+                    }
+
+                    userIdDisplay.textContent = `ID de Usuario: ${currentUserId}`; // Mostrar el userId completo
+                    userIdDisplay.classList.remove('hidden'); // Asegurarse de que el userId sea visible
+
+                    comercianteDetails.classList.remove('hidden');
+                    loadingSpinner.classList.add('hidden');
+
+                    // Cargar productos una vez que los datos del comerciante estén disponibles
+                    loadProducts(currentUserId);
+
+                } else {
+                    console.log("No se encontraron datos para este comerciante.");
+                    showMessage('No se encontró la información de tu puesto. Por favor, asegúrate de haberte registrado correctamente.', 'error');
+                    businessNameDisplay.textContent = "Puesto No Encontrado";
+                    loadingSpinner.classList.add('hidden');
+                }
+            }, (error) => {
+                console.error("Error al obtener datos del comerciante en tiempo real:", error);
+                showMessage(`Error al cargar la información del puesto: ${error.message}`, 'error');
+                loadingSpinner.classList.add('hidden');
+            });
+        }
+
+        // Función de inicialización de Firebase
+        async function initializeFirebase() {
+            try {
+                if (!app) {
+                    app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+
+                    onAuthStateChanged(auth, async (user) => {
+                        if (user) {
+                            userId = user.uid;
+                            console.log("Usuario autenticado en el panel:", userId);
+                            loadComercianteData(userId); // Cargar datos del comerciante
+                        } else {
+                            userId = null;
+                            console.log("No hay usuario autenticado. Redirigiendo a registro/login.");
+                            showMessage('No has iniciado sesión. Redirigiendo...', 'info');
+                            setTimeout(() => {
+                                window.location.href = 'registro-comerciante.html'; 
+                            }, 3000);
+                        }
+                    });
+
+                    // Si no hay token inicial, intentamos iniciar sesión anónimamente para permitir acceso a Firestore
+                    // Esto es necesario para que loadComercianteData pueda intentar leer el documento del usuario.
+                    await signInAnonymously(auth);
+                    console.warn("Autenticación anónima iniciada para permitir el uso de Firestore y comprobar el estado de autenticación.");
+                    
+                }
+            } catch (error) {
+                console.error("Error al inicializar Firebase o autenticar:", error);
+                showMessage(`Error al iniciar la aplicación: ${error.message}`, 'error');
+            }
+        }
+
+        // --- Lógica del Generador de Descripción de Producto (API de Gemini) ---
+
+        async function generateProductDescription() {
+            const keywords = productKeywordsInput.value.trim();
+            if (!keywords) {
+                showMessage('Por favor, ingresa palabras clave o el nombre del producto.', 'error');
+                return;
+            }
+
+            generatedDescriptionTextarea.value = ''; // Limpiar textarea
+            generateLoadingSpinner.classList.remove('hidden'); // Mostrar spinner
+            generateDescriptionButton.disabled = true; // Desactivar botón
+
+            const prompt = `Genera una descripción de producto atractiva y persuasiva para un comercio online, basándote en las siguientes palabras clave: "${keywords}". Incluye detalles sobre sus características, beneficios y el valor que aporta al cliente. Sé conciso pero completo.`;
+
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            const apiKey = ""; // La API key será proporcionada por Canvas en runtime
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    generatedDescriptionTextarea.value = text;
+                    showMessage('Descripción generada con éxito. ¡No olvides revisarla y adaptarla!', 'success');
+                } else {
+                    showMessage('No se pudo generar la descripción. Intenta con otras palabras clave.', 'error');
+                    console.error("Respuesta inesperada de Gemini API:", result);
+                }
+            } catch (error) {
+                console.error("Error al llamar a la API de Gemini:", error);
+                showMessage(`Error al generar la descripción: ${error.message}.`, 'error');
+            } finally {
+                generateLoadingSpinner.classList.add('hidden'); // Ocultar spinner
+                generateDescriptionButton.disabled = false; // Habilitar botón
+            }
+        }
+
+        generateDescriptionButton.addEventListener('click', generateProductDescription);
+
+        // --- Fin de la Lógica del Generador de Descripción ---
+
+        // --- Lógica del Editor de Productos ---
+
+        // Toggle del formulario de añadir producto
+        toggleAddProductFormButton.addEventListener('click', () => {
+            addProductFormContainer.classList.toggle('hidden');
+            if (!addProductFormContainer.classList.contains('hidden')) {
+                toggleAddProductFormButton.textContent = 'Ocultar Formulario';
+            } else {
+                toggleAddProductFormButton.textContent = 'Añadir Nuevo Producto';
+            }
+        });
+
+        // Manejo del envío del formulario de producto
+        productForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!userId) {
+                showMessage('Debes iniciar sesión para añadir productos.', 'error');
+                return;
+            }
+
+            const productName = productNameInput.value.trim();
+            const productPrice = parseFloat(productPriceInput.value);
+            const productImageUrl = productImageUrlInput.value.trim();
+            const productDescription = productDescriptionInput.value.trim();
+
+            if (!productName || isNaN(productPrice)) {
+                showMessage('Por favor, completa el nombre y el precio del producto.', 'error');
+                return;
+            }
+
+            addProductLoadingSpinner.classList.remove('hidden');
+            productForm.querySelector('button[type="submit"]').disabled = true;
+
+            try {
+                // Ruta para guardar productos: /artifacts/{appId}/users/{userId}/productos
+                const productsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/productos`);
+                
+                await addDoc(productsCollectionRef, {
+                    name: productName,
+                    price: productPrice,
+                    imageUrl: productImageUrl || 'https://placehold.co/400x250/cccccc/333333?text=Sin+Imagen', // Placeholder si no hay URL
+                    description: productDescription,
+                    createdAt: new Date(),
+                    comercianteId: userId // Referencia al comerciante
+                });
+
+                showMessage('Producto añadido con éxito. 🎉', 'success');
+                productForm.reset(); // Limpiar formulario
+                addProductFormContainer.classList.add('hidden'); // Ocultar formulario
+                toggleAddProductFormButton.textContent = 'Añadir Nuevo Producto';
+
+            } catch (error) {
+                console.error("Error al añadir el producto:", error);
+                showMessage(`Error al añadir el producto: ${error.message}`, 'error');
+            } finally {
+                addProductLoadingSpinner.classList.add('hidden');
+                productForm.querySelector('button[type="submit"]').disabled = false;
+            }
+        });
+
+        // Función para cargar y mostrar productos
+        async function loadProducts(currentUserId) {
+            if (!db || !currentUserId) {
+                console.warn("Firestore o userId no disponibles para cargar productos.");
+                return;
+            }
+
+            // Desuscribirse del listener anterior si existe para evitar duplicados
+            if (unsubscribeProducts) {
+                unsubscribeProducts();
+            }
+
+            const productsCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/productos`);
+
+            unsubscribeProducts = onSnapshot(productsCollectionRef, (snapshot) => {
+                productsList.innerHTML = ''; // Limpiar la lista actual
+                const products = [];
+                snapshot.forEach(doc => {
+                    products.push({ id: doc.id, ...doc.data() });
+                });
+
+                if (products.length === 0) {
+                    noProductsMessage.classList.remove('hidden');
+                } else {
+                    noProductsMessage.classList.add('hidden');
+                    products.forEach(product => {
+                        const productCard = `
+                            <div class="product-card">
+                                <img src="${product.imageUrl}" alt="${product.name}" onerror="this.onerror=null;this.src='https://placehold.co/400x250/cccccc/333333?text=Imagen+No+Disp.';">
+                                <div class="product-card-content">
+                                    <h4 class="product-card-title">${product.name}</h4>
+                                    <p class="product-card-price">$${product.price.toFixed(2)}</p>
+                                    <p class="product-card-description">${product.description || 'Sin descripción.'}</p>
+                                    <button data-id="${product.id}" class="button-secondary text-red-600 hover:text-red-800 mt-4 delete-product-button">
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        productsList.insertAdjacentHTML('beforeend', productCard);
+                    });
+
+                    // Añadir event listeners a los botones de eliminar dinámicamente
+                    document.querySelectorAll('.delete-product-button').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const productId = e.target.dataset.id;
+                            confirmAndDeleteProduct(productId);
+                        });
+                    });
+                }
+            }, (error) => {
+                console.error("Error al cargar productos en tiempo real:", error);
+                showMessage(`Error al cargar tus productos: ${error.message}`, 'error');
+            });
+        }
+
+        // Función para confirmar y eliminar un producto
+        async function confirmAndDeleteProduct(productId) {
+            // Reemplaza esto con un modal de confirmación en el futuro, no uses alert()
+            const confirmation = confirm("¿Estás seguro de que quieres eliminar este producto?"); // Placeholder, DEBE ser reemplazado por un modal
+            if (!confirmation) {
+                return;
+            }
+
+            try {
+                if (!userId) {
+                    showMessage('Debes iniciar sesión para eliminar productos.', 'error');
+                    return;
+                }
+                showMessage('Eliminando producto...', 'info');
+                const productDocRef = doc(db, `artifacts/${appId}/users/${userId}/productos`, productId);
+                await deleteDoc(productDocRef);
+                showMessage('Producto eliminado con éxito.', 'success');
+            } catch (error) {
+                console.error("Error al eliminar producto:", error);
+                showMessage(`Error al eliminar producto: ${error.message}`, 'error');
+            }
+        }
+
+        // --- Fin de la Lógica del Editor de Productos ---
+
+        // Event listener para el botón de cerrar sesión
+        logoutButton.addEventListener('click', async () => {
+            try {
+                if (unsubscribeComercianteData) {
+                    unsubscribeComercianteData(); 
+                }
+                if (unsubscribeProducts) {
+                    unsubscribeProducts();
+                }
+                await signOut(auth);
+                showMessage('Sesión cerrada. Redirigiendo...', 'info');
+                setTimeout(() => {
+                    window.location.href = 'index.html'; 
+                }, 2000);
+            } catch (error) {
+                console.error("Error al cerrar sesión:", error);
+                showMessage(`Error al cerrar sesión: ${error.message}`, 'error');
+            }
+        });
+
+        // Llama a la inicialización cuando la ventana cargue
+        window.onload = initializeFirebase;
+
+    </script>
+</body>
+</html>

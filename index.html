@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feria Online: Tu Espacio para Comprar y Vender</title>
+    <!-- Incluye Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f3f4f6; /* Fondo gris claro */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Alinea al inicio verticalmente */
+            min-height: 100vh; /* Asegura que ocupe al menos toda la altura de la vista */
+            padding: 2rem 0; /* Espaciado superior e inferior */
+        }
+        /* Estilos personalizados para el contenedor principal */
+        .main-container {
+            max-width: 1200px; /* Ancho máximo para el contenido */
+            width: 95%; /* Ancho responsivo */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="main-container bg-white rounded-lg p-8 md:p-12">
+        <!-- Encabezado principal -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-blue-700 mb-4">
+                ¡Bienvenido a Nuestra Feria Online! 🎉
+            </h1>
+            <p class="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
+                Descubre un mundo de productos únicos y apoya a comerciantes locales e independientes. Tu mercado digital a un clic de distancia.
+            </p>
+        </header>
+
+        <!-- Sección de Propuesta de Valor -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mb-12">
+            <!-- Columna para Comerciantes -->
+            <div class="bg-blue-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+                <h2 class="text-2xl md:text-3xl font-bold text-blue-600 mb-4">
+                    Comerciantes: ¡Crea tu Puesto Digital! 🛍️
+                </h2>
+                <p class="text-gray-700 mb-4 leading-relaxed">
+                    ¿Eres un artesano, emprendedor o tienes un negocio local? Con nuestra feria, puedes:
+                </p>
+                <ul class="list-disc list-inside text-gray-700 space-y-2 mb-6">
+                    <li>Armar tu propio puesto virtual con facilidad.</li>
+                    <li>Subir imágenes impactantes de tus productos.</li>
+                    <li>Gestionar precios y crear catálogos atractivos.</li>
+                    <li>Lanzar promociones especiales para atraer más clientes.</li>
+                    <li>Establecer contacto directo con tus compradores.</li>
+                </ul>
+                <div class="text-center">
+                    <img src="https://placehold.co/400x250/a8d8e0/1a202c?text=Puesto+Digital" alt="Puesto digital con productos" class="w-full rounded-md mb-4 shadow-sm">
+                    <a href="registro-comerciante.html" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105">
+                        ¡Quiero mi Puesto!
+                    </a>
+                </div>
+            </div>
+
+            <!-- Columna para Visitantes -->
+            <div class="bg-green-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+                <h2 class="text-2xl md:text-3xl font-bold text-green-600 mb-4">
+                    Visitantes: ¡Explora y Descubre! 🔎
+                </h2>
+                <p class="text-gray-700 mb-4 leading-relaxed">
+                    ¿Buscas algo único? Sumérgete en nuestra feria y:
+                </p>
+                <ul class="list-disc list-inside text-gray-700 space-y-2 mb-6">
+                    <li>Visita una gran variedad de puestos desde la comodidad de tu hogar.</li>
+                    <li>Explora catálogos completos con fotos y descripciones detalladas.</li>
+                    <li>Encuentra ofertas y promociones exclusivas.</li>
+                    <li>Contacta directamente a los comerciantes para tus compras.</li>
+                    <li>Apoya el talento y la producción local.</li>
+                </ul>
+                <div class="text-center">
+                    <img src="https://placehold.co/400x250/b0e0d0/1a202c?text=Explora+la+Feria" alt="Gente explorando una feria virtual" class="w-full rounded-md mb-4 shadow-sm">
+                    <a href="galeria-productos.html" class="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105">
+                        ¡Entra a la Feria!
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección de Llamada a la Acción General -->
+        <section class="text-center bg-yellow-50 p-8 rounded-lg shadow-md">
+            <h2 class="text-3xl md:text-4xl font-bold text-yellow-700 mb-4">
+                ¡Únete a la Comunidad de la Feria Online!
+            </h2>
+            <p class="text-lg text-gray-700 mb-6">
+                Ya seas comerciante o comprador, te invitamos a ser parte de esta nueva experiencia.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
+                <a href="registro-comerciante.html" class="inline-block bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105">
+                    Registrarse como Comerciante
+                </a>
+                <a href="galeria-productos.html" class="inline-block bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105">
+                    Ver Puestos Ahora
+                </a>
+            </div>
+        </section>
+
+        <!-- Pie de página -->
+        <footer class="text-center text-gray-500 text-sm mt-12 pt-8 border-t border-gray-200">
+            &copy; 2025 Feria Online. Todos los derechos reservados.
+        </footer>
+    </div>
+
+</body>
+</html>
