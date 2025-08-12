@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feria Online</title>
-    <!-- Incluye Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -20,7 +19,7 @@
             padding: 2rem;
         }
         .hero-section {
-            background-image: url('https://placehold.co/1200x400/87CEEB/FFFFFF?text=Tu+Feria+Online'); /* Imagen de fondo para el héroe */
+            background-image: url('https://placehold.co/1200x400/2A9D8F/FFFFFF?text=Feria+Online'); /* Imagen de fondo para el héroe */
             background-size: cover;
             background-position: center;
             height: 400px;
@@ -44,26 +43,158 @@
             position: relative;
             z-index: 10;
         }
-        .button-primary {
-            @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105;
+
+        /* Estilos de botones 3D con CMYK */
+        .btn-cmyk {
+            @apply font-bold py-2 px-4 rounded-lg relative overflow-hidden text-lg;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+            position: relative;
+            z-index: 1; /* Asegura que el texto esté por encima de ::after */
         }
-        .button-secondary {
-            @apply bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-all duration-300;
+        .btn-cmyk::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 0.5rem;
+            background: rgba(0,0,0,0.1); /* Sombra sutil para efecto 3D */
+            transform: scaleY(0);
+            transform-origin: bottom;
+            transition: transform 0.2s ease;
+            z-index: -1;
         }
+        .btn-cmyk:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        .btn-cmyk:hover::after {
+            transform: scaleY(1);
+        }
+        .btn-cmyk:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+        }
+        
+        /* Colores específicos CMYK para botones */
+        .btn-cyan { @apply bg-cyan-500 text-white; }
+        .btn-magenta { @apply bg-fuchsia-600 text-white; } /* Más oscuro para legibilidad */
+        .btn-yellow { @apply bg-yellow-400 text-gray-800; } /* Más claro para legibilidad */
+        .btn-black { @apply bg-gray-800 text-white; }
+
         .card {
             @apply bg-white p-6 rounded-lg shadow-md transition-shadow duration-300 hover:shadow-lg;
+        }
+
+        /* Estilos para tooltips */
+        [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%; /* Arriba del elemento */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: #fff;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem; /* text-sm */
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            z-index: 20; /* Asegura que esté por encima de otros elementos */
+            margin-bottom: 0.5rem; /* Espacio entre el botón y el tooltip */
+        }
+        [data-tooltip]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(0.25rem);
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            z-index: 20;
+        }
+        [data-tooltip]:hover::after,
+        [data-tooltip]:hover::before {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Modal de Login */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 450px;
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1.2rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #4b5563; /* gray-600 */
+        }
+        .modal-input {
+            @apply w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200;
+        }
+        .modal-message {
+            @apply p-3 rounded-md text-sm text-center mb-4;
+        }
+        .modal-message.success { @apply bg-green-100 text-green-700; }
+        .modal-message.error { @apply bg-red-100 text-red-700; }
+        .modal-message.info { @apply bg-teal-100 text-teal-700; }
+
+        /* Loader para botones */
+        .loader {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #fff;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <!-- CAMBIO AQUI: Encabezado con fondo cian y botón de Iniciar Sesión -->
-    <header class="bg-cyan-100 shadow-lg py-4">
+    <!-- Cabecera con colores CMYK y botones -->
+    <header class="bg-cyan-500 shadow-lg py-4">
         <div class="container-center flex justify-between items-center">
-            <h1 class="text-3xl font-extrabold text-gray-800">Feria Online</h1>
+            <h1 class="text-3xl font-extrabold text-white">Feria Online</h1>
             <nav class="space-x-4">
-                <a href="galeria-productos.html" class="button-secondary">Ver Galería</a>
-                <a href="registro-comerciante.html" class="button-primary">Iniciar Sesión / Registrarse</a>
+                <a href="galeria-productos.html" class="btn-cmyk btn-yellow" data-tooltip="Explora todos los productos de la feria">Ver Galería</a>
+                <button id="open-login-modal" class="btn-cmyk btn-magenta" data-tooltip="Ingresa a tu panel de comerciante">Iniciar Sesión</button>
+                <a href="registro-comerciante.html" class="btn-cmyk btn-black" data-tooltip="Crea una cuenta para tu puesto en la feria">Registra tu Puesto</a>
             </nav>
         </div>
     </header>
@@ -77,8 +208,8 @@
                     Tu espacio para descubrir productos únicos de artesanos y comerciantes locales.
                 </p>
                 <div class="space-x-4">
-                    <a href="galeria-productos.html" class="button-primary text-xl px-8 py-3">Explorar Productos</a>
-                    <a href="registro-comerciante.html" class="button-secondary text-xl px-8 py-3">Registra tu Puesto</a>
+                    <a href="galeria-productos.html" class="btn-cmyk btn-cyan px-8 py-3" data-tooltip="Explora todos los productos disponibles">Explorar Productos</a>
+                    <a href="registro-comerciante.html" class="btn-cmyk btn-magenta px-8 py-3" data-tooltip="Si eres comerciante, registra tu puesto aquí">Registra tu Puesto</a>
                 </div>
             </div>
         </section>
@@ -113,5 +244,115 @@
             </p>
         </div>
     </footer>
+
+    <!-- Modal de Inicio de Sesión -->
+    <div id="login-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <span id="close-login-modal" class="modal-close">&times;</span>
+            <h3 class="text-2xl font-bold text-gray-800 text-center mb-6">Iniciar Sesión</h3>
+            <div id="login-message-container" class="modal-message hidden"></div>
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label for="login-email" class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico:</label>
+                    <input type="email" id="login-email" class="modal-input" required placeholder="tu@email.com">
+                </div>
+                <div>
+                    <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1">Contraseña:</label>
+                    <input type="password" id="login-password" class="modal-input" required placeholder="Tu contraseña">
+                </div>
+                <button type="submit" class="btn-cmyk btn-cyan w-full flex items-center justify-center">
+                    <span id="login-loading-spinner" class="loader hidden"></span>
+                    Ingresar
+                </button>
+            </form>
+            <p class="text-center text-gray-600 text-sm mt-4">
+                ¿No tienes cuenta? <a href="registro-comerciante.html" class="text-blue-600 hover:underline">Regístrate aquí</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Script de Firebase para Login -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { firebaseConfig } from "./firebase-config.js";
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Elementos del DOM del modal de login
+        const openLoginModalButton = document.getElementById('open-login-modal');
+        const loginModal = document.getElementById('login-modal');
+        const closeLoginModalButton = document.getElementById('close-login-modal');
+        const loginForm = document.getElementById('login-form');
+        const loginEmailInput = document.getElementById('login-email');
+        const loginPasswordInput = document.getElementById('login-password');
+        const loginMessageContainer = document.getElementById('login-message-container');
+        const loginLoadingSpinner = document.getElementById('login-loading-spinner');
+        const loginSubmitButton = loginForm.querySelector('button[type="submit"]');
+
+        function showLoginMessage(message, type = 'info') {
+            loginMessageContainer.innerHTML = message;
+            loginMessageContainer.className = `modal-message ${type}`;
+            loginMessageContainer.classList.remove('hidden');
+            setTimeout(() => {
+                loginMessageContainer.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Abrir modal
+        openLoginModalButton.addEventListener('click', () => {
+            loginModal.classList.remove('hidden');
+            loginEmailInput.focus(); // Enfocar el campo de email al abrir
+        });
+
+        // Cerrar modal
+        closeLoginModalButton.addEventListener('click', () => {
+            loginModal.classList.add('hidden');
+            loginForm.reset(); // Limpiar formulario
+            loginMessageContainer.classList.add('hidden'); // Ocultar mensajes
+        });
+
+        // Cerrar modal al hacer clic fuera
+        loginModal.addEventListener('click', (e) => {
+            if (e.target === loginModal) {
+                closeLoginModalButton.click();
+            }
+        });
+
+        // Manejo del envío del formulario de login
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = loginEmailInput.value;
+            const password = loginPasswordInput.value;
+
+            loginLoadingSpinner.classList.remove('hidden');
+            loginSubmitButton.disabled = true;
+            showLoginMessage('Iniciando sesión...', 'info');
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showLoginMessage('¡Inicio de sesión exitoso! Redirigiendo...', 'success');
+                setTimeout(() => {
+                    window.location.href = 'panel-comerciante.html';
+                }, 1500); // Redirigir más rápido
+            } catch (error) {
+                console.error("Error al iniciar sesión:", error);
+                let errorMessage = 'Error al iniciar sesión. Verifica tus credenciales.';
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    errorMessage = 'Correo o contraseña incorrectos.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'El formato del correo electrónico es inválido.';
+                } else if (error.code === 'auth/network-request-failed') {
+                    errorMessage = 'Problema de red. Verifica tu conexión a internet.';
+                }
+                showLoginMessage(`Error: ${errorMessage}`, 'error');
+            } finally {
+                loginLoadingSpinner.classList.add('hidden');
+                loginSubmitButton.disabled = false;
+            }
+        });
+    </script>
 </body>
 </html>

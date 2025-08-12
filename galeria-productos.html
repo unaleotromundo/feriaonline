@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Galería de Productos - Feria Online</title>
-    <!-- Incluye Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -22,7 +21,7 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             @apply bg-white rounded-lg p-8 md:p-10;
         }
-        /* Estilo para las tarjetas de Puesto/Comerciante */
+        /* Estilos para las tarjetas de Puesto/Comerciante */
         .stall-card {
             @apply bg-white border border-gray-300 rounded-lg overflow-hidden shadow-md flex flex-col md:flex-row items-center p-6 mb-8;
             transition: transform 0.2s;
@@ -31,7 +30,7 @@
             transform: translateY(-5px);
         }
         .stall-card img {
-            @apply w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-blue-200 shadow-md;
+            @apply w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-cyan-300 shadow-md; /* Borde cian */
             flex-shrink: 0;
             margin-right: 1.5rem;
         }
@@ -39,7 +38,7 @@
             @apply flex-grow text-center md:text-left;
         }
         .stall-card-title {
-            @apply text-2xl font-bold text-blue-800 mb-2;
+            @apply text-2xl font-bold text-cyan-800 mb-2; /* Texto cian oscuro */
         }
         .stall-card-description {
             @apply text-gray-700 text-sm;
@@ -90,6 +89,85 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Estilos de botones 3D con CMYK */
+        .btn-cmyk {
+            @apply font-bold py-2 px-4 rounded-lg relative overflow-hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+            position: relative;
+            z-index: 1;
+        }
+        .btn-cmyk::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 0.5rem;
+            background: rgba(0,0,0,0.1); /* Sombra sutil para efecto 3D */
+            transform: scaleY(0);
+            transform-origin: bottom;
+            transition: transform 0.2s ease;
+            z-index: -1;
+        }
+        .btn-cmyk:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        .btn-cmyk:hover::after {
+            transform: scaleY(1);
+        }
+        .btn-cmyk:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+        }
+        
+        /* Colores específicos CMYK para botones */
+        .btn-cyan { @apply bg-cyan-500 text-white; }
+        .btn-magenta { @apply bg-fuchsia-600 text-white; }
+        .btn-yellow { @apply bg-yellow-400 text-gray-800; }
+        .btn-black { @apply bg-gray-800 text-white; }
+
+        /* Estilos para tooltips */
+        [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: #fff;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            z-index: 20;
+            margin-bottom: 0.5rem;
+        }
+        [data-tooltip]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(0.25rem);
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            z-index: 20;
+        }
+        [data-tooltip]:hover::after,
+        [data-tooltip]:hover::before {
+            opacity: 1;
+            visibility: visible;
+        }
+
         /* Estilos del modal/área de chat de IA */
         .ai-chat-overlay {
             position: fixed;
@@ -107,7 +185,7 @@
         .ai-chat-box {
             background: white;
             padding: 2rem;
-            border-radius: 0.75rem; /* rounded-lg */
+            border-radius: 0.75rem;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             width: 90%;
             max-width: 600px;
@@ -119,18 +197,18 @@
         .ai-chat-messages {
             flex-grow: 1;
             overflow-y: auto;
-            border: 1px solid #e5e7eb; /* gray-200 */
-            border-radius: 0.5rem; /* rounded-md */
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
             padding: 1rem;
             margin-bottom: 1rem;
-            background-color: #f9fafb; /* gray-50 */
+            background-color: #f9fafb;
         }
 
         .ai-chat-message p {
             margin-bottom: 0.5rem;
         }
         .ai-chat-message strong {
-            color: #1f2937; /* gray-900 */
+            color: #1f2937;
         }
 
         .ai-chat-input-area {
@@ -140,8 +218,8 @@
         .ai-chat-input {
             flex-grow: 1;
             padding: 0.75rem;
-            border: 1px solid #d1d5db; /* gray-300 */
-            border-radius: 0.5rem; /* rounded-md */
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
         }
         .ai-chat-button {
             @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200;
@@ -154,11 +232,12 @@
 <body class="bg-gray-100 text-gray-800">
 
     <div class="gallery-container">
-        <header class="text-center mb-8 pb-4 border-b border-gray-200 bg-blue-100 rounded-lg p-4">
-            <h1 class="text-4xl md:text-5xl font-extrabold text-blue-700 mb-4">
+        <!-- Cabecera con colores CMYK y botones -->
+        <header class="text-center mb-8 pb-4 border-b border-gray-200 bg-cyan-500 rounded-lg p-4">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-4">
                 Explora Nuestra Feria Online 🎨
             </h1>
-            <p class="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
+            <p class="text-lg md:text-xl text-white max-w-2xl mx-auto">
                 Descubre productos únicos hechos con pasión por nuestros talentosos comerciantes.
             </p>
         </header>
@@ -190,8 +269,8 @@
         </section>
 
 
-        <!-- CAMBIO AQUI: Pie de página con fondo azul MUY oscuro -->
-        <footer class="text-center text-white text-sm mt-12 pt-8 border-t border-blue-800 bg-blue-900 py-4 rounded-b-lg">
+        <!-- Pie de página con fondo azul MUY oscuro -->
+        <footer class="text-center text-white text-sm mt-12 pt-8 border-t border-gray-700 bg-gray-800 py-4 rounded-b-lg">
             &copy; 2025 Feria Online. Todos los derechos reservados.
         </footer>
     </div>
@@ -218,12 +297,10 @@
 
     <!-- Script para Firebase y lógica de la galería -->
     <script type="module">
-        // Importa las funciones necesarias de Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, collectionGroup, getDocs, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Importamos la configuración de Firebase y el appId desde nuestro archivo local 'firebase-config.js'
         import { firebaseConfig, appId } from "./firebase-config.js";
 
         let app;
@@ -231,16 +308,14 @@
         let db;
         let unsubscribeProducts = null;
         let unsubscribeComerciantes = null;
-        let currentProductData = null; // Para guardar el producto actual en el modal de IA
+        let currentProductData = null;
 
-        // Elementos del DOM
         const productsGrid = document.getElementById('products-grid');
         const stallsGrid = document.getElementById('stalls-grid');
         const loadingMessage = document.getElementById('loading-message');
         const noProductsFoundMessage = document.getElementById('no-products-found');
         const noStallsFoundMessage = document.getElementById('no-stalls-found');
 
-        // Elementos del chat de IA
         const aiChatOverlay = document.getElementById('ai-chat-overlay');
         const aiChatCloseButton = document.getElementById('ai-chat-close');
         const aiProductNameDisplay = document.getElementById('ai-product-name');
@@ -250,7 +325,6 @@
         const aiChatLoadingSpinner = document.getElementById('ai-chat-loading-spinner');
 
 
-        // Función de inicialización de Firebase
         async function initializeFirebase() {
             try {
                 if (!app) {
@@ -269,7 +343,6 @@
             }
         }
 
-        // Función para cargar todos los datos de la feria (puestos y productos)
         async function loadAllFairData() {
             if (!db) {
                 console.warn("Firestore no inicializado para cargar datos de la feria.");
@@ -287,7 +360,6 @@
             if (unsubscribeProducts) unsubscribeProducts();
             if (unsubscribeComerciantes) unsubscribeComerciantes();
 
-            // --- Cargar Puestos (Comerciantes) ---
             const comerciantesCollectionRef = collection(db, `artifacts/${appId}/users`);
             unsubscribeComerciantes = onSnapshot(comerciantesCollectionRef, async (usersSnapshot) => {
                 const fetchedStalls = [];
@@ -307,7 +379,7 @@
                     fetchedStalls.forEach(stall => {
                         const stallCardHtml = `
                             <div class="stall-card">
-                                <img src="${stall.logoUrl || 'https://placehold.co/150x150/cccccc/333333?text=Logo'}" alt="${stall.businessName || 'Puesto'}" class="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-blue-200 shadow-md">
+                                <img src="${stall.logoUrl || 'https://placehold.co/150x150/cccccc/333333?text=Logo'}" alt="${stall.businessName || 'Puesto'}" class="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-cyan-300 shadow-md">
                                 <div class="stall-card-content">
                                     <h3 class="stall-card-title">${stall.businessName || 'Puesto Sin Nombre'}</h3>
                                     <p class="stall-card-description">${stall.description || 'Este puesto no tiene una descripción.'}</p>
@@ -323,7 +395,6 @@
                 noStallsFoundMessage.classList.remove('hidden');
             });
 
-            // --- Cargar Productos (desde collectionGroup) ---
             const productsQuery = collectionGroup(db, 'productos');
             unsubscribeProducts = onSnapshot(productsQuery, async (productsSnapshot) => {
                 const fetchedProducts = [];
@@ -365,7 +436,7 @@
                                     <p class="product-card-price">$${product.price ? product.price.toFixed(2) : '0.00'}</p>
                                     <p class="product-card-description">${product.description || 'Sin descripción.'}</p>
                                     <p class="product-card-comerciante">Vendido por: <strong>${comercianteName}</strong></p>
-                                    <button class="ask-ai-button bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md mt-3 w-full" data-product='${JSON.stringify(product)}'>
+                                    <button class="ask-ai-button btn-cmyk btn-magenta mt-3 w-full" data-product='${JSON.stringify(product)}' data-tooltip="Haz una pregunta sobre este producto al asistente de IA">
                                         Preguntar al Experto ✨
                                     </button>
                                 </div>
@@ -374,7 +445,6 @@
                         productsGrid.insertAdjacentHTML('beforeend', productCard);
                     });
 
-                    // Añadir listeners a los nuevos botones de IA
                     document.querySelectorAll('.ask-ai-button').forEach(button => {
                         button.addEventListener('click', (event) => {
                             const productData = JSON.parse(event.target.dataset.product);
@@ -389,11 +459,10 @@
             });
         }
 
-        // --- Lógica del Asistente de IA (Gemini API) ---
         aiChatCloseButton.addEventListener('click', () => {
             aiChatOverlay.classList.add('hidden');
-            aiChatMessages.innerHTML = ''; // Limpiar mensajes al cerrar
-            aiChatQuestionInput.value = ''; // Limpiar input al cerrar
+            aiChatMessages.innerHTML = '';
+            aiChatQuestionInput.value = '';
             currentProductData = null;
         });
 
@@ -401,7 +470,7 @@
             const question = aiChatQuestionInput.value.trim();
             if (question && currentProductData) {
                 sendQuestionToAI(currentProductData, question);
-                aiChatQuestionInput.value = ''; // Limpiar input
+                aiChatQuestionInput.value = '';
             }
         });
 
@@ -433,14 +502,13 @@
 
             let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
             const payload = { contents: chatHistory };
-            const apiKey = ""; // La clave se inyecta en tiempo de ejecución por el entorno
+            const apiKey = "";
 
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
             try {
-                // Implementación de reintentos con backoff exponencial
                 let response;
-                let delay = 1000; // 1 segundo
+                let delay = 1000;
                 const maxRetries = 3;
                 for (let i = 0; i < maxRetries; i++) {
                     response = await fetch(apiUrl, {
@@ -450,13 +518,12 @@
                     });
 
                     if (response.ok) {
-                        break; // Salir del bucle si la respuesta es exitosa
-                    } else if (response.status === 429) { // Demasiadas solicitudes (Too Many Requests)
+                        break;
+                    } else if (response.status === 429) {
                         console.warn(`Intento ${i + 1}/${maxRetries}: Demasiadas solicitudes. Reintentando en ${delay / 1000}s...`);
                         await new Promise(res => setTimeout(res, delay));
-                        delay *= 2; // Duplicar el retraso
+                        delay *= 2;
                     } else {
-                        // Para otros errores que no sean 429, no reintentar
                         const errorData = await response.json();
                         console.error("Error de la API de Gemini (sin reintento):", errorData);
                         throw new Error(`Error ${response.status}: ${errorData.error?.message || 'Error desconocido de la API.'}`);
@@ -492,9 +559,8 @@
             messageDiv.classList.add('ai-chat-message', sender === 'user' ? 'text-right' : 'text-left');
             messageDiv.innerHTML = `<p><strong>${sender === 'user' ? 'Tú' : 'Asistente'}:</strong> ${text}</p>`;
             aiChatMessages.appendChild(messageDiv);
-            aiChatMessages.scrollTop = aiChatMessages.scrollHeight; // Auto-scroll
+            aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
         }
-        // --- Fin Lógica Asistente de IA ---
 
         window.onload = initializeFirebase;
     </script>

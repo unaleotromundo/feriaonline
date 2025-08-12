@@ -14,14 +14,48 @@
         .product-card:hover {
             transform: translateY(-5px);
         }
-        /* Botón de Guardar/Añadir Producto */
-        .submit-button-style {
-            @apply w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105;
+        /* Estilos de botones 3D con CMYK */
+        .btn-cmyk {
+            @apply font-bold py-2 px-4 rounded-lg relative overflow-hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+            position: relative;
+            z-index: 1;
         }
-        /* Botón de Editar Información del Puesto */
-        .edit-info-button {
-            @apply bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105;
+        .btn-cmyk::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 0.5rem;
+            background: rgba(0,0,0,0.1); /* Sombra sutil para efecto 3D */
+            transform: scaleY(0);
+            transform-origin: bottom;
+            transition: transform 0.2s ease;
+            z-index: -1;
         }
+        .btn-cmyk:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        .btn-cmyk:hover::after {
+            transform: scaleY(1);
+        }
+        .btn-cmyk:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+        }
+        
+        /* Colores específicos CMYK para botones */
+        .btn-cyan { @apply bg-cyan-500 text-white; }
+        .btn-magenta { @apply bg-fuchsia-600 text-white; }
+        .btn-yellow { @apply bg-yellow-400 text-gray-800; }
+        .btn-black { @apply bg-gray-800 text-white; }
+        .btn-red { @apply bg-red-500 text-white; } /* Para cerrar sesión o eliminar */
+
+
         .message-box {
             @apply p-4 rounded-lg text-sm text-center font-medium;
         }
@@ -32,6 +66,62 @@
         .input-field {
             @apply w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200;
         }
+
+        /* Estilos para tooltips */
+        [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: #fff;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            z-index: 20;
+            margin-bottom: 0.5rem;
+        }
+        [data-tooltip]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(0.25rem);
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            z-index: 20;
+        }
+        [data-tooltip]:hover::after,
+        [data-tooltip]:hover::before {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Loader para botones */
+        .loader {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #fff;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -40,7 +130,7 @@
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
             <h1 class="text-2xl font-bold text-gray-900">Mi Puesto Online</h1>
             <nav>
-                <button id="logout-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200">
+                <button id="logout-button" class="btn-cmyk btn-red" data-tooltip="Cierra tu sesión actual">
                     Cerrar Sesión
                 </button>
             </nav>
@@ -61,7 +151,7 @@
             <section class="bg-white p-6 rounded-lg shadow-lg mb-8">
                 <h3 class="text-2xl font-bold mb-4 text-gray-800 flex justify-between items-center">
                     Información de tu Puesto
-                    <button id="edit-comerciante-button" class="edit-info-button">
+                    <button id="edit-comerciante-button" class="btn-cmyk btn-yellow" data-tooltip="Modifica los detalles de tu negocio">
                         Editar Información del Puesto
                     </button>
                 </h3>
@@ -102,10 +192,10 @@
                             <p class="text-xs text-gray-500 mt-1">Sube el logo de tu negocio a un servicio de hosting y pega la URL aquí.</p>
                         </div>
                         <div class="flex justify-end space-x-4 mt-6">
-                            <button type="button" id="cancel-edit-comerciante" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-colors duration-200">
+                            <button type="button" id="cancel-edit-comerciante" class="btn-cmyk btn-black text-sm" data-tooltip="Descartar los cambios y volver">
                                 Cancelar
                             </button>
-                            <button type="submit" class="submit-button-style bg-blue-600 hover:bg-blue-700">
+                            <button type="submit" class="btn-cmyk btn-cyan text-sm" data-tooltip="Guardar las modificaciones realizadas">
                                 Guardar Cambios
                             </button>
                         </div>
@@ -133,7 +223,7 @@
                         <label for="productImage" class="block text-sm font-medium text-gray-700">Imagen (URL)</label>
                         <input type="url" id="productImage" name="productImage" placeholder="https://ejemplo.com/imagen.jpg" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
                     </div>
-                    <button type="submit" class="submit-button-style">
+                    <button type="submit" class="btn-cmyk btn-magenta w-full" data-tooltip="Añade un nuevo producto a tu catálogo">
                         Añadir Nuevo Producto
                     </button>
                 </form>
@@ -167,7 +257,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, addDoc, getDocs, deleteDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, collection, addDoc, deleteDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         import { firebaseConfig, appId } from "./firebase-config.js";
 
@@ -179,7 +269,6 @@
         let unsubscribeComercianteData = null;
         let unsubscribeProducts = null;
 
-        // Elementos del DOM del Panel Principal
         const messageContainer = document.getElementById('message-container');
         const businessNameDisplay = document.getElementById('business-name-display');
         const loadingContainer = document.getElementById('loading-container');
@@ -189,7 +278,6 @@
         const editComercianteFormContainer = document.getElementById('edit-comerciante-form-container');
         const comercianteEditForm = document.getElementById('comerciante-edit-form');
 
-        // Campos del formulario de edición
         const editBusinessName = document.getElementById('editBusinessName');
         const editEmail = document.getElementById('editEmail');
         const editWhatsapp = document.getElementById('editWhatsapp');
@@ -197,7 +285,6 @@
         const editLogoUrl = document.getElementById('editLogoUrl');
         const cancelEditComercianteButton = document.getElementById('cancel-edit-comerciante');
 
-        // Elementos de visualización de detalles del comerciante
         const detailBusinessName = document.getElementById('detail-business-name');
         const detailEmail = document.getElementById('detail-email');
         const detailWhatsapp = document.getElementById('detail-whatsapp');
@@ -205,8 +292,6 @@
         const detailLogoUrl = document.getElementById('detail-logo-url');
         const detailRegistrationDate = document.getElementById('detail-registration-date');
 
-
-        // Elementos del Editor de Productos
         const addProductForm = document.getElementById('add-product-form');
         const productNameInput = document.getElementById('productName');
         const productPriceInput = document.getElementById('productPrice');
@@ -247,7 +332,7 @@
 
                     } else {
                         console.log("Usuario no autenticado, redirigiendo a registro.");
-                        window.location.href = 'registro-comerciante.html';
+                        window.location.href = 'index.html'; // Redirigir a la página principal para login
                     }
                 });
 
@@ -324,7 +409,7 @@
                                 <h4 class="text-xl font-semibold text-gray-900">${product.name}</h4>
                                 <p class="text-lg font-bold text-gray-800 mt-2">$${product.price ? product.price.toFixed(2) : '0.00'}</p>
                                 <p class="text-sm text-gray-500 mt-1">${product.description || ''}</p>
-                                <button data-id="${productId}" class="delete-button w-full mt-4 bg-red-500 hover:bg-red-600 text-white py-2 rounded-md transition-colors duration-200">
+                                <button data-id="${productId}" class="btn-cmyk btn-red w-full mt-4 text-sm" data-tooltip="Elimina este producto de tu catálogo">
                                     Eliminar
                                 </button>
                             </div>
@@ -397,15 +482,14 @@
             }
         });
 
-        // --- Lógica de Edición de Información del Puesto ---
         editComercianteButton.addEventListener('click', () => {
-            comercianteDetails.classList.add('hidden'); // Ocultar vista de detalles
-            editComercianteFormContainer.classList.remove('hidden'); // Mostrar formulario de edición
+            comercianteDetails.classList.add('hidden');
+            editComercianteFormContainer.classList.remove('hidden');
         });
 
         cancelEditComercianteButton.addEventListener('click', () => {
-            editComercianteFormContainer.classList.add('hidden'); // Ocultar formulario de edición
-            comercianteDetails.classList.remove('hidden'); // Mostrar vista de detalles
+            editComercianteFormContainer.classList.add('hidden');
+            comercianteDetails.classList.remove('hidden');
         });
 
         comercianteEditForm.addEventListener('submit', async (e) => {
@@ -439,8 +523,6 @@
                 showMessage(`Error al actualizar el puesto: ${error.message}`, 'error');
             }
         });
-        // --- Fin Lógica de Edición ---
-
 
         logoutButton.addEventListener('click', async () => {
             try {
