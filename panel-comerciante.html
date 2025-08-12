@@ -129,7 +129,10 @@
     <header class="bg-white shadow-md">
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
             <h1 class="text-2xl font-bold text-gray-900">Mi Puesto Online</h1>
-            <nav>
+            <nav class="space-x-4">
+                <button id="go-to-gallery-button" class="btn-cmyk btn-yellow" data-tooltip="Explora la galería pública de productos y puestos">
+                    Ver la Galería
+                </button>
                 <button id="logout-button" class="btn-cmyk btn-red" data-tooltip="Cierra tu sesión actual">
                     Cerrar Sesión
                 </button>
@@ -151,7 +154,7 @@
             <section class="bg-white p-6 rounded-lg shadow-lg mb-8">
                 <h3 class="text-2xl font-bold mb-4 text-gray-800 flex justify-between items-center">
                     Información de tu Puesto
-                    <button id="edit-comerciante-button" class="btn-cmyk btn-yellow" data-tooltip="Modifica los detalles de tu negocio">
+                    <button id="edit-comerciante-button" class="btn-cmyk btn-yellow" data-tooltip="Modifica los detalles de tu negocio y la URL de tu logo">
                         Editar Información del Puesto
                     </button>
                 </h3>
@@ -192,10 +195,10 @@
                             <p class="text-xs text-gray-500 mt-1">Sube el logo de tu negocio a un servicio de hosting y pega la URL aquí.</p>
                         </div>
                         <div class="flex justify-end space-x-4 mt-6">
-                            <button type="button" id="cancel-edit-comerciante" class="btn-cmyk btn-black text-sm" data-tooltip="Descartar los cambios y volver">
+                            <button type="button" id="cancel-edit-comerciante" class="btn-cmyk btn-black text-sm" data-tooltip="Descartar los cambios y volver a la vista de los datos del puesto">
                                 Cancelar
                             </button>
-                            <button type="submit" class="btn-cmyk btn-cyan text-sm" data-tooltip="Guardar las modificaciones realizadas">
+                            <button type="submit" class="btn-cmyk btn-cyan text-sm" data-tooltip="Guarda las modificaciones realizadas en la información de tu puesto">
                                 Guardar Cambios
                             </button>
                         </div>
@@ -223,7 +226,7 @@
                         <label for="productImage" class="block text-sm font-medium text-gray-700">Imagen (URL)</label>
                         <input type="url" id="productImage" name="productImage" placeholder="https://ejemplo.com/imagen.jpg" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
                     </div>
-                    <button type="submit" class="btn-cmyk btn-magenta w-full" data-tooltip="Añade un nuevo producto a tu catálogo">
+                    <button type="submit" class="btn-cmyk btn-magenta w-full" data-tooltip="Añade un nuevo producto a tu catálogo para que se muestre en la feria">
                         Añadir Nuevo Producto
                     </button>
                 </form>
@@ -300,6 +303,7 @@
         const productsContainer = document.getElementById('products-container');
         const noProductsMessage = document.getElementById('no-products-message');
         const logoutButton = document.getElementById('logout-button');
+        const goToGalleryButton = document.getElementById('go-to-gallery-button');
 
 
         function showMessage(message, type = 'info') {
@@ -331,8 +335,8 @@
                         contentContainer.classList.remove('hidden');
 
                     } else {
-                        console.log("Usuario no autenticado, redirigiendo a registro.");
-                        window.location.href = 'index.html'; // Redirigir a la página principal para login
+                        console.log("Usuario no autenticado, redirigiendo a la página principal.");
+                        window.location.href = 'index.html';
                     }
                 });
 
@@ -529,10 +533,15 @@
                 if (unsubscribeComercianteData) unsubscribeComercianteData();
                 if (unsubscribeProducts) unsubscribeProducts();
                 await signOut(auth);
+                window.location.href = 'index.html'; // Redirigir al inicio después de cerrar sesión
             } catch (error) {
                 console.error("Error al cerrar sesión:", error);
                 showMessage(`Error al cerrar sesión: ${error.message}`, 'error');
             }
+        });
+
+        goToGalleryButton.addEventListener('click', () => {
+            window.location.href = 'galeria-productos.html';
         });
 
         initializeFirebase();

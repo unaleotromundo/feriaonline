@@ -232,14 +232,14 @@
 <body class="bg-gray-100 text-gray-800">
 
     <div class="gallery-container">
-        <!-- Cabecera con colores CMYK y botones -->
-        <header class="text-center mb-8 pb-4 border-b border-gray-200 bg-cyan-500 rounded-lg p-4">
+        <!-- Cabecera con colores CMYK y botón de navegación -->
+        <header class="text-center mb-8 pb-4 border-b border-gray-200 bg-cyan-500 rounded-lg p-4 flex justify-between items-center">
             <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-4">
                 Explora Nuestra Feria Online 🎨
             </h1>
-            <p class="text-lg md:text-xl text-white max-w-2xl mx-auto">
-                Descubre productos únicos hechos con pasión por nuestros talentosos comerciantes.
-            </p>
+            <button id="go-to-home-button" class="btn-cmyk btn-yellow text-base py-1 px-3" data-tooltip="Vuelve a la página principal de la feria">
+                Página Principal
+            </button>
         </header>
 
         <div id="loading-message" class="text-center text-gray-500 mb-6">
@@ -253,7 +253,7 @@
                 <!-- Las tarjetas de puestos se inyectarán aquí -->
             </div>
             <p id="no-stalls-found" class="text-center text-gray-500 mt-8 hidden">
-                Aún no hay puestos registrados en la feria.
+                Aún no hay puestos registrados en la feria. ¡Sé el primero!
             </p>
         </section>
 
@@ -269,7 +269,7 @@
         </section>
 
 
-        <!-- Pie de página con fondo azul MUY oscuro -->
+        <!-- Pie de página con fondo gris oscuro -->
         <footer class="text-center text-white text-sm mt-12 pt-8 border-t border-gray-700 bg-gray-800 py-4 rounded-b-lg">
             &copy; 2025 Feria Online. Todos los derechos reservados.
         </footer>
@@ -279,16 +279,16 @@
     <div id="ai-chat-overlay" class="ai-chat-overlay hidden">
         <div class="ai-chat-box">
             <div class="flex justify-between items-center mb-4">
-                <h4 class="text-xl font-bold text-gray-800">Preguntar al Experto sobre <span id="ai-product-name" class="text-blue-700"></span></h4>
-                <button id="ai-chat-close" class="ai-chat-close-button">X</button>
+                <h4 class="text-xl font-bold text-gray-800">Preguntar al Experto sobre <span id="ai-product-name" class="text-cyan-700"></span></h4>
+                <button id="ai-chat-close" class="ai-chat-close-button" data-tooltip="Cerrar esta conversación con el asistente">X</button>
             </div>
             <div id="ai-chat-messages" class="ai-chat-messages">
                 <!-- Mensajes del chat irán aquí -->
             </div>
             <div class="ai-chat-input-area">
                 <input type="text" id="ai-chat-question-input" class="ai-chat-input" placeholder="Haz tu pregunta...">
-                <button id="ai-chat-send-button" class="ai-chat-button">
-                    <span id="ai-chat-loading-spinner" class="loader hidden w-5 h-5 border-blue-200 border-t-white"></span>
+                <button id="ai-chat-send-button" class="ai-chat-button" data-tooltip="Envía tu pregunta al asistente de IA">
+                    <span id="ai-chat-loading-spinner" class="loader hidden w-5 h-5 border-cyan-200 border-t-white"></span>
                     Enviar
                 </button>
             </div>
@@ -323,6 +323,7 @@
         const aiChatQuestionInput = document.getElementById('ai-chat-question-input');
         const aiChatSendButton = document.getElementById('ai-chat-send-button');
         const aiChatLoadingSpinner = document.getElementById('ai-chat-loading-spinner');
+        const goToHomeButton = document.getElementById('go-to-home-button');
 
 
         async function initializeFirebase() {
@@ -332,13 +333,14 @@
                     auth = getAuth(app);
                     db = getFirestore(app);
 
+                    // La galería inicia sesión anónimamente para tener un request.auth para las reglas de lectura
                     await signInAnonymously(auth);
                     console.log("Sesión anónima iniciada para ver la galería.");
                     loadAllFairData(); 
                 }
             } catch (error) {
                 console.error("Error al inicializar Firebase o autenticar:", error);
-                loadingMessage.textContent = `Error al cargar la feria: ${error.message}.`;
+                loadingMessage.textContent = `Error al cargar la feria: ${error.message}. Asegúrate de que tus reglas de Firebase sean correctas.`;
                 loadingMessage.classList.add('text-red-700');
             }
         }
@@ -360,9 +362,12 @@
             if (unsubscribeProducts) unsubscribeProducts();
             if (unsubscribeComerciantes) unsubscribeComerciantes();
 
-            const comerciantesCollectionRef = collection(db, `artifacts/${appId}/users`);
-            unsubscribeComerciantes = onSnapshot(comerciantesCollectionRef, async (usersSnapshot) => {
+            // --- Cargar Puestos (Comerciantes) ---
+            // Consulta la colección 'users' para obtener los IDs de los comerciantes
+            const usersCollectionRef = collection(db, `artifacts/${appId}/users`);
+            unsubscribeComerciantes = onSnapshot(usersCollectionRef, async (usersSnapshot) => {
                 const fetchedStalls = [];
+                // Por cada documento de usuario, intenta obtener su documento de comerciante
                 for (const userDoc of usersSnapshot.docs) {
                     const comercianteDocRef = doc(db, `artifacts/${appId}/users/${userDoc.id}/comerciantes`, userDoc.id);
                     const comercianteSnap = await getDoc(comercianteDocRef);
@@ -391,10 +396,11 @@
                 }
             }, (error) => {
                 console.error("Error al cargar puestos en tiempo real:", error);
-                noStallsFoundMessage.textContent = `Error al cargar los puestos: ${error.message}`;
+                noStallsFoundMessage.textContent = `Error al cargar los puestos: ${error.message}. Asegúrate de que tus reglas de Firebase permitan leer la colección 'users'.`;
                 noStallsFoundMessage.classList.remove('hidden');
             });
 
+            // --- Cargar Productos (desde collectionGroup) ---
             const productsQuery = collectionGroup(db, 'productos');
             unsubscribeProducts = onSnapshot(productsQuery, async (productsSnapshot) => {
                 const fetchedProducts = [];
@@ -454,11 +460,12 @@
                 }
             }, (error) => {
                 console.error("Error al cargar productos de la galería en tiempo real:", error);
-                loadingMessage.textContent = `Error al cargar los productos: ${error.message}`;
+                loadingMessage.textContent = `Error al cargar los productos: ${error.message}. Asegúrate de que tus reglas de Firebase permitan leer la colección 'productos' y que tengas los índices correctos.`;
                 loadingMessage.classList.add('text-red-700');
             });
         }
 
+        // --- Lógica del Asistente de IA (Gemini API) ---
         aiChatCloseButton.addEventListener('click', () => {
             aiChatOverlay.classList.add('hidden');
             aiChatMessages.innerHTML = '';
@@ -561,6 +568,11 @@
             aiChatMessages.appendChild(messageDiv);
             aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
         }
+
+        // Interconexión de botones de navegación
+        goToHomeButton.addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
 
         window.onload = initializeFirebase;
     </script>
