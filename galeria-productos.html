@@ -19,9 +19,14 @@
       <div id="puestos-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
     </section>
 
-    <!-- Buscador -->
+    <!-- Buscador y Productos -->
     <section>
-      <h2 class="text-2xl font-semibold mb-4">Productos</h2>
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-semibold">Productos</h2>
+        <button id="ver-todos-btn" class="hidden px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">
+          Ver todos
+        </button>
+      </div>
       <input type="text" id="search-input" placeholder="Buscar productos..." class="w-full p-2 mb-4 border border-gray-300 rounded"/>
       <div id="productos-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
     </section>
@@ -29,7 +34,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, collectionGroup, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     import { firebaseConfig, appId } from "./firebase-config.js";
 
     const app = initializeApp(firebaseConfig);
@@ -38,6 +43,10 @@
     const puestosGrid = document.getElementById("puestos-grid");
     const productosGrid = document.getElementById("productos-grid");
     const searchInput = document.getElementById("search-input");
+    const verTodosBtn = document.getElementById("ver-todos-btn");
+
+    let allProducts = [];
+    let currentFilterUserId = null;
 
     // Render puestos
     async function loadPuestos() {
@@ -51,21 +60,34 @@
         comerciantesSnap.forEach((doc) => {
           const data = doc.data();
           const card = document.createElement("div");
-          card.className = "bg-white p-4 rounded shadow hover:shadow-lg transition";
+          card.className = "bg-white p-4 rounded shadow hover:shadow-lg transition cursor-pointer";
           card.innerHTML = `
             <img src="${data.logoUrl || 'https://placehold.co/300'}" alt="${data.businessName}" class="w-full h-32 object-cover rounded mb-2">
             <h3 class="text-lg font-bold">${data.businessName}</h3>
             <p class="text-gray-600">${data.description || ''}</p>
           `;
+          card.addEventListener("click", () => {
+            currentFilterUserId = userDoc.id;
+            loadProductos(currentFilterUserId);
+            verTodosBtn.classList.remove("hidden");
+          });
           puestosGrid.appendChild(card);
         });
       });
     }
 
-    // Render productos
-    let allProducts = [];
-    async function loadProductos() {
-      const productosSnap = await getDocs(collectionGroup(db, "productos"));
+    // Cargar productos
+    async function loadProductos(userId = null) {
+      let productosSnap;
+      if (userId) {
+        // Filtrar por usuario específico
+        const productosRef = collectionGroup(db, "productos");
+        const q = query(productosRef, where("userId", "==", userId));
+        productosSnap = await getDocs(q);
+      } else {
+        productosSnap = await getDocs(collectionGroup(db, "productos"));
+      }
+
       allProducts = [];
       productosSnap.forEach((doc) => {
         allProducts.push(doc.data());
@@ -75,6 +97,10 @@
 
     function renderProductos(products) {
       productosGrid.innerHTML = "";
+      if (products.length === 0) {
+        productosGrid.innerHTML = `<p class="col-span-full text-center text-gray-500">No hay productos para mostrar.</p>`;
+        return;
+      }
       products.forEach((p) => {
         const card = document.createElement("div");
         card.className = "bg-white p-4 rounded shadow hover:shadow-lg transition";
@@ -88,7 +114,7 @@
       });
     }
 
-    // Filtrar productos
+    // Filtrar productos por búsqueda
     searchInput.addEventListener("input", (e) => {
       const term = e.target.value.toLowerCase();
       const filtered = allProducts.filter((p) =>
@@ -98,7 +124,14 @@
       renderProductos(filtered);
     });
 
-    // Cargar datos
+    // Botón Ver todos
+    verTodosBtn.addEventListener("click", () => {
+      currentFilterUserId = null;
+      loadProductos();
+      verTodosBtn.classList.add("hidden");
+    });
+
+    // Inicializar
     loadPuestos();
     loadProductos();
   </script>
