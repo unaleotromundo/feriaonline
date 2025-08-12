@@ -68,7 +68,7 @@
             </div>
             <div>
                 <label for="description" class="block text-gray-700 text-sm font-bold mb-2">Describe tu Negocio (Opcional):</label>
-                <textarea id="description" name="description" rows="3" placeholder="Qué vendes, tu historia, etc." class="input-field"></textarea>
+                <textarea id="description" name="description" rows="3" class="input-field" placeholder="Qué vendes, tu historia, etc."></textarea>
             </div>
 
             <button type="submit" class="submit-button">
@@ -85,14 +85,15 @@
     <script type="module">
         // Importa las funciones necesarias de Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Importamos la configuración de Firebase y el appId desde nuestro archivo local 'firebase-config.js'
         import { firebaseConfig, appId } from "./firebase-config.js";
 
-        // El token inicial no lo usaremos para esta configuración local
-        const initialAuthToken = null;
+        // Las variables __app_id, __firebase_config, __initial_auth_token no se usan en el entorno local
+        // ya que la configuración se importa directamente de firebase-config.js.
+        const initialAuthToken = null; // No necesario en esta configuración local
 
         let app;
         let auth;
@@ -105,6 +106,9 @@
             messageContainer.innerHTML = message;
             messageContainer.className = `message-box ${type}`;
             messageContainer.classList.remove('hidden');
+            setTimeout(() => {
+                messageContainer.classList.add('hidden'); // Ocultar después de 5 segundos
+            }, 5000);
         }
 
         // Función de inicialización de Firebase
@@ -112,6 +116,14 @@
             try {
                 // Si la app ya está inicializada, no la inicializamos de nuevo
                 if (!app) {
+                    // **VERIFICACIÓN IMPORTANTE:** Imprime la configuración de Firebase
+                    console.log("Configuración de Firebase al inicializar:", firebaseConfig);
+
+                    // Asegúrate de que firebaseConfig no esté vacío
+                    if (!firebaseConfig || !firebaseConfig.apiKey || !firebaseConfig.projectId) {
+                        throw new Error("La configuración de Firebase es inválida o está vacía.");
+                    }
+
                     app = initializeApp(firebaseConfig);
                     auth = getAuth(app);
                     db = getFirestore(app);
@@ -121,16 +133,15 @@
                         if (user) {
                             userId = user.uid;
                             console.log("Usuario autenticado:", userId);
-                            // No redirigimos aquí automáticamente para evitar bucles si el usuario ya está logueado
-                            // y aterriza en esta página. La redirección es solo después de un registro exitoso.
                         } else {
                             userId = null;
                             console.log("Usuario no autenticado.");
                         }
                     });
 
-                    // Como no usamos __initial_auth_token en el entorno local, iniciamos anónimamente para que Firestore funcione.
-                    // Esto permite acceder a Firestore incluso si el usuario no se ha registrado/logueado con email/pass.
+                    // Inicia sesión anónimamente para permitir el acceso a Firestore
+                    // Esto permite que el código interactúe con la base de datos incluso si el usuario no se registra/loguea
+                    // con email/password.
                     await signInAnonymously(auth);
                     console.warn("Autenticación anónima iniciada para permitir el uso de Firestore.");
 
@@ -170,7 +181,7 @@
 
                 // 2. Guardar información adicional del comerciante en Cloud Firestore
                 // Usamos el UID de Firebase Auth como ID del documento en Firestore
-                // Ruta para datos privados del usuario: /artifacts/{appId}/users/{userId}/{collectionName}/{documentId}
+                // Ruta para datos privados del usuario: /artifacts/{appId}/users/{userId}/comerciantes/{documentId}
                 const comercianteDocRef = doc(db, `artifacts/${appId}/users/${newUserId}/comerciantes`, newUserId);
                 
                 await setDoc(comercianteDocRef, {
@@ -199,22 +210,25 @@
                     errorMessage = 'El formato del correo electrónico es inválido.';
                 } else if (error.code === 'auth/weak-password') {
                     errorMessage = 'La contraseña es demasiado débil. Necesita ser más robusta.';
+                } else if (error.code === 'auth/network-request-failed') {
+                    errorMessage = 'Problema de red. Verifica tu conexión a internet.';
                 }
                 showMessage(`Error: ${errorMessage}`, 'error');
             }
         });
 
-        // Manejo del enlace de "Iniciar Sesión" (por ahora, solo muestra un mensaje)
+        // Manejo del enlace de "Iniciar Sesión"
+        // NOTA: Usar prompt() para credenciales NO es seguro ni una buena UX en producción.
+        // Se recomienda implementar un modal o una página de inicio de sesión dedicada.
         document.getElementById('login-link').addEventListener('click', (e) => {
             e.preventDefault();
-            // Implementación básica para iniciar sesión con Email/Password (puedes expandirlo a un modal o nueva página)
             const email = prompt("Por favor, introduce tu email:");
             const password = prompt("Por favor, introduce tu contraseña:");
 
             if (email && password) {
+                showMessage('Iniciando sesión...', 'info');
                 signInWithEmailAndPassword(auth, email, password)
                     .then((userCredential) => {
-                        // Signed in 
                         const user = userCredential.user;
                         showMessage(`¡Bienvenido de nuevo, ${user.email}! Redirigiendo...`, 'success');
                         setTimeout(() => {
@@ -224,12 +238,12 @@
                     .catch((error) => {
                         console.error("Error al iniciar sesión:", error);
                         let errorMessage = 'Error al iniciar sesión. Verifica tus credenciales.';
-                        if (error.code === 'auth/user-not-found') {
-                            errorMessage = 'No se encontró un usuario con ese correo.';
-                        } else if (error.code === 'auth/wrong-password') {
-                            errorMessage = 'Contraseña incorrecta.';
+                        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                            errorMessage = 'Correo o contraseña incorrectos.';
                         } else if (error.code === 'auth/invalid-email') {
-                            errorMessage = 'Formato de email inválido.';
+                            errorMessage = 'Formato de correo electrónico inválido.';
+                        } else if (error.code === 'auth/network-request-failed') {
+                            errorMessage = 'Problema de red. Verifica tu conexión a internet.';
                         }
                         showMessage(`Error: ${errorMessage}`, 'error');
                     });
