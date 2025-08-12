@@ -12,7 +12,7 @@
             background-color: #f3f4f6;
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* Alinea al inicio para que el contenido no quede en medio de la nada */
+            align-items: flex-start;
             min-height: 100vh;
             padding: 2rem 0;
         }
@@ -37,7 +37,7 @@
             @apply bg-red-100 text-red-700;
         }
         .message-box.info {
-            @apply bg-teal-100 text-teal-700; /* Nuevo color para mensajes de info */
+            @apply bg-teal-100 text-teal-700;
         }
     </style>
 </head>
@@ -72,6 +72,12 @@
             <div>
                 <label for="description" class="block text-gray-700 text-sm font-bold mb-2">Describe tu Negocio (Opcional):</label>
                 <textarea id="description" name="description" rows="3" class="input-field" placeholder="Qué vendes, tu historia, etc."></textarea>
+            </div>
+            <!-- Nuevo campo para la URL del Logo del Puesto -->
+            <div>
+                <label for="logoUrl" class="block text-gray-700 text-sm font-bold mb-2">URL del Logo de tu Puesto (Opcional):</label>
+                <input type="url" id="logoUrl" name="logoUrl" placeholder="https://ejemplo.com/tu-logo.png" class="input-field">
+                <p class="text-xs text-gray-500 mt-1">Sube el logo de tu negocio a un servicio de hosting y pega la URL aquí.</p>
             </div>
 
             <button type="submit" class="submit-button">
@@ -145,6 +151,7 @@
             const password = document.getElementById('password').value;
             const whatsapp = document.getElementById('whatsapp').value;
             const description = document.getElementById('description').value;
+            const logoUrl = document.getElementById('logoUrl').value; // Nuevo campo
 
             if (password.length < 6) {
                 showMessage('La contraseña debe tener al menos 6 caracteres.', 'error');
@@ -166,6 +173,7 @@
                     email: email,
                     whatsapp: whatsapp,
                     description: description,
+                    logoUrl: logoUrl || 'https://placehold.co/150x150/cccccc/333333?text=Logo', // Guardar logo, con placeholder
                     registrationDate: new Date()
                 });
 

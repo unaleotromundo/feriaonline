@@ -142,10 +142,7 @@
                         userId = user.uid;
                         console.log("Usuario autenticado:", userId);
                         
-                        // Configurar listener para datos del comerciante
                         setupComercianteDataListener(userId);
-
-                        // Configurar listener para productos
                         setupProductsListener(userId);
                         
                         loadingContainer.classList.add('hidden');
@@ -163,10 +160,9 @@
             }
         }
 
-        // Función para configurar el listener de datos del comerciante
         function setupComercianteDataListener(uid) {
             if (unsubscribeComercianteData) {
-                unsubscribeComercianteData(); // Desuscribirse del anterior si existe
+                unsubscribeComercianteData(); 
             }
             const comercianteDocRef = doc(db, `artifacts/${appId}/users/${uid}/comerciantes`, uid);
             unsubscribeComercianteData = onSnapshot(comercianteDocRef, (docSnap) => {
@@ -197,16 +193,15 @@
             });
         }
 
-        // Función para configurar el listener de productos
         function setupProductsListener(uid) {
             if (unsubscribeProducts) {
-                unsubscribeProducts(); // Desuscribirse del anterior si existe
+                unsubscribeProducts(); 
             }
             const productsCollectionRef = collection(db, `artifacts/${appId}/users/${uid}/productos`);
             unsubscribeProducts = onSnapshot(productsCollectionRef, (querySnapshot) => {
                 const productsContainer = document.getElementById('products-container');
                 const noProductsMessage = document.getElementById('no-products-message');
-                productsContainer.innerHTML = ''; // Limpiar productos existentes
+                productsContainer.innerHTML = ''; 
 
                 if (querySnapshot.empty) {
                     noProductsMessage.classList.remove('hidden');
@@ -221,7 +216,7 @@
                     const cardHtml = `
                         <div class="bg-white rounded-lg product-card overflow-hidden">
                             <div class="h-48 overflow-hidden">
-                                <img src="${product.imageUrl || 'https://via.placeholder.com/150'}" alt="${product.name}" class="w-full h-full object-cover">
+                                <img src="${product.imageUrl || 'https://placehold.co/400x250/cccccc/333333?text=Sin+Imagen'}" alt="${product.name}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x250/cccccc/333333?text=No+Disponible';">
                             </div>
                             <div class="p-4">
                                 <h4 class="text-xl font-semibold text-gray-900">${product.name}</h4>
@@ -245,7 +240,6 @@
             });
         }
         
-        // Función para eliminar un producto
         async function deleteProduct(e) {
             const productId = e.target.dataset.id;
             if (!userId || !productId) {
@@ -253,7 +247,6 @@
                 return;
             }
 
-            // NOTA: En un entorno de producción, reemplazar `confirm()` por un modal de confirmación personalizado
             if (!confirm("¿Estás seguro de que quieres eliminar este producto?")) {
                 return;
             }
@@ -262,14 +255,12 @@
                 const productDocRef = doc(db, `artifacts/${appId}/users/${userId}/productos`, productId);
                 await deleteDoc(productDocRef);
                 showMessage('Producto eliminado con éxito.', 'success');
-                // loadProducts(userId); // onSnapshot se encargará de la actualización
             } catch (error) {
                 console.error("Error al eliminar el producto:", error);
                 showMessage(`Error al eliminar el producto: ${error.message}`, 'error');
             }
         }
 
-        // Manejo del formulario para añadir un nuevo producto
         document.getElementById('add-product-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -291,13 +282,12 @@
                     description: productDescription,
                     imageUrl: productImage,
                     createdAt: new Date(),
-                    comercianteId: userId, // Guardamos el ID del comerciante
-                    businessName: businessName // Guardamos el nombre del negocio (para fácil acceso en la galería)
+                    comercianteId: userId,
+                    businessName: businessName
                 });
 
                 showMessage('Producto añadido con éxito.', 'success');
-                document.getElementById('add-product-form').reset(); // Limpiar formulario
-                // loadProducts(userId); // onSnapshot se encargará de la actualización
+                document.getElementById('add-product-form').reset(); 
 
             } catch (error) {
                 console.error("Error al añadir el producto:", error);
@@ -305,13 +295,11 @@
             }
         });
 
-        // Manejo del botón de cerrar sesión
         document.getElementById('logout-button').addEventListener('click', async () => {
             try {
                 if (unsubscribeComercianteData) unsubscribeComercianteData();
                 if (unsubscribeProducts) unsubscribeProducts();
                 await signOut(auth);
-                // La redirección ocurrirá automáticamente por el listener onAuthStateChanged
             } catch (error) {
                 console.error("Error al cerrar sesión:", error);
                 showMessage(`Error al cerrar sesión: ${error.message}`, 'error');

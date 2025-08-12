@@ -32,7 +32,7 @@
         }
         .stall-card img {
             @apply w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-blue-200 shadow-md;
-            flex-shrink: 0; /* Evita que la imagen se encoja */
+            flex-shrink: 0;
             margin-right: 1.5rem;
         }
         .stall-card-content {
@@ -94,7 +94,6 @@
 <body class="bg-gray-100 text-gray-800">
 
     <div class="gallery-container">
-        <!-- CAMBIO AQUI: Color del encabezado y título principal -->
         <header class="text-center mb-8 pb-4 border-b border-gray-200 bg-blue-100 rounded-lg p-4">
             <h1 class="text-4xl md:text-5xl font-extrabold text-blue-700 mb-4">
                 Explora Nuestra Feria Online 🎨
@@ -108,7 +107,7 @@
             <span class="loader"></span> Cargando la feria...
         </div>
 
-        <!-- Nueva Sección: Puestos de la Feria -->
+        <!-- Sección: Puestos de la Feria -->
         <section class="mb-12">
             <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Nuestros Puestos</h2>
             <div id="stalls-grid" class="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-6">
@@ -131,8 +130,8 @@
         </section>
 
 
-        <!-- Pie de página -->
-        <footer class="text-center text-gray-500 text-sm mt-12 pt-8 border-t border-gray-200">
+        <!-- CAMBIO AQUI: Pie de página con fondo azul oscuro -->
+        <footer class="text-center text-white text-sm mt-12 pt-8 border-t border-blue-700 bg-blue-800 py-4 rounded-b-lg">
             &copy; 2025 Feria Online. Todos los derechos reservados.
         </footer>
     </div>
@@ -150,15 +149,15 @@
         let app;
         let auth;
         let db;
-        let unsubscribeProducts = null; // Para desuscribirse de los listeners de productos
-        let unsubscribeComerciantes = null; // Para desuscribirse de los listeners de comerciantes
+        let unsubscribeProducts = null;
+        let unsubscribeComerciantes = null;
 
         // Elementos del DOM
         const productsGrid = document.getElementById('products-grid');
-        const stallsGrid = document.getElementById('stalls-grid'); // Nuevo
+        const stallsGrid = document.getElementById('stalls-grid');
         const loadingMessage = document.getElementById('loading-message');
         const noProductsFoundMessage = document.getElementById('no-products-found');
-        const noStallsFoundMessage = document.getElementById('no-stalls-found'); // Nuevo
+        const noStallsFoundMessage = document.getElementById('no-stalls-found');
 
         // Función de inicialización de Firebase
         async function initializeFirebase() {
@@ -168,12 +167,9 @@
                     auth = getAuth(app);
                     db = getFirestore(app);
 
-                    // Para la galería pública, los usuarios no necesitan iniciar sesión
-                    // con credenciales específicas. Usaremos signInAnonymously para que
-                    // puedan acceder a Firestore con las reglas de seguridad adecuadas.
                     await signInAnonymously(auth);
                     console.log("Sesión anónima iniciada para ver la galería.");
-                    loadAllFairData(); // Cargar puestos y productos una vez que Firebase esté listo
+                    loadAllFairData(); 
                 }
             } catch (error) {
                 console.error("Error al inicializar Firebase o autenticar:", error);
@@ -193,11 +189,10 @@
 
             loadingMessage.classList.remove('hidden');
             productsGrid.innerHTML = '';
-            stallsGrid.innerHTML = ''; // Limpiar puestos también
+            stallsGrid.innerHTML = '';
             noProductsFoundMessage.classList.add('hidden');
-            noStallsFoundMessage.classList.add('hidden'); // Ocultar mensaje de no puestos
+            noStallsFoundMessage.classList.add('hidden');
 
-            // Desuscribirse de listeners anteriores
             if (unsubscribeProducts) unsubscribeProducts();
             if (unsubscribeComerciantes) unsubscribeComerciantes();
 
@@ -206,7 +201,6 @@
             unsubscribeComerciantes = onSnapshot(comerciantesCollectionRef, async (usersSnapshot) => {
                 const fetchedStalls = [];
                 for (const userDoc of usersSnapshot.docs) {
-                    // Cada documento en 'users' es una carpeta para un userId, dentro de ella buscamos 'comerciantes'
                     const comercianteDocRef = doc(db, `artifacts/${appId}/users/${userDoc.id}/comerciantes`, userDoc.id);
                     const comercianteSnap = await getDoc(comercianteDocRef);
                     if (comercianteSnap.exists()) {
@@ -242,13 +236,12 @@
             const productsQuery = collectionGroup(db, 'productos');
             unsubscribeProducts = onSnapshot(productsQuery, async (productsSnapshot) => {
                 const fetchedProducts = [];
-                const comercianteNamesMap = new Map(); // Para evitar re-fetch de nombres de comerciantes si ya los tenemos
+                const comercianteNamesMap = new Map();
 
                 productsSnapshot.forEach(doc => {
                     fetchedProducts.push({ id: doc.id, ...doc.data() });
                 });
 
-                // Recopilar nombres de comerciantes para los productos
                 const uniqueComercianteIds = new Set(fetchedProducts.map(p => p.comercianteId).filter(Boolean));
                 const fetchPromises = Array.from(uniqueComercianteIds).map(async (comercianteId) => {
                     if (!comercianteNamesMap.has(comercianteId)) {
@@ -265,7 +258,7 @@
 
 
                 productsGrid.innerHTML = '';
-                loadingMessage.classList.add('hidden'); // Ocultar mensaje de carga general
+                loadingMessage.classList.add('hidden');
 
                 if (fetchedProducts.length === 0) {
                     noProductsFoundMessage.classList.remove('hidden');
@@ -275,8 +268,8 @@
                         const comercianteName = comercianteNamesMap.get(product.comercianteId) || product.businessName || "Comerciante Desconocido";
                         const productCard = `
                             <div class="product-card">
-                                <img src="${product.imageUrl || 'https://placehold.co/400x250/cccccc/333333?text=Imagen+No+Disp.';}" alt="${product.name}">
-                                <div class="product-card-content">
+                                <img src="${product.imageUrl || 'https://placehold.co/400x250/cccccc/333333?text=Sin+Imagen'}" alt="${product.name}" onerror="this.onerror=null;this.src='https://placehold.co/400x250/cccccc/333333?text=No+Disponible';">
+                                <div class="p-4">
                                     <h4 class="product-card-title">${product.name}</h4>
                                     <p class="product-card-price">$${product.price ? product.price.toFixed(2) : '0.00'}</p>
                                     <p class="product-card-description">${product.description || 'Sin descripción.'}</p>

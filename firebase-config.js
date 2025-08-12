@@ -14,4 +14,4 @@ export const firebaseConfig = {
 // garantizando consistencia en todas las páginas.
 export const appId = firebaseConfig.appId;
 
-console.log("FirebaseConfig cargada. Usando appId para rutas:", appId); // Log para depuración
+console.log("FirebaseConfig cargada. Usando appId para rutas:", appId);
