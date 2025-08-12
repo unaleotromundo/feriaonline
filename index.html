@@ -1,358 +1,350 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feria Online</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            font-family: "Inter", sans-serif;
-            background-color: #f3f4f6;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-        .container-center {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        .hero-section {
-            background-image: url('https://placehold.co/1200x400/2A9D8F/FFFFFF?text=Tu+Feria+Online'); /* Imagen de fondo para el héroe */
-            background-size: cover;
-            background-position: center;
-            height: 400px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            color: white;
-            position: relative;
-        }
-        .hero-section::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5); /* Oscurece la imagen para que el texto resalte */
-        }
-        .hero-content {
-            position: relative;
-            z-index: 10;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feria Virtual - Todos los productos</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .card-producto {
+      border-radius: 0.75rem;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+      background: white;
+    }
+    .card-producto:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    }
+    .etiqueta-puesto {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0369a1;
+      border-radius: 9999px;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.8rem;
+      margin: 0.25rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .etiqueta-puesto:hover {
+      background: #bae6fd;
+      transform: scale(1.05);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+      color: white;
+      padding: 0.8rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+      opacity: 0.9;
+      transform: scale(1.03);
+    }
+    #resultados-busqueda {
+      max-height: 300px;
+      overflow-y: auto;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+  
+  <!-- Header con buscador -->
+  <header class="bg-white py-6 shadow-sm sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+        <h1 class="text-3xl font-bold text-indigo-800">✨ Feria Virtual</h1>
+        <button onclick="openRegisterModal()" class="btn-primary whitespace-nowrap">
+          <i class="fas fa-store mr-2"></i>Registrar mi puesto
+        </button>
+      </div>
+      
+      <!-- Buscador principal -->
+      <div class="relative">
+        <div class="flex">
+          <input 
+            type="text" 
+            id="buscador" 
+            placeholder="Buscar productos, puestos o categorías..." 
+            class="w-full p-4 border rounded-l-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 text-lg"
+            autocomplete="off"
+          >
+          <button id="btn-buscar" class="bg-indigo-600 text-white px-6 rounded-r-lg">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+        
+        <!-- Resultados de búsqueda en tiempo real -->
+        <div id="resultados-busqueda" class="absolute bg-white w-full mt-1 rounded-lg shadow-lg hidden"></div>
+      </div>
+    </div>
+  </header>
 
-        /* Estilos de botones 3D con CMYK */
-        .btn-cmyk {
-            @apply font-bold py-2 px-4 rounded-lg relative overflow-hidden text-lg;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: all 0.2s ease;
-            position: relative;
-            z-index: 1; /* Asegura que el texto esté por encima de ::after */
-        }
-        .btn-cmyk::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border-radius: 0.5rem;
-            background: rgba(0,0,0,0.1); /* Sombra sutil para efecto 3D */
-            transform: scaleY(0);
-            transform-origin: bottom;
-            transition: transform 0.2s ease;
-            z-index: -1;
-        }
-        .btn-cmyk:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
-        }
-        .btn-cmyk:hover::after {
-            transform: scaleY(1);
-        }
-        .btn-cmyk:active {
-            transform: translateY(1px);
-            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+  <!-- Contenido Principal -->
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Etiquetas de puestos -->
+    <div class="mb-8">
+      <h2 class="text-xl font-bold mb-3">Explorar puestos:</h2>
+      <div id="etiquetas-puestos" class="flex flex-wrap"></div>
+    </div>
+    
+    <!-- Todos los productos -->
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">Todos los productos</h2>
+      <span id="contador-productos" class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full">0 productos</span>
+    </div>
+    
+    <div id="galeria-productos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+  </main>
+
+  <!-- Modal Registro -->
+  <div id="register-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl max-w-md w-full p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold">Registra tu puesto</h2>
+        <button onclick="closeRegisterModal()" class="text-gray-500 text-xl"><i class="fas fa-times"></i></button>
+      </div>
+      <form id="registro-form">
+        <input type="text" placeholder="Nombre de tu negocio" class="w-full p-3 border rounded-lg mb-3" required>
+        <textarea placeholder="Descripción breve" class="w-full p-3 border rounded-lg mb-3" rows="2" required></textarea>
+        <input type="tel" placeholder="WhatsApp (con código de país)" class="w-full p-3 border rounded-lg mb-3" required>
+        <button type="submit" class="btn-primary w-full">Crear mi puesto</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAlqGoYrHkASbhmE2aBKIOXqkkNBBEEiGU",
+      authDomain: "feria-online-ec7c6.firebaseapp.com",
+      projectId: "feria-online-ec7c6",
+      storageBucket: "feria-online-ec7c6.appspot.com",
+      messagingSenderId: "1001881267179",
+      appId: "1:1001881267179:web:fc5ac0fd940964537887ae"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    let todosProductos = [];
+    let todosComerciantes = [];
+
+    // Funciones modal
+    function openRegisterModal() {
+      document.getElementById('register-modal').classList.remove('hidden');
+      document.getElementById('register-modal').classList.add('flex');
+    }
+
+    function closeRegisterModal() {
+      document.getElementById('register-modal').classList.add('hidden');
+      document.getElementById('register-modal').classList.remove('flex');
+    }
+
+    // Cargar todos los datos
+    async function cargarDatos() {
+      try {
+        // Cargar comerciantes
+        const comerciantesSnapshot = await db.collection("comerciantes").get();
+        todosComerciantes = comerciantesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        // Generar etiquetas de puestos
+        const etiquetasContainer = document.getElementById('etiquetas-puestos');
+        etiquetasContainer.innerHTML = '';
+        
+        todosComerciantes.forEach(comerciante => {
+          const etiqueta = document.createElement('div');
+          etiqueta.className = 'etiqueta-puesto';
+          etiqueta.innerHTML = `<i class="fas fa-store mr-1"></i> ${comerciante.businessName || 'Mi Negocio'}`;
+          etiqueta.onclick = () => filtrarPorPuesto(comerciante.id);
+          etiquetasContainer.appendChild(etiqueta);
+        });
+        
+        // Cargar productos
+        const productosSnapshot = await db.collectionGroup("productos").get();
+        todosProductos = productosSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          userId: doc.ref.parent.parent.id // ID del comerciante
+        }));
+        
+        // Actualizar contador
+        document.getElementById('contador-productos').textContent = 
+          `${todosProductos.length} ${todosProductos.length === 1 ? 'producto' : 'productos'}`;
+        
+        // Mostrar todos los productos
+        mostrarProductos(todosProductos);
+        
+      } catch (error) {
+        console.error("Error cargando datos:", error);
+        document.getElementById('galeria-productos').innerHTML = `
+          <div class="col-span-full text-center py-12">
+            <p class="text-red-500 text-lg">Error al cargar los productos</p>
+            <button onclick="cargarDatos()" class="mt-4 btn-primary">Reintentar</button>
+          </div>
+        `;
+      }
+    }
+
+    // Mostrar productos en galería
+    function mostrarProductos(productos) {
+      const galeria = document.getElementById('galeria-productos');
+      galeria.innerHTML = '';
+      
+      if (productos.length === 0) {
+        galeria.innerHTML = `
+          <div class="col-span-full text-center py-12">
+            <p class="text-gray-500 text-xl">No se encontraron productos</p>
+            <button onclick="mostrarProductos(todosProductos)" class="mt-4 btn-primary">
+              Ver todos los productos
+            </button>
+          </div>
+        `;
+        return;
+      }
+      
+      productos.forEach(producto => {
+        // Encontrar datos del comerciante
+        const comerciante = todosComerciantes.find(c => c.id === producto.userId) || {};
+        
+        const card = document.createElement('div');
+        card.className = 'card-producto';
+        card.innerHTML = `
+          <img src="${producto.imagen || 'https://via.placeholder.com/300'}" 
+               class="w-full h-48 object-cover">
+          <div class="p-4">
+            <h3 class="text-lg font-bold">${producto.nombre || 'Producto sin nombre'}</h3>
+            <p class="text-gray-600 text-sm mt-1">${producto.descripcion?.substring(0, 80) || ''}${producto.descripcion?.length > 80 ? '...' : ''}</p>
+            
+            <div class="mt-3 flex justify-between items-center">
+              <span class="text-lg font-bold">$${producto.precio || '0.00'}</span>
+              <div class="flex gap-2">
+                <a href="puesto.html?userId=${producto.userId}&productoId=${producto.id}" 
+                   class="text-indigo-600 font-medium hover:underline">
+                  Ver producto
+                </a>
+              </div>
+            </div>
+            
+            <div class="mt-3 flex items-center border-t pt-2">
+              <i class="fas fa-store text-indigo-500 mr-2"></i>
+              <a href="puesto.html?userId=${producto.userId}" 
+                 class="text-sm text-gray-600 hover:underline">
+                ${comerciante.businessName || 'Puesto del vendedor'}
+              </a>
+            </div>
+          </div>
+        `;
+        galeria.appendChild(card);
+      });
+    }
+
+    // Filtrar por puesto
+    function filtrarPorPuesto(userId) {
+      const productosFiltrados = todosProductos.filter(p => p.userId === userId);
+      mostrarProductos(productosFiltrados);
+    }
+
+    // Búsqueda en tiempo real
+    const buscador = document.getElementById('buscador');
+    const resultadosDiv = document.getElementById('resultados-busqueda');
+    
+    buscador.addEventListener('input', function() {
+      const termino = this.value.trim().toLowerCase();
+      
+      if (termino.length < 2) {
+        resultadosDiv.classList.add('hidden');
+        return;
+      }
+      
+      // Buscar en productos
+      const productosResultados = todosProductos.filter(p => 
+        (p.nombre && p.nombre.toLowerCase().includes(termino)) ||
+        (p.descripcion && p.descripcion.toLowerCase().includes(termino))
+      ).slice(0, 5);
+      
+      // Buscar en comerciantes
+      const comerciantesResultados = todosComerciantes.filter(c => 
+        (c.businessName && c.businessName.toLowerCase().includes(termino)) ||
+        (c.description && c.description.toLowerCase().includes(termino))
+      ).slice(0, 3);
+      
+      // Mostrar resultados
+      resultadosDiv.innerHTML = '';
+      
+      if (productosResultados.length === 0 && comerciantesResultados.length === 0) {
+        resultadosDiv.innerHTML = '<p class="p-4 text-gray-500">No se encontraron resultados</p>';
+      } else {
+        // Resultados de productos
+        if (productosResultados.length > 0) {
+          resultadosDiv.innerHTML += '<p class="p-2 font-bold bg-gray-100">Productos:</p>';
+          productosResultados.forEach(p => {
+            const comerciante = todosComerciantes.find(c => c.id === p.userId) || {};
+            resultadosDiv.innerHTML += `
+              <a href="puesto.html?userId=${p.userId}&productoId=${p.id}" 
+                 class="flex items-center p-3 hover:bg-gray-50 border-b">
+                <img src="${p.imagen || 'https://via.placeholder.com/50'}" 
+                     class="w-10 h-10 object-cover rounded mr-3">
+                <div>
+                  <p class="font-medium">${p.nombre}</p>
+                  <p class="text-sm text-gray-600">${comerciante.businessName || 'Puesto'}</p>
+                </div>
+              </a>
+            `;
+          });
         }
         
-        /* Colores específicos CMYK para botones */
-        .btn-cyan { @apply bg-cyan-500 text-white; }
-        .btn-magenta { @apply bg-fuchsia-600 text-white; } /* Más oscuro para legibilidad */
-        .btn-yellow { @apply bg-yellow-400 text-gray-800; } /* Más claro para legibilidad */
-        .btn-black { @apply bg-gray-800 text-white; }
-
-        .card {
-            @apply bg-white p-6 rounded-lg shadow-md transition-shadow duration-300 hover:shadow-lg;
+        // Resultados de comerciantes
+        if (comerciantesResultados.length > 0) {
+          resultadosDiv.innerHTML += '<p class="p-2 font-bold bg-gray-100">Puestos:</p>';
+          comerciantesResultados.forEach(c => {
+            resultadosDiv.innerHTML += `
+              <a href="puesto.html?userId=${c.id}" 
+                 class="flex items-center p-3 hover:bg-gray-50">
+                <i class="fas fa-store text-indigo-500 text-xl mr-3"></i>
+                <p class="font-medium">${c.businessName}</p>
+              </a>
+            `;
+          });
         }
+      }
+      
+      resultadosDiv.classList.remove('hidden');
+    });
 
-        /* Estilos para tooltips */
-        [data-tooltip]:hover::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%; /* Arriba del elemento */
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #333;
-            color: #fff;
-            padding: 0.5rem 0.75rem;
-            border-radius: 0.25rem;
-            font-size: 0.875rem; /* text-sm */
-            white-space: nowrap;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s, visibility 0.2s;
-            z-index: 20; /* Asegura que esté por encima de otros elementos */
-            margin-bottom: 0.5rem; /* Espacio entre el botón y el tooltip */
-        }
-        [data-tooltip]:hover::before {
-            content: '';
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%) translateY(0.25rem);
-            border-width: 5px;
-            border-style: solid;
-            border-color: #333 transparent transparent transparent;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s, visibility 0.2s;
-            z-index: 20;
-        }
-        [data-tooltip]:hover::after,
-        [data-tooltip]:hover::before {
-            opacity: 1;
-            visibility: visible;
-        }
+    // Cerrar resultados al hacer clic fuera
+    document.addEventListener('click', function(e) {
+      if (!buscador.contains(e.target) && !resultadosDiv.contains(e.target)) {
+        resultadosDiv.classList.add('hidden');
+      }
+    });
 
-        /* Modal de Login */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background: white;
-            padding: 2.5rem;
-            border-radius: 1rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            width: 90%;
-            max-width: 450px;
-            position: relative;
-        }
-        .modal-close {
-            position: absolute;
-            top: 1rem;
-            right: 1.2rem;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #4b5563; /* gray-600 */
-        }
-        .modal-input {
-            @apply w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200;
-        }
-        .modal-message {
-            @apply p-3 rounded-md text-sm text-center mb-4;
-        }
-        .modal-message.success { @apply bg-green-100 text-green-700; }
-        .modal-message.error { @apply bg-red-100 text-red-700; }
-        .modal-message.info { @apply bg-teal-100 text-teal-700; }
-
-        /* Loader para botones */
-        .loader {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top: 3px solid #fff;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 8px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
-</head>
-<body class="bg-gray-100 text-gray-800">
-
-    <!-- Cabecera con colores CMYK y botones -->
-    <header class="bg-cyan-500 shadow-lg py-4">
-        <div class="container-center flex justify-between items-center">
-            <h1 class="text-3xl font-extrabold text-white">Feria Online</h1>
-            <nav class="space-x-4">
-                <a href="galeria-productos.html" class="btn-cmyk btn-yellow" data-tooltip="Explora todos los productos y puestos disponibles">Ver Galería</a>
-                <button id="open-login-modal" class="btn-cmyk btn-magenta" data-tooltip="Accede a tu panel de comerciante con tu cuenta">Iniciar Sesión</button>
-                <a href="registro-comerciante.html" class="btn-cmyk btn-black" data-tooltip="Crea una nueva cuenta y registra tu puesto en la feria">Registra tu Puesto</a>
-            </nav>
-        </div>
-    </header>
-
-    <main class="flex-grow">
-        <!-- Sección Hero (Banner principal) -->
-        <section class="hero-section">
-            <div class="hero-content">
-                <h2 class="text-5xl font-extrabold mb-4">¡Bienvenido a la Feria Online!</h2>
-                <p class="text-xl md:text-2xl max-w-2xl mx-auto mb-8">
-                    Tu espacio para descubrir productos únicos de artesanos y comerciantes locales.
-                </p>
-                <div class="space-x-4">
-                    <a href="galeria-productos.html" class="btn-cmyk btn-cyan px-8 py-3" data-tooltip="Inicia tu exploración por la feria">Explorar Productos</a>
-                    <a href="registro-comerciante.html" class="btn-cmyk btn-magenta px-8 py-3" data-tooltip="Crea tu propio espacio para vender tus creaciones">Registra tu Puesto</a>
-                </div>
-            </div>
-        </section>
-
-        <!-- Sección de Características -->
-        <section class="container-center py-12">
-            <h2 class="text-4xl font-bold text-center text-gray-800 mb-10">¿Qué puedes hacer?</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="card text-center">
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Descubrir Productos</h3>
-                    <p class="text-gray-700">Encuentra artesanías, productos frescos y creaciones únicas de talentosos comerciantes.</p>
-                </div>
-                <div class="card text-center">
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Registrar tu Puesto</h3>
-                    <p class="text-gray-700">Si eres comerciante, crea tu puesto virtual en minutos y muestra tus productos al mundo.</p>
-                </div>
-                <div class="card text-center">
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Gestionar tu Catálogo</h3>
-                    <p class="text-gray-700">Desde tu panel, sube, edita y organiza tus productos fácilmente.</p>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- Pie de página -->
-    <footer class="bg-gray-800 text-white py-8 mt-auto">
-        <div class="container-center text-center">
-            <p>&copy; 2025 Feria Online. Todos los derechos reservados.</p>
-            <p class="text-sm mt-2">
-                <a href="#" class="hover:underline">Política de Privacidad</a> | 
-                <a href="#" class="hover:underline">Términos de Servicio</a>
-            </p>
-        </div>
-    </footer>
-
-    <!-- Modal de Inicio de Sesión -->
-    <div id="login-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <span id="close-login-modal" class="modal-close" data-tooltip="Cerrar esta ventana">&times;</span>
-            <h3 class="text-2xl font-bold text-gray-800 text-center mb-6">Iniciar Sesión</h3>
-            <div id="login-message-container" class="modal-message hidden"></div>
-            <form id="login-form" class="space-y-4">
-                <div>
-                    <label for="login-email" class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico:</label>
-                    <input type="email" id="login-email" class="modal-input" required placeholder="tu@email.com">
-                </div>
-                <div>
-                    <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1">Contraseña:</label>
-                    <input type="password" id="login-password" class="modal-input" required placeholder="Tu contraseña">
-                </div>
-                <button type="submit" class="btn-cmyk btn-cyan w-full flex items-center justify-center" data-tooltip="Accede a tu panel con tus credenciales">
-                    <span id="login-loading-spinner" class="loader hidden"></span>
-                    Ingresar
-                </button>
-            </form>
-            <p class="text-center text-gray-600 text-sm mt-4">
-                ¿No tienes cuenta? <a href="registro-comerciante.html" class="text-blue-600 hover:underline">Regístrate aquí</a>
-            </p>
-        </div>
-    </div>
-
-    <!-- Script de Firebase para Login -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { firebaseConfig } from "./firebase-config.js";
-
-        // Inicializar Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        // Elementos del DOM del modal de login
-        const openLoginModalButton = document.getElementById('open-login-modal');
-        const loginModal = document.getElementById('login-modal');
-        const closeLoginModalButton = document.getElementById('close-login-modal');
-        const loginForm = document.getElementById('login-form');
-        const loginEmailInput = document.getElementById('login-email');
-        const loginPasswordInput = document.getElementById('login-password');
-        const loginMessageContainer = document.getElementById('login-message-container');
-        const loginLoadingSpinner = document.getElementById('login-loading-spinner');
-        const loginSubmitButton = loginForm.querySelector('button[type="submit"]');
-
-        function showLoginMessage(message, type = 'info') {
-            loginMessageContainer.innerHTML = message;
-            loginMessageContainer.className = `modal-message ${type}`;
-            loginMessageContainer.classList.remove('hidden');
-            setTimeout(() => {
-                loginMessageContainer.classList.add('hidden');
-            }, 5000);
-        }
-
-        // Abrir modal
-        openLoginModalButton.addEventListener('click', () => {
-            loginModal.classList.remove('hidden');
-            loginEmailInput.focus();
-        });
-
-        // Cerrar modal
-        closeLoginModalButton.addEventListener('click', () => {
-            loginModal.classList.add('hidden');
-            loginForm.reset();
-            loginMessageContainer.classList.add('hidden');
-        });
-
-        // Cerrar modal al hacer clic fuera
-        loginModal.addEventListener('click', (e) => {
-            if (e.target === loginModal) {
-                closeLoginModalButton.click();
-            }
-        });
-
-        // Manejo del envío del formulario de login
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = loginEmailInput.value;
-            const password = loginPasswordInput.value;
-
-            loginLoadingSpinner.classList.remove('hidden');
-            loginSubmitButton.disabled = true;
-            showLoginMessage('Iniciando sesión...', 'info');
-
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                showLoginMessage('¡Inicio de sesión exitoso! Redirigiendo...', 'success');
-                setTimeout(() => {
-                    window.location.href = 'panel-comerciante.html';
-                }, 1500);
-            } catch (error) {
-                console.error("Error al iniciar sesión:", error);
-                let errorMessage = 'Error al iniciar sesión. Verifica tus credenciales.';
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                    errorMessage = 'Correo o contraseña incorrectos.';
-                } else if (error.code === 'auth/invalid-email') {
-                    errorMessage = 'El formato del correo electrónico es inválido.';
-                } else if (error.code === 'auth/network-request-failed') {
-                    errorMessage = 'Problema de red. Verifica tu conexión a internet.';
-                }
-                showLoginMessage(`Error: ${errorMessage}`, 'error');
-            } finally {
-                loginLoadingSpinner.classList.add('hidden');
-                loginSubmitButton.disabled = false;
-            }
-        });
-    </script>
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', cargarDatos);
+    
+    // Botón buscar
+    document.getElementById('btn-buscar').addEventListener('click', function() {
+      const termino = buscador.value.trim();
+      if (termino) {
+        // Filtra todos los productos
+        const productosFiltrados = todosProductos.filter(p => 
+          (p.nombre && p.nombre.toLowerCase().includes(termino.toLowerCase())) ||
+          (p.descripcion && p.descripcion.toLowerCase().includes(termino.toLowerCase()))
+        );
+        
+        mostrarProductos(productosFiltrados);
+        resultadosDiv.classList.add('hidden');
+      }
+    });
+  </script>
 </body>
 </html>
