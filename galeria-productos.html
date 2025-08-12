@@ -4,136 +4,133 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Galería de Productos y Puestos</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" type="module"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" type="module"></script>
+  <style>
+    /* Botones y tarjetas estilo CMYK 3D */
+    .card-cmyk {
+      border-radius: 0.5rem;
+      padding: 1rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: all 0.2s ease;
+    }
+    .card-cmyk:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+    }
+    .card-cyan { background-color: #06b6d4; color: white; }
+    .card-magenta { background-color: #c026d3; color: white; }
+    .search-input {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid #ccc;
+      margin-bottom: 1.5rem;
+    }
+  </style>
 </head>
 <body class="bg-gray-100">
 
-  <div class="max-w-6xl mx-auto p-4 space-y-8">
-    <h1 class="text-3xl font-bold">Galería de la Feria</h1>
+  <div class="max-w-6xl mx-auto p-4">
+    <h1 class="text-3xl font-bold mb-4">Galería de Puestos y Productos</h1>
 
-    <!-- Sección de Puestos -->
-    <section>
-      <h2 class="text-2xl font-semibold mb-4">Puestos</h2>
-      <div id="puestos-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
-    </section>
+    <!-- Buscador -->
+    <input type="text" id="searchBox" class="search-input" placeholder="Buscar puestos o productos...">
 
-    <!-- Buscador y Productos -->
-    <section>
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-semibold">Productos</h2>
-        <button id="ver-todos-btn" class="hidden px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">
-          Ver todos
-        </button>
-      </div>
-      <input type="text" id="search-input" placeholder="Buscar productos..." class="w-full p-2 mb-4 border border-gray-300 rounded"/>
-      <div id="productos-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
-    </section>
+    <!-- Grid de Puestos -->
+    <h2 class="text-2xl font-semibold mt-6 mb-3">Puestos</h2>
+    <div id="puestos-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+
+    <!-- Grid de Productos -->
+    <h2 class="text-2xl font-semibold mt-8 mb-3">Productos</h2>
+    <div id="productos-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, collectionGroup, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-    import { firebaseConfig, appId } from "./firebase-config.js";
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAlqGoYrHkASbhmE2aBKIOXqkkNBBEEiGU",
+      authDomain: "feria-online-ec7c6.firebaseapp.com",
+      projectId: "feria-online-ec7c6",
+      storageBucket: "feria-online-ec7c6.appspot.com",
+      messagingSenderId: "1001881267179",
+      appId: "1:1001881267179:web:fc5ac0fd940964537887ae"
+    };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-    const puestosGrid = document.getElementById("puestos-grid");
-    const productosGrid = document.getElementById("productos-grid");
-    const searchInput = document.getElementById("search-input");
-    const verTodosBtn = document.getElementById("ver-todos-btn");
+    let puestosData = [];
+    let productosData = [];
 
-    let allProducts = [];
-    let currentFilterUserId = null;
-
-    // Render puestos
-    async function loadPuestos() {
-      const puestosRef = collection(db, `artifacts/${appId}/users`);
-      const snapshot = await getDocs(puestosRef);
-
-      puestosGrid.innerHTML = "";
-      snapshot.forEach(async (userDoc) => {
-        const comerciantesRef = collection(db, `artifacts/${appId}/users/${userDoc.id}/comerciantes`);
-        const comerciantesSnap = await getDocs(comerciantesRef);
-        comerciantesSnap.forEach((doc) => {
-          const data = doc.data();
-          const card = document.createElement("div");
-          card.className = "bg-white p-4 rounded shadow hover:shadow-lg transition cursor-pointer";
-          card.innerHTML = `
-            <img src="${data.logoUrl || 'https://placehold.co/300'}" alt="${data.businessName}" class="w-full h-32 object-cover rounded mb-2">
-            <h3 class="text-lg font-bold">${data.businessName}</h3>
-            <p class="text-gray-600">${data.description || ''}</p>
-          `;
-          card.addEventListener("click", () => {
-            currentFilterUserId = userDoc.id;
-            loadProductos(currentFilterUserId);
-            verTodosBtn.classList.remove("hidden");
-          });
-          puestosGrid.appendChild(card);
+    function renderPuestos(data) {
+      const grid = document.getElementById("puestos-grid");
+      grid.innerHTML = "";
+      data.forEach(puesto => {
+        const card = document.createElement("div");
+        card.className = "card-cmyk card-magenta cursor-pointer";
+        card.innerHTML = `
+          <img src="${puesto.logoUrl || 'https://via.placeholder.com/300'}" class="w-full h-40 object-cover rounded mb-2">
+          <h3 class="text-xl font-bold">${puesto.businessName || 'Puesto sin nombre'}</h3>
+          <p>${puesto.description || ''}</p>
+        `;
+        card.addEventListener("click", () => {
+          window.location.href = `puesto.html?userId=${puesto.userId}`;
         });
+        grid.appendChild(card);
       });
     }
+
+    function renderProductos(data) {
+      const grid = document.getElementById("productos-grid");
+      grid.innerHTML = "";
+      data.forEach(producto => {
+        const card = document.createElement("div");
+        card.className = "card-cmyk card-cyan cursor-pointer";
+        card.innerHTML = `
+          <img src="${producto.imagen || 'https://via.placeholder.com/300'}" class="w-full h-40 object-cover rounded mb-2">
+          <h3 class="text-xl font-bold">${producto.nombre || 'Sin nombre'}</h3>
+          <p>${producto.descripcion || ''}</p>
+          <p class="text-lg font-semibold mt-2">$${producto.precio || '0.00'}</p>
+        `;
+        card.addEventListener("click", () => {
+          window.location.href = `puesto.html?userId=${producto.userId}&productoId=${producto.id}`;
+        });
+        grid.appendChild(card);
+      });
+    }
+
+    function applySearchFilter() {
+      const term = document.getElementById("searchBox").value.toLowerCase();
+      const filteredPuestos = puestosData.filter(p => 
+        p.businessName?.toLowerCase().includes(term) || 
+        p.description?.toLowerCase().includes(term)
+      );
+      const filteredProductos = productosData.filter(pr => 
+        pr.nombre?.toLowerCase().includes(term) || 
+        pr.descripcion?.toLowerCase().includes(term)
+      );
+      renderPuestos(filteredPuestos);
+      renderProductos(filteredProductos);
+    }
+
+    // Escucha buscador
+    document.getElementById("searchBox").addEventListener("input", applySearchFilter);
+
+    // Cargar puestos
+    db.collectionGroup("comerciantes").onSnapshot(snapshot => {
+      puestosData = snapshot.docs.map(doc => doc.data());
+      applySearchFilter();
+    });
 
     // Cargar productos
-    async function loadProductos(userId = null) {
-      let productosSnap;
-      if (userId) {
-        // Filtrar por usuario específico
-        const productosRef = collectionGroup(db, "productos");
-        const q = query(productosRef, where("userId", "==", userId));
-        productosSnap = await getDocs(q);
-      } else {
-        productosSnap = await getDocs(collectionGroup(db, "productos"));
-      }
-
-      allProducts = [];
-      productosSnap.forEach((doc) => {
-        allProducts.push(doc.data());
-      });
-      renderProductos(allProducts);
-    }
-
-    function renderProductos(products) {
-      productosGrid.innerHTML = "";
-      if (products.length === 0) {
-        productosGrid.innerHTML = `<p class="col-span-full text-center text-gray-500">No hay productos para mostrar.</p>`;
-        return;
-      }
-      products.forEach((p) => {
-        const card = document.createElement("div");
-        card.className = "bg-white p-4 rounded shadow hover:shadow-lg transition";
-        card.innerHTML = `
-          <img src="${p.imagen || 'https://placehold.co/300'}" alt="${p.nombre}" class="w-full h-48 object-cover rounded mb-2">
-          <h3 class="text-lg font-bold">${p.nombre}</h3>
-          <p class="text-gray-600">${p.descripcion || ''}</p>
-          <p class="text-lg font-semibold mt-2">$${p.precio || '0.00'}</p>
-        `;
-        productosGrid.appendChild(card);
-      });
-    }
-
-    // Filtrar productos por búsqueda
-    searchInput.addEventListener("input", (e) => {
-      const term = e.target.value.toLowerCase();
-      const filtered = allProducts.filter((p) =>
-        p.nombre?.toLowerCase().includes(term) ||
-        p.descripcion?.toLowerCase().includes(term)
-      );
-      renderProductos(filtered);
+    db.collectionGroup("productos").onSnapshot(snapshot => {
+      productosData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      applySearchFilter();
     });
-
-    // Botón Ver todos
-    verTodosBtn.addEventListener("click", () => {
-      currentFilterUserId = null;
-      loadProductos();
-      verTodosBtn.classList.add("hidden");
-    });
-
-    // Inicializar
-    loadPuestos();
-    loadProductos();
   </script>
 
 </body>
