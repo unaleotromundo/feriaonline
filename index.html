@@ -118,12 +118,6 @@
             color: var(--cyan);
         }
         
-        .dropdown-menu a i {
-            margin-right: 0.5rem;
-            width: 20px;
-            text-align: center;
-        }
-        
         .dropdown-divider {
             height: 1px;
             background: var(--gray);
@@ -1054,24 +1048,13 @@
             </div>
             
             <div class="form-group">
-                <label for="storeCategory">Categoría</label>
-                <select id="storeCategory" class="form-control">
-                    <option>Artesanías</option>
-                    <option>Alimentos</option>
-                    <option>Ropa y Accesorios</option>
-                    <option>Decoración</option>
-                    <option>Otros</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
                 <label for="storeContact">Contacto (WhatsApp)</label>
                 <input type="text" id="storeContact" class="form-control" placeholder="+54 9 11 1234 5678" value="+54 9 11 2345 6789">
             </div>
             
             <div class="form-footer">
                 <button class="btn btn-secondary">Cancelar</button>
-                <button class="btn btn-primary">Guardar Cambios</button>
+                <button class="btn btn-primary" onclick="saveStoreInfo()">Guardar Cambios</button>
             </div>
         </div>
         
@@ -1602,6 +1585,41 @@
             } catch (error) {
                 console.error("Error loading profile:", error);
                 showErrorMessage("Error al cargar el perfil");
+            }
+        }
+
+        // Función para guardar los cambios en la información del puesto
+        async function saveStoreInfo() {
+            if (!currentUser) {
+                showErrorMessage('Debes iniciar sesión para guardar cambios');
+                return;
+            }
+
+            const storeName = document.getElementById('storeName').value.trim();
+            const storeDescription = document.getElementById('storeDescription').value.trim();
+            const storeContact = document.getElementById('storeContact').value.trim();
+
+            if (!storeName || !storeContact) {
+                showErrorMessage('El nombre y el contacto no pueden estar vacíos.');
+                return;
+            }
+
+            try {
+                showLoading('Guardando cambios...');
+                await db.collection('merchants').doc(currentUser.uid).update({
+                    business: storeName,
+                    description: storeDescription,
+                    phone: storeContact,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                await updateUserProfile(currentUser.uid);
+                showSuccessMessage('Cambios guardados exitosamente');
+            } catch (error) {
+                console.error("Error saving store info:", error);
+                showErrorMessage('Error al guardar los cambios: ' + error.message);
+            } finally {
+                hideLoading();
             }
         }
         
