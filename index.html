@@ -91,6 +91,10 @@
         .user-dropdown {
             position: relative;
         }
+
+        .user-dropdown-toggle {
+            cursor: pointer;
+        }
         
         .dropdown-menu {
             display: none;
@@ -103,6 +107,15 @@
             border-radius: 0.5rem;
             overflow: hidden;
             z-index: 1000;
+            transform: scale(0.95);
+            opacity: 0;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .user-dropdown.active-dropdown .dropdown-menu {
+            display: block;
+            transform: scale(1);
+            opacity: 1;
         }
         
         .dropdown-menu a {
@@ -1241,8 +1254,8 @@
         const storeLink = document.getElementById('storeLink');
         const authContainer = document.getElementById('authContainer');
         const chatbotContainer = document.getElementById('chatbotContainer');
-        
-        // Function to show a section
+
+        // Función para mostrar una sección
         function showSection(sectionId) {
             const targetSection = document.getElementById(sectionId);
             const activeSection = document.querySelector('.active-section');
@@ -1858,35 +1871,43 @@
         // Update authentication UI
         function updateAuthUI() {
             if (isMerchant && currentUser) {
-                authContainer.innerHTML = `
-                    <div class="user-dropdown">
-                        <div class="nav-link">
-                            <i class="fas fa-user-circle"></i>
-                            <span>Mi Cuenta</span>
-                        </div>
-                        <div class="dropdown-menu">
-                            <a href="#" onclick="showSection('profile')"><i class="fas fa-user"></i> Mi Perfil</a>
-                            <a href="#" onclick="showSection('my-store')"><i class="fas fa-store"></i> Mi Puesto</a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
-                        </div>
+                // Clear the container first
+                authContainer.innerHTML = '';
+                
+                // Create dropdown elements
+                const userDropdown = document.createElement('div');
+                userDropdown.className = 'user-dropdown';
+                userDropdown.innerHTML = `
+                    <div class="nav-link user-dropdown-toggle">
+                        <i class="fas fa-user-circle"></i>
+                        <span>Mi Cuenta</span>
+                    </div>
+                    <div class="dropdown-menu">
+                        <a href="#" onclick="showSection('profile')"><i class="fas fa-user"></i> Mi Perfil</a>
+                        <a href="#" onclick="showSection('my-store')"><i class="fas fa-store"></i> Mi Puesto</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
                     </div>
                 `;
+                authContainer.appendChild(userDropdown);
+                
+                // Add dropdown functionality
+                const dropdownToggle = userDropdown.querySelector('.user-dropdown-toggle');
+                dropdownToggle.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    userDropdown.classList.toggle('active-dropdown');
+                });
+
+                // Close dropdown on outside click
+                document.addEventListener('click', (e) => {
+                    if (!userDropdown.contains(e.target)) {
+                        userDropdown.classList.remove('active-dropdown');
+                    }
+                });
                 
                 // Enable merchant sections
                 profileLink.style.display = 'flex';
                 storeLink.style.display = 'flex';
-                
-                // Add dropdown functionality
-                const userBtn = document.querySelector('.user-dropdown .nav-link');
-                const dropdownMenu = document.querySelector('.dropdown-menu');
-                
-                if (userBtn && dropdownMenu) {
-                    userBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
-                    });
-                }
                 
             } else {
                 authContainer.innerHTML = `
