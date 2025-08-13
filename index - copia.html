@@ -178,34 +178,6 @@
             max-width: 700px;
             line-height: 1.6;
         }
-
-        /* Chatbot text */
-        .chatbot-text {
-            text-align: center;
-            margin-top: 3rem;
-            margin-bottom: 2rem;
-            max-width: 800px;
-            padding: 0 1rem;
-        }
-
-        .chatbot-text h2 {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--black);
-            margin-bottom: 1rem;
-        }
-
-        .chatbot-text p {
-            font-size: 1.1rem;
-            color: #4b5563;
-            line-height: 1.6;
-        }
-
-        .chatbot-text p strong {
-            background: linear-gradient(135deg, var(--magenta), var(--yellow));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
         
         .buttons {
             display: flex;
@@ -810,23 +782,6 @@
             font-size: 0.75rem;
             font-weight: 600;
         }
-
-        /* Chatbot Container Styles */
-        .chatbot-container {
-            width: 100%;
-            max-width: 600px;
-            height: 600px; /* Adjust height as needed */
-            margin: 2rem auto;
-            border-radius: 1rem;
-            overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-
-        .chatbot-iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
         
         /* Responsive Styles */
         @media (max-width: 768px) {
@@ -849,9 +804,6 @@
             
             .nav-link span {
                 display: none;
-            }
-            .chatbot-container {
-                height: 400px; /* Make it smaller on mobile */
             }
         }
         
@@ -896,6 +848,7 @@
     </style>
 </head>
 <body>
+    <!-- Header -->
     <header class="header">
         <a href="#" class="logo" onclick="showSection('home')">
             <i class="fas fa-store"></i>
@@ -927,6 +880,7 @@
         </div>
     </header>
 
+    <!-- Home Section -->
     <section id="home" class="section active-section">
         <div class="hero">
             <h1>Conecta tu pequeño negocio con el mundo</h1>
@@ -943,21 +897,20 @@
                 </button>
             </div>
         </div>
-      
-        <div class="chatbot-container">
-            <iframe class="chatbot-iframe" src="https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/13/17/20250813172155-WZV5LKVX.json" allow="microphone; geolocation; fullscreen"></iframe>
-        </div>
     </section>
 
+    <!-- Products Section -->
     <section id="products" class="section">
         <div class="products-header">
             <h2 class="section-title">Productos Destacados</h2>
         </div>
         
         <div class="products-grid" id="productsGrid">
-            </div>
+            <!-- Product cards will be loaded here -->
+        </div>
     </section>
 
+    <!-- Profile Section -->
     <section id="profile" class="section">
         <h2 class="section-title">Mi Perfil</h2>
         
@@ -1002,6 +955,7 @@
         </div>
     </section>
 
+    <!-- My Store Section -->
     <section id="my-store" class="section">
         <h2 class="section-title">Gestión de mi Puesto</h2>
         
@@ -1048,9 +1002,11 @@
         </div>
         
         <div class="products-grid" id="myProductsGrid">
-            </div>
+            <!-- Products will be loaded here -->
+        </div>
     </section>
 
+    <!-- Registration Section -->
     <section id="register" class="section">
         <h2 class="section-title">Registro de Comerciante</h2>
         
@@ -1096,6 +1052,7 @@
         </div>
     </section>
 
+    <!-- Login Modal -->
     <div class="login-modal" id="loginModal">
         <div class="login-box">
             <div class="login-header">
@@ -1125,6 +1082,7 @@
         </div>
     </div>
 
+    <!-- Add Product Modal -->
     <div class="login-modal" id="addProductModal">
         <div class="login-box">
             <div class="login-header">
@@ -1172,6 +1130,7 @@
         </div>
     </div>
 
+    <!-- Footer -->
     <footer class="footer">
         <p>Únete a la comunidad de pequeños comerciantes que ya están creciendo con Feria Virtual</p>
         
@@ -1184,7 +1143,7 @@
         
         <p class="copyright">&copy; 2025 Feria Virtual. Todos los derechos reservados.</p>
     </footer>
-    
+
     <script>
         // Firebase Configuration
         const firebaseConfig = {
@@ -1213,42 +1172,21 @@
         
         // Function to show a section
         function showSection(sectionId) {
-            const targetSection = document.getElementById(sectionId);
-            const activeSection = document.querySelector('.active-section');
-            
-            // If the target section is already active, do nothing
-            if (activeSection && activeSection.id === sectionId) {
-                return;
-            }
-            
-            // Hide the currently active section
-            if (activeSection) {
-                activeSection.classList.add('fade-out');
-                setTimeout(() => {
-                    activeSection.classList.remove('active-section', 'fade-out');
-                    
-                    // Show the new section after the old one fades out
-                    targetSection.classList.add('active-section', 'fade-in');
-                    
-                    // Load content after the transition
-                    loadContentForSection(sectionId);
-                    
-                }, 300);
-            } else {
-                // No active section, just show the target one
-                targetSection.classList.add('active-section', 'fade-in');
-                loadContentForSection(sectionId);
-            }
-            
-            // Smooth scroll to top
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                if (section.classList.contains('active-section')) {
+                    section.classList.add('fade-out');
+                    setTimeout(() => {
+                        section.classList.remove('active-section', 'fade-out');
+                    }, 300);
+                }
             });
-        }
-        
-        // New helper function to load content
-        function loadContentForSection(sectionId) {
+            
+            // Show the selected section
+            const targetSection = document.getElementById(sectionId);
+            targetSection.classList.add('active-section', 'fade-in');
+            
+            // Load content according to section
             switch(sectionId) {
                 case 'products':
                     loadProducts();
@@ -1268,6 +1206,12 @@
                     }
                     break;
             }
+            
+            // Smooth scroll to top
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
         }
         
         // Function to show login modal
@@ -1755,7 +1699,7 @@
                 await loadMyProducts();
                 showSuccessMessage(`Producto ${newStatus ? 'publicado' : 'ocultado'} correctamente`);
             } catch (error) {
-                console.error("Error al cambiar el estado del producto:", error);
+                console.error("Error toggling product status:", error);
                 showErrorMessage('Error al cambiar el estado del producto');
             } finally {
                 hideLoading();
