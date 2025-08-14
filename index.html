@@ -8,7 +8,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-storage-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -91,31 +90,18 @@
         .user-dropdown {
             position: relative;
         }
-
-        .user-dropdown-toggle {
-            cursor: pointer;
-        }
         
         .dropdown-menu {
             display: none;
             position: absolute;
             right: 0;
-            top: calc(100% + 10px);
+            top: 100%;
             background: white;
             min-width: 200px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             border-radius: 0.5rem;
             overflow: hidden;
             z-index: 1000;
-            transform: scale(0.95);
-            opacity: 0;
-            transition: transform 0.2s ease, opacity 0.2s ease;
-        }
-
-        .user-dropdown.active-dropdown .dropdown-menu {
-            display: block;
-            transform: scale(1);
-            opacity: 1;
         }
         
         .dropdown-menu a {
@@ -129,6 +115,12 @@
         .dropdown-menu a:hover {
             background: var(--light);
             color: var(--cyan);
+        }
+        
+        .dropdown-menu a i {
+            margin-right: 0.5rem;
+            width: 20px;
+            text-align: center;
         }
         
         .dropdown-divider {
@@ -233,6 +225,10 @@
         .btn:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+        }
+        
+        .btn:hover::after {
+            transform: scaleY(1);
         }
         
         .btn:active {
@@ -786,86 +782,6 @@
             font-size: 0.75rem;
             font-weight: 600;
         }
-
-        /* INICIO: CÓDIGO AÑADIDO PARA EL CHATBOT FLOTANTE */
-        .chatbot-floating {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-        }
-
-        .chatbot-toggle {
-            background: linear-gradient(135deg, var(--cyan), var(--magenta));
-            border: none;
-            color: white;
-            padding: 1rem;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            font-size: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            cursor: pointer;
-            transition: transform 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-top: 1rem;
-        }
-
-        .chatbot-toggle:hover {
-            transform: scale(1.1);
-        }
-
-        .chatbot-container-floating {
-            width: 350px;
-            height: 500px;
-            background: white;
-            border-radius: 1rem;
-            overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            transform-origin: bottom right;
-            transform: scale(0);
-            opacity: 0;
-            transition: all 0.3s ease-in-out;
-        }
-
-        .chatbot-container-floating.visible {
-            transform: scale(1);
-            opacity: 1;
-        }
-        
-        .chatbot-iframe-floating {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        
-        .chatbot-header-floating {
-            background: linear-gradient(135deg, var(--cyan), var(--magenta));
-            color: white;
-            padding: 0.75rem 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .chatbot-header-floating h3 {
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-        
-        .close-chatbot-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.25rem;
-            cursor: pointer;
-        }
-        /* FIN: CÓDIGO AÑADIDO PARA EL CHATBOT FLOTANTE */
         
         /* Responsive Styles */
         @media (max-width: 768px) {
@@ -928,20 +844,11 @@
                 gap: 1rem;
                 align-items: flex-start;
             }
-            
-            /* Ajustes para el chatbot en móvil */
-            .chatbot-container-floating {
-                width: 90vw;
-                height: 70vh;
-            }
-            .chatbot-floating {
-                bottom: 10px;
-                right: 10px;
-            }
         }
     </style>
 </head>
 <body>
+    <!-- Header -->
     <header class="header">
         <a href="#" class="logo" onclick="showSection('home')">
             <i class="fas fa-store"></i>
@@ -956,6 +863,14 @@
                 <i class="fas fa-shopping-bag"></i>
                 <span>Productos</span>
             </a>
+            <a href="#" class="nav-link" onclick="showSection('profile')" id="profileLink" style="display: none;">
+                <i class="fas fa-user"></i>
+                <span>Mi Perfil</span>
+            </a>
+            <a href="#" class="nav-link" onclick="showSection('my-store')" id="storeLink" style="display: none;">
+                <i class="fas fa-store"></i>
+                <span>Mi Puesto</span>
+            </a>
             <div id="authContainer">
                 <a href="#" class="nav-link" onclick="showLogin()">
                     <i class="fas fa-sign-in-alt"></i>
@@ -965,6 +880,7 @@
         </div>
     </header>
 
+    <!-- Home Section -->
     <section id="home" class="section active-section">
         <div class="hero">
             <h1>Conecta tu pequeño negocio con el mundo</h1>
@@ -983,15 +899,18 @@
         </div>
     </section>
 
+    <!-- Products Section -->
     <section id="products" class="section">
         <div class="products-header">
             <h2 class="section-title">Productos Destacados</h2>
         </div>
         
         <div class="products-grid" id="productsGrid">
-            </div>
+            <!-- Product cards will be loaded here -->
+        </div>
     </section>
 
+    <!-- Profile Section -->
     <section id="profile" class="section">
         <h2 class="section-title">Mi Perfil</h2>
         
@@ -1036,6 +955,7 @@
         </div>
     </section>
 
+    <!-- My Store Section -->
     <section id="my-store" class="section">
         <h2 class="section-title">Gestión de mi Puesto</h2>
         
@@ -1053,13 +973,24 @@
             </div>
             
             <div class="form-group">
+                <label for="storeCategory">Categoría</label>
+                <select id="storeCategory" class="form-control">
+                    <option>Artesanías</option>
+                    <option>Alimentos</option>
+                    <option>Ropa y Accesorios</option>
+                    <option>Decoración</option>
+                    <option>Otros</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
                 <label for="storeContact">Contacto (WhatsApp)</label>
                 <input type="text" id="storeContact" class="form-control" placeholder="+54 9 11 1234 5678" value="+54 9 11 2345 6789">
             </div>
             
             <div class="form-footer">
                 <button class="btn btn-secondary">Cancelar</button>
-                <button class="btn btn-primary" onclick="saveStoreInfo()">Guardar Cambios</button>
+                <button class="btn btn-primary">Guardar Cambios</button>
             </div>
         </div>
         
@@ -1071,9 +1002,11 @@
         </div>
         
         <div class="products-grid" id="myProductsGrid">
-            </div>
+            <!-- Products will be loaded here -->
+        </div>
     </section>
 
+    <!-- Registration Section -->
     <section id="register" class="section">
         <h2 class="section-title">Registro de Comerciante</h2>
         
@@ -1119,6 +1052,7 @@
         </div>
     </section>
 
+    <!-- Login Modal -->
     <div class="login-modal" id="loginModal">
         <div class="login-box">
             <div class="login-header">
@@ -1148,6 +1082,7 @@
         </div>
     </div>
 
+    <!-- Add Product Modal -->
     <div class="login-modal" id="addProductModal">
         <div class="login-box">
             <div class="login-header">
@@ -1195,18 +1130,7 @@
         </div>
     </div>
 
-    <div class="chatbot-floating" id="chatbotFloatingContainer">
-        <div class="chatbot-container-floating" id="chatbotContainer">
-            <div class="chatbot-header-floating">
-                <h3>Asistente de marketing</h3>
-                <button class="close-chatbot-btn" onclick="toggleChatbot()"><i class="fas fa-times"></i></button>
-            </div>
-            <iframe class="chatbot-iframe-floating" src="https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/13/17/20250813172155-WZV5LKVX.json" allow="microphone; geolocation; fullscreen"></iframe>
-        </div>
-        <button class="chatbot-toggle" id="chatbotToggleBtn" onclick="toggleChatbot()">
-            <i class="fas fa-comment-dots"></i>
-        </button>
-    </div>
+    <!-- Footer -->
     <footer class="footer">
         <p>Únete a la comunidad de pequeños comerciantes que ya están creciendo con Feria Virtual</p>
         
@@ -1219,7 +1143,7 @@
         
         <p class="copyright">&copy; 2025 Feria Virtual. Todos los derechos reservados.</p>
     </footer>
-    
+
     <script>
         // Firebase Configuration
         const firebaseConfig = {
@@ -1242,38 +1166,27 @@
         let isMerchant = false;
         
         // DOM Elements
+        const profileLink = document.getElementById('profileLink');
+        const storeLink = document.getElementById('storeLink');
         const authContainer = document.getElementById('authContainer');
-        const chatbotContainer = document.getElementById('chatbotContainer');
-
-        // Función para mostrar una sección
-        function showSection(sectionId) {
-            const targetSection = document.getElementById(sectionId);
-            const activeSection = document.querySelector('.active-section');
-            
-            if (activeSection && activeSection.id === sectionId) {
-                return;
-            }
-            
-            if (activeSection) {
-                activeSection.classList.add('fade-out');
-                setTimeout(() => {
-                    activeSection.classList.remove('active-section', 'fade-out');
-                    targetSection.classList.add('active-section', 'fade-in');
-                    loadContentForSection(sectionId);
-                }, 300);
-            } else {
-                targetSection.classList.add('active-section', 'fade-in');
-                loadContentForSection(sectionId);
-            }
-            
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-        }
         
-        // New helper function to load content
-        function loadContentForSection(sectionId) {
+        // Function to show a section
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                if (section.classList.contains('active-section')) {
+                    section.classList.add('fade-out');
+                    setTimeout(() => {
+                        section.classList.remove('active-section', 'fade-out');
+                    }, 300);
+                }
+            });
+            
+            // Show the selected section
+            const targetSection = document.getElementById(sectionId);
+            targetSection.classList.add('active-section', 'fade-in');
+            
+            // Load content according to section
             switch(sectionId) {
                 case 'products':
                     loadProducts();
@@ -1293,6 +1206,12 @@
                     }
                     break;
             }
+            
+            // Smooth scroll to top
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
         }
         
         // Function to show login modal
@@ -1316,12 +1235,6 @@
         function hideModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
         }
-
-        // INICIO: NUEVA FUNCIÓN PARA MOSTRAR/OCULTAR CHATBOT
-        function toggleChatbot() {
-            chatbotContainer.classList.toggle('visible');
-        }
-        // FIN: NUEVA FUNCIÓN PARA MOSTRAR/OCULTAR CHATBOT
         
         // Function to load products
         async function loadProducts() {
@@ -1590,41 +1503,6 @@
                 showErrorMessage("Error al cargar el perfil");
             }
         }
-
-        // Función para guardar los cambios en la información del puesto
-        async function saveStoreInfo() {
-            if (!currentUser) {
-                showErrorMessage('Debes iniciar sesión para guardar cambios');
-                return;
-            }
-
-            const storeName = document.getElementById('storeName').value.trim();
-            const storeDescription = document.getElementById('storeDescription').value.trim();
-            const storeContact = document.getElementById('storeContact').value.trim();
-
-            if (!storeName || !storeContact) {
-                showErrorMessage('El nombre y el contacto no pueden estar vacíos.');
-                return;
-            }
-
-            try {
-                showLoading('Guardando cambios...');
-                await db.collection('merchants').doc(currentUser.uid).update({
-                    business: storeName,
-                    description: storeDescription,
-                    phone: storeContact,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
-                await updateUserProfile(currentUser.uid);
-                showSuccessMessage('Cambios guardados exitosamente');
-            } catch (error) {
-                console.error("Error saving store info:", error);
-                showErrorMessage('Error al guardar los cambios: ' + error.message);
-            } finally {
-                hideLoading();
-            }
-        }
         
         // Function to load user statistics
         async function loadUserStats(userId) {
@@ -1679,31 +1557,15 @@
             });
         }
         
-        // Function to upload product image (updated with compression)
+        // Function to upload product image
         async function uploadProductImage(file) {
             if (!currentUser) throw new Error("Usuario no autenticado");
-
-            // Opciones de compresión y redimensionamiento
-            const options = {
-                maxSizeMB: 0.5,           // Tamaño máximo del archivo en MB (0.5MB = 500KB)
-                maxWidthOrHeight: 800,    // Ancho o alto máximo en píxeles (la imagen no excederá los 800px)
-                useWebWorker: true,
-                fileType: 'image/jpeg'
-            };
-
-            try {
-                // Comprimir y redimensionar la imagen antes de subirla
-                const compressedFile = await imageCompression(file, options);
-                
-                const storageRef = storage.ref();
-                const fileRef = storageRef.child(`products/${currentUser.uid}/${Date.now()}_${compressedFile.name}`);
-                
-                const snapshot = await fileRef.put(compressedFile);
-                return await snapshot.ref.getDownloadURL();
-            } catch (error) {
-                console.error("Error al procesar o subir la imagen:", error);
-                throw error;
-            }
+            
+            const storageRef = storage.ref();
+            const fileRef = storageRef.child(`products/${currentUser.uid}/${Date.now()}_${file.name}`);
+            
+            const snapshot = await fileRef.put(file);
+            return await snapshot.ref.getDownloadURL();
         }
         
         // Function to remove uploaded image
@@ -1837,7 +1699,7 @@
                 await loadMyProducts();
                 showSuccessMessage(`Producto ${newStatus ? 'publicado' : 'ocultado'} correctamente`);
             } catch (error) {
-                console.error("Error al cambiar el estado del producto:", error);
+                console.error("Error toggling product status:", error);
                 showErrorMessage('Error al cambiar el estado del producto');
             } finally {
                 hideLoading();
@@ -1861,39 +1723,35 @@
         // Update authentication UI
         function updateAuthUI() {
             if (isMerchant && currentUser) {
-                // Clear the container first
-                authContainer.innerHTML = '';
-                
-                // Create dropdown elements
-                const userDropdown = document.createElement('div');
-                userDropdown.className = 'user-dropdown';
-                userDropdown.innerHTML = `
-                    <div class="nav-link user-dropdown-toggle">
-                        <i class="fas fa-user-circle"></i>
-                        <span>Mi Cuenta</span>
-                    </div>
-                    <div class="dropdown-menu">
-                        <a href="#" onclick="showSection('profile')"><i class="fas fa-user"></i> Mi Perfil</a>
-                        <a href="#" onclick="showSection('my-store')"><i class="fas fa-store"></i> Mi Puesto</a>
-                        <div class="dropdown-divider"></div>
-                        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                authContainer.innerHTML = `
+                    <div class="user-dropdown">
+                        <div class="nav-link">
+                            <i class="fas fa-user-circle"></i>
+                            <span>Mi Cuenta</span>
+                        </div>
+                        <div class="dropdown-menu">
+                            <a href="#" onclick="showSection('profile')"><i class="fas fa-user"></i> Mi Perfil</a>
+                            <a href="#" onclick="showSection('my-store')"><i class="fas fa-store"></i> Mi Puesto</a>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                        </div>
                     </div>
                 `;
-                authContainer.appendChild(userDropdown);
+                
+                // Enable merchant sections
+                profileLink.style.display = 'flex';
+                storeLink.style.display = 'flex';
                 
                 // Add dropdown functionality
-                const dropdownToggle = userDropdown.querySelector('.user-dropdown-toggle');
-                dropdownToggle.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    userDropdown.classList.toggle('active-dropdown');
-                });
-
-                // Close dropdown on outside click
-                document.addEventListener('click', (e) => {
-                    if (!userDropdown.contains(e.target)) {
-                        userDropdown.classList.remove('active-dropdown');
-                    }
-                });
+                const userBtn = document.querySelector('.user-dropdown .nav-link');
+                const dropdownMenu = document.querySelector('.dropdown-menu');
+                
+                if (userBtn && dropdownMenu) {
+                    userBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+                    });
+                }
                 
             } else {
                 authContainer.innerHTML = `
@@ -1902,6 +1760,10 @@
                         <span>Iniciar sesión</span>
                     </a>
                 `;
+                
+                // Hide merchant sections
+                profileLink.style.display = 'none';
+                storeLink.style.display = 'none';
             }
         }
         
@@ -2021,5 +1883,138 @@
         // Start the application when DOM is loaded
         document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
+
+<!-- Chatbot Floating Container -->
+<div class="chatbot-floating" id="chatbotFloatingContainer">
+    <div class="chatbot-container-floating" id="chatbotContainer">
+        <div class="chatbot-header-floating">
+            <h3>Asistente de marketing</h3>
+            <button class="close-chatbot-btn" onclick="toggleChatbot()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <iframe class="chatbot-iframe-floating"
+            src="https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/13/17/20250813172155-WZV5LKVX.json"
+            allow="microphone; geolocation; fullscreen">
+        </iframe>
+    </div>
+    <button class="chatbot-toggle" id="chatbotToggleBtn" onclick="toggleChatbot()">
+        <i class="fas fa-comment-dots"></i>
+    </button>
+</div>
+
+<style>
+/* Chatbot Floating Styles */
+.chatbot-floating {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.chatbot-toggle {
+    background: linear-gradient(135deg, var(--cyan), var(--magenta));
+    border: none;
+    color: white;
+    padding: 1rem;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chatbot-toggle:hover {
+    transform: scale(1.1);
+}
+
+.chatbot-container-floating {
+    width: 350px;
+    height: 500px;
+    background: white;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    transform-origin: bottom right;
+    transform: scale(0);
+    opacity: 0;
+    transition: all 0.3s ease-in-out;
+}
+
+.chatbot-container-floating.visible {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.chatbot-iframe-floating {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.chatbot-header-floating {
+    background: linear-gradient(135deg, var(--cyan), var(--magenta));
+    color: white;
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chatbot-header-floating h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.close-chatbot-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.25rem;
+    cursor: pointer;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .chatbot-container-floating {
+        width: 90vw;
+        height: 70vh;
+    }
+    .chatbot-floating {
+        bottom: 10px;
+        right: 10px;
+    }
+}
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script>
+function toggleChatbot() {
+    const chatbotContainer = document.getElementById('chatbotContainer');
+    const isVisible = chatbotContainer.classList.contains('visible');
+    if (isVisible) {
+        gsap.to(chatbotContainer, { scale: 0, opacity: 0, duration: 0.3, onComplete: () => chatbotContainer.classList.remove('visible') });
+    } else {
+        chatbotContainer.classList.add('visible');
+        gsap.fromTo(chatbotContainer, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(1.7)' });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const toggleBtn = document.getElementById('chatbotToggleBtn');
+    let hoverAnim = gsap.to(toggleBtn, { scale: 1.1, duration: 0.3, paused: true, ease: 'power2.inOut' });
+    toggleBtn.addEventListener('mouseenter', () => hoverAnim.play());
+    toggleBtn.addEventListener('mouseleave', () => hoverAnim.reverse());
+});
+</script>
+
 </body>
 </html>
