@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -846,6 +847,22 @@
             }
         }
     </style>
+
+<style>
+nav a.active {
+    background: linear-gradient(135deg, #06b6d4, #c026d3);
+    color: white !important;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+nav a {
+    transition: all 0.3s ease;
+    padding: 0.5rem 1rem;
+    display: inline-block;
+}
+</style>
+
 </head>
 <body>
     <!-- Header -->
@@ -898,6 +915,12 @@
             </div>
         </div>
     </section>
+
+<section id="puestos" style="display:none; padding: 2rem;">
+  <h2 style="color:#06b6d4;">Puestos</h2>
+  <p>Esta es la sección de puestos. Aquí se mostrarán todos los stands o expositores.</p>
+</section>
+
 
     <!-- Products Section -->
     <section id="products" class="section">
@@ -1885,38 +1908,40 @@
     </script>
 
 <!-- Chatbot Floating Container -->
-<div class="chatbot-floating" id="chatbotFloatingContainer">
-    <div class="chatbot-container-floating" id="chatbotContainer">
+<div class="chatbot-floating" id="chatbotFloatingContainer" aria-live="polite">
+    <div class="chatbot-container-floating" id="chatbotContainer" aria-hidden="true">
         <div class="chatbot-header-floating">
             <h3>Asistente de marketing</h3>
-            <button class="close-chatbot-btn" onclick="toggleChatbot()">
+            <button class="close-chatbot-btn" type="button" onclick="toggleChatbot()" aria-label="Cerrar chat">
                 <i class="fas fa-times"></i>
             </button>
         </div>
         <iframe class="chatbot-iframe-floating"
             src="https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/13/17/20250813172155-WZV5LKVX.json"
-            allow="microphone; geolocation; fullscreen">
+            allow="microphone; geolocation; fullscreen" title="Chat Asistente de marketing">
         </iframe>
     </div>
-    <button class="chatbot-toggle" id="chatbotToggleBtn" onclick="toggleChatbot()">
+    <button class="chatbot-toggle" id="chatbotToggleBtn" type="button" onclick="toggleChatbot()" aria-expanded="false" aria-controls="chatbotContainer">
         <i class="fas fa-comment-dots"></i>
     </button>
 </div>
 
 <style>
-/* Chatbot Floating Styles */
+/* Chatbot Floating Styles - Left side */
 .chatbot-floating {
     position: fixed;
     bottom: 20px;
-    right: 20px;
+    left: 20px;       /* ⬅️ movido a la izquierda */
+    right: auto;
     z-index: 3000;
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: flex-start; /* Alineado a la izquierda */
+    gap: 12px;
 }
 
 .chatbot-toggle {
-    background: linear-gradient(135deg, var(--cyan), var(--magenta));
+    background: linear-gradient(135deg, var(--cyan, #06b6d4), var(--magenta, #c026d3));
     border: none;
     color: white;
     padding: 1rem;
@@ -1924,96 +1949,193 @@
     width: 60px;
     height: 60px;
     font-size: 1.5rem;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
     cursor: pointer;
     transition: transform 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
+    z-index: 3001; /* por encima del contenedor */
+    will-change: transform;
 }
 
-.chatbot-toggle:hover {
-    transform: scale(1.1);
-}
+.chatbot-toggle:hover { transform: scale(1.08); }
+.chatbot-toggle:active { transform: scale(0.96); }
 
 .chatbot-container-floating {
-    width: 350px;
-    height: 500px;
+    width: 360px;
+    height: 520px;
     background: white;
-    border-radius: 1rem;
+    border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-    transform-origin: bottom right;
-    transform: scale(0);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    transform-origin: bottom left; /* ⬅️ origen acorde a la izquierda */
+    transform: scale(0.9);
     opacity: 0;
-    transition: all 0.3s ease-in-out;
+    transition: opacity 0.25s ease;
+    display: none;         /* 🔒 no ocupa espacio ni captura clics */
+    visibility: hidden;    /* 🔒 no visible */
+    pointer-events: none;  /* 🔒 no captura eventos */
+    will-change: transform, opacity;
 }
 
 .chatbot-container-floating.visible {
-    transform: scale(1);
+    display: block;        /* ✅ visible */
+    visibility: visible;
+    pointer-events: auto;  /* ✅ interactivo */
     opacity: 1;
 }
 
 .chatbot-iframe-floating {
     width: 100%;
-    height: 100%;
+    height: calc(100% - 54px);
     border: none;
+    display: block;
 }
 
 .chatbot-header-floating {
-    background: linear-gradient(135deg, var(--cyan), var(--magenta));
+    background: linear-gradient(135deg, var(--cyan, #06b6d4), var(--magenta, #c026d3));
     color: white;
-    padding: 0.75rem 1rem;
+    padding: 12px 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .chatbot-header-floating h3 {
-    font-size: 1.1rem;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: .2px;
 }
 
 .close-chatbot-btn {
     background: none;
     border: none;
     color: white;
-    font-size: 1.25rem;
+    font-size: 1.15rem;
     cursor: pointer;
 }
 
 /* Responsive */
 @media (max-width: 480px) {
     .chatbot-container-floating {
-        width: 90vw;
+        width: 92vw;
         height: 70vh;
     }
     .chatbot-floating {
-        bottom: 10px;
-        right: 10px;
+        bottom: 12px;
+        left: 12px;
     }
 }
 </style>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script>
-function toggleChatbot() {
-    const chatbotContainer = document.getElementById('chatbotContainer');
-    const isVisible = chatbotContainer.classList.contains('visible');
-    if (isVisible) {
-        gsap.to(chatbotContainer, { scale: 0, opacity: 0, duration: 0.3, onComplete: () => chatbotContainer.classList.remove('visible') });
-    } else {
-        chatbotContainer.classList.add('visible');
-        gsap.fromTo(chatbotContainer, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(1.7)' });
-    }
-}
+// Animación de apertura/cierre con GSAP + control de accesibilidad
+(function(){
+  // Cargar GSAP si no existe
+  function ensureGSAP(cb){
+    if (window.gsap) return cb();
+    var s = document.createElement('script');
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js";
+    s.onload = cb;
+    document.head.appendChild(s);
+  }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const toggleBtn = document.getElementById('chatbotToggleBtn');
-    let hoverAnim = gsap.to(toggleBtn, { scale: 1.1, duration: 0.3, paused: true, ease: 'power2.inOut' });
-    toggleBtn.addEventListener('mouseenter', () => hoverAnim.play());
-    toggleBtn.addEventListener('mouseleave', () => hoverAnim.reverse());
-});
+  window.toggleChatbot = function toggleChatbot(){
+    ensureGSAP(function(){
+      const ctn = document.getElementById('chatbotContainer');
+      const btn = document.getElementById('chatbotToggleBtn');
+      const isOpen = ctn.classList.contains('visible');
+
+      if (isOpen) {
+        // Cerrar
+        gsap.to(ctn, {
+          duration: 0.25,
+          scale: 0.9,
+          opacity: 0,
+          ease: 'power2.out',
+          onComplete: function(){
+            ctn.classList.remove('visible');
+            ctn.setAttribute('aria-hidden', 'true');
+            btn.setAttribute('aria-expanded', 'false');
+          }
+        });
+      } else {
+        // Abrir
+        ctn.classList.add('visible');
+        ctn.setAttribute('aria-hidden', 'false');
+        btn.setAttribute('aria-expanded', 'true');
+        gsap.fromTo(ctn, { scale: 0.9, opacity: 0 }, { duration: 0.35, scale: 1, opacity: 1, ease: 'back.out(1.6)' });
+      }
+    });
+  };
+
+  // Microinteracciones del botón
+  document.addEventListener('DOMContentLoaded', function(){
+    const btn = document.getElementById('chatbotToggleBtn');
+    if (!btn) return;
+    btn.addEventListener('mouseenter', function(){ if (window.gsap) gsap.to(btn, { scale: 1.08, duration: 0.2 }); });
+    btn.addEventListener('mouseleave', function(){ if (window.gsap) gsap.to(btn, { scale: 1.0, duration: 0.2 }); });
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+    if (typeof showSection === 'function') {
+        const originalShowSection = showSection;
+        window.showSection = function(name) {
+            const sections = document.querySelectorAll('section[id]');
+            sections.forEach(sec => sec.style.display = 'none');
+            const target = document.getElementById(name);
+            if (target) target.style.display = 'block';
+            originalShowSection.apply(this, arguments);
+        };
+    } else {
+        window.showSection = function(name) {
+            const sections = document.querySelectorAll('section[id]');
+            sections.forEach(sec => sec.style.display = 'none');
+            const target = document.getElementById(name);
+            if (target) target.style.display = 'block';
+        };
+    }
+})();
+</script>
+
+
+<script>
+(function(){
+    const menuLinks = document.querySelectorAll('nav a[onclick]');
+    if (typeof showSection === 'function') {
+        const originalShowSection = showSection;
+        window.showSection = function(name) {
+            // Quitar activo de todos
+            menuLinks.forEach(link => link.classList.remove('active'));
+            // Ejecutar lógica de mostrar sección
+            const result = originalShowSection.apply(this, arguments);
+            // Marcar activo el botón correspondiente
+            menuLinks.forEach(link => {
+                if (link.getAttribute('onclick').includes("'" + name + "'")) {
+                    link.classList.add('active');
+                }
+            });
+            return result;
+        };
+    } else {
+        window.showSection = function(name) {
+            document.querySelectorAll('section[id]').forEach(sec => sec.style.display = 'none');
+            const target = document.getElementById(name);
+            if (target) target.style.display = 'block';
+            menuLinks.forEach(link => link.classList.remove('active'));
+            menuLinks.forEach(link => {
+                if (link.getAttribute('onclick').includes("'" + name + "'")) {
+                    link.classList.add('active');
+                }
+            });
+        };
+    }
+})();
 </script>
 
 </body>
