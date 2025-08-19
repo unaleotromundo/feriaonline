@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -59,15 +20,6 @@
             --gray: #e5e7eb;
             --error: #ef4444;
             --success: #10b981;
-            /* Dark mode variables */
-            --dark-bg: #1a202c;
-            --dark-card: #2d3748;
-            --dark-text: #e2e8f0;
-            --dark-gray: #4b5563;
-            --dark-light: #2d3748;
-            --dark-cyan: #22d3ee;
-            --dark-magenta: #d946ef;
-            --dark-yellow: #facc15;
         }
         
         * {
@@ -84,228 +36,6 @@
             display: flex;
             flex-direction: column;
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="none" stroke="%2306b6d4" stroke-width="0.5" opacity="0.1"/></svg>');
-            transition: background 0.5s ease, color 0.5s ease;
-        }
-        
-        /* Dark mode styles */
-        body.dark-mode {
-            background: linear-gradient(135deg, #2d3748, #4b5563);
-            color: var(--dark-text);
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="none" stroke="%2322d3ee" stroke-width="0.5" opacity="0.1"/></svg>');
-        }
-        
-        body.dark-mode .header {
-            background: linear-gradient(135deg, var(--dark-cyan) 0%, var(--dark-magenta) 100%);
-        }
-        
-        body.dark-mode .nav-link {
-            color: var(--dark-text);
-        }
-        
-        body.dark-mode .nav-link:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        
-        body.dark-mode .dropdown-menu {
-            background: var(--dark-card);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        
-        body.dark-mode .dropdown-menu a {
-            color: var(--dark-text);
-        }
-        
-        body.dark-mode .dropdown-menu a:hover {
-            background: var(--dark-light);
-            color: var(--dark-cyan);
-        }
-        
-        body.dark-mode .dropdown-divider {
-            background: var(--dark-gray);
-        }
-        
-        body.dark-mode .section {
-            color: var(--dark-text);
-        }
-        
-        body.dark-mode .hero h1 {
-            background: linear-gradient(135deg, var(--dark-cyan), var(--dark-magenta));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        body.dark-mode .hero p {
-            color: var(--dark-gray);
-        }
-        
-        body.dark-mode .btn-primary {
-            background: var(--dark-magenta);
-        }
-        
-        body.dark-mode .btn-secondary {
-            background: var(--dark-cyan);
-        }
-        
-        body.dark-mode .profile-card {
-            background: var(--dark-card);
-            border-top-color: var(--dark-cyan);
-        }
-        
-        body.dark-mode .profile-info p {
-            color: var(--dark-gray);
-        }
-        
-        body.dark-mode .detail-item {
-            background: var(--dark-light);
-        }
-        
-        body.dark-mode .detail-item h3 {
-            color: var(--dark-cyan);
-        }
-        
-        body.dark-mode .products-header .section-title {
-            background: linear-gradient(135deg, var(--dark-cyan), var(--dark-magenta));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        body.dark-mode .product-card {
-            background: var(--dark-card);
-        }
-        
-        body.dark-mode .product-image {
-            background: linear-gradient(135deg, #2d3748, #4b5563);
-        }
-        
-        body.dark-mode .product-description {
-            color: var(--dark-gray);
-        }
-        
-        body.dark-mode .product-vendor {
-            color: var(--dark-gray);
-        }
-        
-        body.dark-mode .category-badge {
-            background: var(--dark-light);
-            color: var(--dark-cyan);
-        }
-        
-        body.dark-mode .form-container {
-            background: var(--dark-card);
-            border-top-color: var(--dark-magenta);
-        }
-        
-        body.dark-mode .form-title {
-            color: var(--dark-magenta);
-        }
-        
-        body.dark-mode .form-group label {
-            color: var(--dark-text);
-        }
-        
-        body.dark-mode .form-control {
-            background: var(--dark-light);
-            border-color: var(--dark-gray);
-            color: var(--dark-text);
-        }
-        
-        body.dark-mode .form-control:focus {
-            border-color: var(--dark-cyan);
-            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2);
-        }
-        
-        body.dark-mode .footer {
-            background: linear-gradient(135deg, var(--dark-cyan) 0%, var(--dark-magenta) 100%);
-        }
-        
-        body.dark-mode .login-box {
-            background: var(--dark-card);
-        }
-        
-        body.dark-mode .login-header h2 {
-            background: linear-gradient(135deg, var(--dark-cyan), var(--dark-magenta));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        body.dark-mode .login-success {
-            background: #1a4731;
-            color: #6ee7b7;
-            border-color: #34d399;
-        }
-        
-        body.dark-mode .login-error {
-            background: #7f1d1d;
-            color: #f87171;
-            border-color: #f87171;
-        }
-        
-        body.dark-mode .product-image-upload {
-            border-color: var(--dark-gray);
-        }
-        
-        body.dark-mode .product-image-upload:hover {
-            border-color: var(--dark-cyan);
-            background: rgba(34, 211, 238, 0.05);
-        }
-        
-        body.dark-mode .product-image-upload i {
-            color: var(--dark-cyan);
-        }
-        
-        body.dark-mode .no-products,
-        body.dark-mode .error-message {
-            color: var(--dark-text);
-        }
-        
-        body.dark-mode .no-products i,
-        body.dark-mode .error-message i {
-            color: var(--dark-magenta);
-        }
-        
-        body.dark-mode .product-badge {
-            background: var(--dark-magenta);
-        }
-        
-        body.dark-mode .chatbot-container-floating {
-            background: var(--dark-card);
-        }
-        
-        body.dark-mode .chatbot-header-floating {
-            background: linear-gradient(135deg, var(--dark-cyan), var(--dark-magenta));
-        }
-        
-        /* Floating Dark Mode Toggle Button */
-        .dark-mode-toggle {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--cyan), var(--magenta));
-            border: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.5s ease, transform 0.3s ease, box-shadow 0.3s ease;
-            z-index: 1000;
-        }
-        
-        .dark-mode-toggle:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.3);
-        }
-        
-        .dark-mode-toggle i {
-            color: white;
-            font-size: 1.5rem;
-        }
-        
-        body.dark-mode .dark-mode-toggle {
-            background: linear-gradient(135deg, var(--dark-cyan), var(--dark-magenta));
         }
         
         /* Header Styles */
@@ -745,6 +475,12 @@
             margin-top: auto;
         }
         
+        .footer p {
+            max-width: 500px;
+            margin: 0 auto 1.5rem;
+            line-height: 1.6;
+        }
+        
         .social-icons {
             display: flex;
             justify-content: center;
@@ -1128,11 +864,6 @@
                 gap: 1rem;
                 align-items: flex-start;
             }
-            
-            .dark-mode-toggle {
-                width: 50px;
-                height: 50px;
-            }
         }
     </style>
 
@@ -1207,13 +938,14 @@ nav a {
   <p>Esta es la sección de puestos. Aquí se mostrarán todos los stands o expositores.</p>
 </section>
 
+
     <section id="products" class="section">
         <div class="products-header">
             <h2 class="section-title">Productos Destacados</h2>
         </div>
         
         <div class="products-grid" id="productsGrid">
-        </div>
+            </div>
     </section>
 
     <section id="profile" class="section">
@@ -1306,7 +1038,7 @@ nav a {
         </div>
         
         <div class="products-grid" id="myProductsGrid">
-        </div>
+            </div>
     </section>
 
     <section id="register" class="section">
@@ -1438,11 +1170,6 @@ nav a {
         </div>
     </div>
 
-    <!-- Floating Dark Mode Toggle Button -->
-    <button class="dark-mode-toggle" id="darkModeToggle" title="Alternar modo claro/oscuro">
-        <i class="fas fa-moon"></i>
-    </button>
-
     <footer class="footer">
         <p>Únete a la comunidad de pequeños comerciantes que ya están creciendo con Feria Virtual</p>
         
@@ -1481,44 +1208,6 @@ nav a {
         const profileLink = document.getElementById('profileLink');
         const storeLink = document.getElementById('storeLink');
         const authContainer = document.getElementById('authContainer');
-        
-        // Dark Mode Toggle Functionality
-        document.addEventListener('DOMContentLoaded', () => {
-            const darkModeToggle = document.getElementById('darkModeToggle');
-            if (darkModeToggle) {
-                darkModeToggle.addEventListener('click', () => {
-                    document.body.classList.toggle('dark-mode');
-                    const icon = darkModeToggle.querySelector('i');
-                    
-                    if (document.body.classList.contains('dark-mode')) {
-                        icon.classList.remove('fa-moon');
-                        icon.classList.add('fa-sun');
-                        darkModeToggle.setAttribute('title', 'Cambiar a modo claro');
-                        // GSAP animation for smooth button transition
-                        gsap.to(darkModeToggle, {
-                            scale: 1.2,
-                            duration: 0.2,
-                            ease: "power2.out",
-                            onComplete: () => {
-                                gsap.to(darkModeToggle, { scale: 1, duration: 0.2 });
-                            }
-                        });
-                    } else {
-                        icon.classList.remove('fa-sun');
-                        icon.classList.add('fa-moon');
-                        darkModeToggle.setAttribute('title', 'Cambiar a modo oscuro');
-                        gsap.to(darkModeToggle, {
-                            scale: 1.2,
-                            duration: 0.2,
-                            ease: "power2.out",
-                            onComplete: () => {
-                                gsap.to(darkModeToggle, { scale: 1, duration: 0.2 });
-                            }
-                        });
-                    }
-                });
-            }
-        });
         
         // Function to show a section
         function showSection(sectionId) {
@@ -2151,4 +1840,389 @@ nav a {
                             <span>Mi Cuenta</span>
                         </div>
                         <div class="dropdown-menu">
-                            <a href="#" onclick="showSection('profile')"><i
+                            <a href="#" onclick="showSection('profile')"><i class="fas fa-user"></i> Mi Perfil</a>
+                            <a href="#" onclick="showSection('my-store')"><i class="fas fa-store"></i> Mi Puesto</a>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                        </div>
+                    </div>
+                `;
+                
+                // Enable merchant sections
+                profileLink.style.display = 'flex';
+                storeLink.style.display = 'flex';
+                
+                // Add dropdown functionality
+                const userBtn = document.querySelector('.user-dropdown .nav-link');
+                const dropdownMenu = document.querySelector('.dropdown-menu');
+                
+                if (userBtn && dropdownMenu) {
+                    userBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+                    });
+                }
+                
+            } else {
+                authContainer.innerHTML = `
+                    <a href="#" class="nav-link" onclick="showLogin()">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>Iniciar sesión</span>
+                    </a>
+                `;
+                
+                // Hide merchant sections
+                profileLink.style.display = 'none';
+                storeLink.style.display = 'none';
+            }
+        }
+        
+        // Show message in UI
+        function showMessage(element, message, type) {
+            element.textContent = message;
+            element.className = 'login-message';
+            
+            if (type === 'success') {
+                element.classList.add('login-success');
+            } else {
+                element.classList.add('login-error');
+            }
+            
+            element.style.display = 'block';
+        }
+        
+        // Show loading overlay
+        function showLoading(message = 'Cargando...') {
+            const loadingElement = document.createElement('div');
+            loadingElement.className = 'global-loading';
+            loadingElement.innerHTML = `
+                <div class="loading-overlay">
+                    <div class="loading-content">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>${message}</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(loadingElement);
+        }
+        
+        // Hide loading overlay
+        function hideLoading() {
+            const loadingElement = document.querySelector('.global-loading');
+            if (loadingElement) {
+                loadingElement.remove();
+            }
+        }
+        
+        // Show success message
+        function showSuccessMessage(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-success';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('fade-out');
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
+        
+        // Show error message
+        function showErrorMessage(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-error';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('fade-out');
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
+        
+        // Initialize the application
+        async function initializeApp() {
+            try {
+                // Set auth persistence
+                await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+                
+                // Check auth state
+                auth.onAuthStateChanged(async (user) => {
+                    if (user) {
+                        // Verify if merchant
+                        const merchantDoc = await db.collection('merchants').doc(user.uid).get();
+                        isMerchant = merchantDoc.exists;
+                        currentUser = user;
+                        
+                        if (isMerchant) {
+                            await updateUserProfile(user.uid);
+                            
+                            // Update last access
+                            await db.collection('merchants').doc(user.uid).update({
+                                lastAccess: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        }
+                        
+                        updateAuthUI();
+                        
+                        // Show appropriate section based on state
+                        const currentSection = document.querySelector('.section.active-section');
+                        if (!currentSection || currentSection.id === 'home') {
+                            showSection(isMerchant ? 'profile' : 'products');
+                        }
+                    } else {
+                        isMerchant = false;
+                        currentUser = null;
+                        updateAuthUI();
+                        showSection('home');
+                    }
+                });
+                
+                // Setup image upload
+                setupImageUpload();
+                
+                // Load initial products
+                loadProducts();
+                
+            } catch (error) {
+                console.error("Error initializing app:", error);
+                showErrorMessage("Error al iniciar la aplicación");
+            }
+        }
+        
+        // Start the application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+
+<div class="chatbot-floating" id="chatbotFloatingContainer" aria-live="polite">
+    <div class="chatbot-container-floating" id="chatbotContainer" aria-hidden="true">
+        <div class="chatbot-header-floating">
+            <h3>Asistente de marketing</h3>
+            <button class="close-chatbot-btn" type="button" onclick="toggleChatbot()" aria-label="Cerrar chat">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <iframe class="chatbot-iframe-floating"
+            src="https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/13/17/20250813172155-WZV5LKVX.json"
+            allow="microphone; geolocation; fullscreen" title="Chat Asistente de marketing">
+        </iframe>
+    </div>
+    <button class="chatbot-toggle" id="chatbotToggleBtn" type="button" onclick="toggleChatbot()" aria-expanded="false" aria-controls="chatbotContainer">
+        <i class="fas fa-comment-dots"></i>
+    </button>
+</div>
+
+<style>
+/* Chatbot Floating Styles - Left side */
+.chatbot-floating {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;       /* ⬅️ movido a la izquierda */
+    right: auto;
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Alineado a la izquierda */
+    gap: 12px;
+}
+
+.chatbot-toggle {
+    background: linear-gradient(135deg, var(--cyan, #06b6d4), var(--magenta, #c026d3));
+    border: none;
+    color: white;
+    padding: 1rem;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3001; /* por encima del contenedor */
+    will-change: transform;
+}
+
+.chatbot-toggle:hover { transform: scale(1.08); }
+.chatbot-toggle:active { transform: scale(0.96); }
+
+.chatbot-container-floating {
+    width: 360px;
+    height: 520px;
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    transform-origin: bottom left; /* ⬅️ origen acorde a la izquierda */
+    transform: scale(0.9);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    display: none;         /* 🔒 no ocupa espacio ni captura clics */
+    visibility: hidden;    /* 🔒 no visible */
+    pointer-events: none;  /* 🔒 no captura eventos */
+    will-change: transform, opacity;
+}
+
+.chatbot-container-floating.visible {
+    display: block;        /* ✅ visible */
+    visibility: visible;
+    pointer-events: auto;  /* ✅ interactivo */
+    opacity: 1;
+}
+
+.chatbot-iframe-floating {
+    width: 100%;
+    height: calc(100% - 54px);
+    border: none;
+    display: block;
+}
+
+.chatbot-header-floating {
+    background: linear-gradient(135deg, var(--cyan, #06b6d4), var(--magenta, #c026d3));
+    color: white;
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chatbot-header-floating h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: .2px;
+}
+
+.close-chatbot-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.15rem;
+    cursor: pointer;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .chatbot-container-floating {
+        width: 92vw;
+        height: 70vh;
+    }
+    .chatbot-floating {
+        bottom: 12px;
+        left: 12px;
+    }
+}
+</style>
+
+<script>
+// Animación de apertura/cierre con GSAP + control de accesibilidad
+(function(){
+  // Cargar GSAP si no existe
+  function ensureGSAP(cb){
+    if (window.gsap) return cb();
+    var s = document.createElement('script');
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js";
+    s.onload = cb;
+    document.head.appendChild(s);
+  }
+
+  window.toggleChatbot = function toggleChatbot(){
+    ensureGSAP(function(){
+      const ctn = document.getElementById('chatbotContainer');
+      const btn = document.getElementById('chatbotToggleBtn');
+      const isOpen = ctn.classList.contains('visible');
+
+      if (isOpen) {
+        // Cerrar
+        gsap.to(ctn, {
+          duration: 0.25,
+          scale: 0.9,
+          opacity: 0,
+          ease: 'power2.out',
+          onComplete: function(){
+            ctn.classList.remove('visible');
+            ctn.setAttribute('aria-hidden', 'true');
+            btn.setAttribute('aria-expanded', 'false');
+          }
+        });
+      } else {
+        // Abrir
+        ctn.classList.add('visible');
+        ctn.setAttribute('aria-hidden', 'false');
+        btn.setAttribute('aria-expanded', 'true');
+        gsap.fromTo(ctn, { scale: 0.9, opacity: 0 }, { duration: 0.35, scale: 1, opacity: 1, ease: 'back.out(1.6)' });
+      }
+    });
+  };
+
+  // Microinteracciones del botón
+  document.addEventListener('DOMContentLoaded', function(){
+    const btn = document.getElementById('chatbotToggleBtn');
+    if (!btn) return;
+    btn.addEventListener('mouseenter', function(){ if (window.gsap) gsap.to(btn, { scale: 1.08, duration: 0.2 }); });
+    btn.addEventListener('mouseleave', function(){ if (window.gsap) gsap.to(btn, { scale: 1.0, duration: 0.2 }); });
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+    if (typeof showSection === 'function') {
+        const originalShowSection = showSection;
+        window.showSection = function(name) {
+            const sections = document.querySelectorAll('section[id]');
+            sections.forEach(sec => sec.style.display = 'none');
+            const target = document.getElementById(name);
+            if (target) target.style.display = 'block';
+            originalShowSection.apply(this, arguments);
+        };
+    } else {
+        window.showSection = function(name) {
+            const sections = document.querySelectorAll('section[id]');
+            sections.forEach(sec => sec.style.display = 'none');
+            const target = document.getElementById(name);
+            if (target) target.style.display = 'block';
+        };
+    }
+})();
+</script>
+
+
+<script>
+(function(){
+    const menuLinks = document.querySelectorAll('nav a[onclick]');
+    if (typeof showSection === 'function') {
+        const originalShowSection = showSection;
+        window.showSection = function(name) {
+            // Quitar activo de todos
+            menuLinks.forEach(link => link.classList.remove('active'));
+            // Ejecutar lógica de mostrar sección
+            const result = originalShowSection.apply(this, arguments);
+            // Marcar activo el botón correspondiente
+            menuLinks.forEach(link => {
+                if (link.getAttribute('onclick').includes("'" + name + "'")) {
+                    link.classList.add('active');
+                }
+            });
+            return result;
+        };
+    } else {
+        window.showSection = function(name) {
+            document.querySelectorAll('section[id]').forEach(sec => sec.style.display = 'none');
+            const target = document.getElementById(name);
+            if (target) target.style.display = 'block';
+            menuLinks.forEach(link => link.classList.remove('active'));
+            menuLinks.forEach(link => {
+                if (link.getAttribute('onclick').includes("'" + name + "'")) {
+                    link.classList.add('active');
+                }
+            });
+        };
+    }
+})();
+</script>
+
+</body>
+</html>
