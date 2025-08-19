@@ -36,6 +36,7 @@
             display: flex;
             flex-direction: column;
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="none" stroke="%2306b6d4" stroke-width="0.5" opacity="0.1"/></svg>');
+            transition: background-color 0.4s ease, color 0.4s ease;
         }
         
         /* Header Styles */
@@ -880,6 +881,85 @@ nav a {
     padding: 0.5rem 1rem;
     display: inline-block;
 }
+
+/* --- INICIO: CSS para interruptor de tema y modo oscuro --- */
+body[data-theme="dark"] {
+    --black: #f9fafb; /* Invertimos colores base */
+    --light: #1f2937;
+    --gray: #374151;
+    background: linear-gradient(135deg, #1e293b, #111827);
+    color: #e5e7eb;
+}
+
+/* Sobrescribimos estilos específicos para el modo oscuro */
+body[data-theme="dark"] .profile-card,
+body[data-theme="dark"] .form-container,
+body[data-theme="dark"] .product-card,
+body[data-theme="dark"] .login-box,
+body[data-theme="dark"] .dropdown-menu {
+    background-color: #374151;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+body[data-theme="dark"] .hero p,
+body[data-theme="dark"] .profile-info p,
+body[data-theme="dark"] .product-description,
+body[data-theme="dark"] .product-vendor {
+    color: #9ca3af;
+}
+
+body[data-theme="dark"] .form-control {
+    background-color: #4b5563;
+    border-color: #6b7280;
+    color: white;
+}
+body[data-theme="dark"] .form-control::placeholder {
+    color: #9ca3af;
+}
+
+body[data-theme="dark"] .product-image {
+    background: linear-gradient(135deg, #374151, #1f2937);
+}
+
+body[data-theme="dark"] .dropdown-menu a:hover {
+    background: #4b5563;
+}
+
+/* Estilos para el botón de cambio de tema */
+.theme-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 3001; /* Por encima del chatbot */
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--light);
+    color: var(--black);
+    border: 2px solid var(--gray);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    overflow: hidden; /* Para la animación de los iconos */
+}
+
+.theme-toggle:hover {
+    transform: scale(1.1) rotate(15deg);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+}
+
+.theme-toggle .fa-sun { display: none; }
+.theme-toggle .fa-moon { display: block; }
+
+body[data-theme="dark"] .theme-toggle .fa-sun { display: block; }
+body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
+
+/* --- FIN: CSS para interruptor de tema y modo oscuro --- */
+
 </style>
 
 </head>
@@ -1182,6 +1262,13 @@ nav a {
         
         <p class="copyright">&copy; 2025 Feria Virtual. Todos los derechos reservados.</p>
     </footer>
+
+    <!-- --- INICIO: HTML para el interruptor de tema --- -->
+    <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema">
+        <i class="fas fa-moon"></i>
+        <i class="fas fa-sun"></i>
+    </button>
+    <!-- --- FIN: HTML para el interruptor de tema --- -->
 
     <script>
         // Firebase Configuration
@@ -2283,6 +2370,31 @@ function renderProductCard(container, product) {
     }
 })();
 </script>
+
+<!-- --- INICIO: Lógica JavaScript para el interruptor de tema --- -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const themeToggle = document.getElementById('themeToggle');
+    const body = document.body;
+
+    // Función para aplicar el tema
+    const applyTheme = (theme) => {
+        body.dataset.theme = theme;
+        localStorage.setItem('theme', theme);
+    };
+
+    // Evento de clic para cambiar el tema
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = body.dataset.theme === 'dark' ? 'light' : 'dark';
+        applyTheme(currentTheme);
+    });
+
+    // Cargar el tema guardado al iniciar la página
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    applyTheme(savedTheme);
+});
+</script>
+<!-- --- FIN: Lógica JavaScript para el interruptor de tema --- -->
 
 </body>
 </html>
