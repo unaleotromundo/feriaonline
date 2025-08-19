@@ -1675,73 +1675,133 @@ nav a {
         }
         
         // Function to save or update product
-        async function saveProduct() {
-            if (!currentUser) {
-                showErrorMessage('Debes iniciar sesión para agregar productos');
-                return;
-            }
+ async function saveProduct() {
+  const productId = document.getElementById('productModal').dataset.productId || firebase.firestore().collection('products').doc().id;
+  const productName = document.getElementById('productName').value.trim();
+  const productPrice = parseFloat(document.getElementById('productPrice').value);
+  const productCategory = document.getElementById('productCategory').value;
+  const productDescription = document.getElementById('productDescription').value.trim();
+  const fileInput = document.querySelector('#productImage');
+  const messageElement = document.getElementById('productModalMessage');
 
-            const modal = document.getElementById('productModal');
-            const productId = modal.dataset.productId;
-            const name = document.getElementById('productName').value.trim();
-            const price = parseFloat(document.getElementById('productPrice').value);
-            const category = document.getElementById('productCategory').value;
-            const description = document.getElementById('productDescription').value.trim();
-            const uploadArea = document.querySelector('#productModal .product-image-upload');
-            const imageUrl = uploadArea.dataset.imageUrl || null;
+  if (!productName || !productPrice || isNaN(productPrice) || !productCategory || !productDescription) {
+    showMessage(messageElement, 'Por favor completa todos los campos requeridos', 'error');
+    return;
+  }
 
-            // Improved validation
-            if (!name || name.length < 3) {
-                showErrorMessage('El nombre del producto debe tener al menos 3 caracteres');
-                return;
-            }
+  if (!currentUser) {
+    showMessage(messageElement, 'Debes iniciar sesión para guardar productos', 'error');
+    return;
+  }
 
-            if (isNaN(price) || price <= 0) {
-                showErrorMessage('Ingresa un precio válido mayor a 0');
-                return;
-            }
+  try {
+    showMessage(messageElement, 'Guardando producto...', 'success');
 
-            try {
-                showLoading(productId ? 'Actualizando producto...' : 'Guardando producto...');
-                
-                const productData = {
-                    name,
-                    price,
-                    category,
-                    description,
-                    vendorId: currentUser.uid,
-                    vendorName: document.getElementById('userBusiness').textContent,
-                    imageUrl,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
+    let imageBase64 = null;
+    const file = fileInput && fileInput.files[0];
 
-                if (productId) {
-                    // Modo edición: actualiza el producto
-                    await db.collection('products').doc(productId).update(productData);
-                    showSuccessMessage('Producto actualizado exitosamente');
-                } else {
-                    // Modo agregar: añade un nuevo producto
-                    productData.published = true; // New products are published by default
-                    productData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                    await db.collection('products').add(productData);
-                    showSuccessMessage('Producto agregado exitosamente');
-                }
-                
-                // Clear form
-                resetProductForm();
-                
-                // Close modal and refresh list
-                hideModal('productModal');
-                await loadMyProducts();
-                
-            } catch (error) {
-                console.error("Error saving product:", error);
-                showErrorMessage('Error al guardar el producto: ' + error.message);
-            } finally {
-                hideLoading();
-            }
-        }
-        
+    if (file) {
+      // Validar tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        showMessage(messageElement, 'Por favor selecciona una imagen válida (JPG, PNG)', 'error');
+        return;
+      }
+      // Validar tamaño (500KB para Firestore)
+      if (file.size > 500 * 1024) {
+        showMessage(messageElement, 'La imagen debe ser menor a 500KB', 'error');
+        return;
+      }
+
+      // Convertir imagen a base64
+      imageBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Error al convertir la imagen a base64'));
+        reader.readAsDataURL(file);
+      });
+      console.log('Imagen convertida a base64:', imageBase64.substring(0, 50) + '...');
+    } else {
+      console.log('No se seleccionó ninguna imagen');
+    }
+
+    const productData = {
+      name: productName,
+      price: productPrice,
+      category: productCategory,
+      description: productDescription,
+      vendorId: currentUser.uid,
+      vendorName: currentUser.displayName || 'Comerciante',
+      published: true,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      imageBase64: imageBase64 || null
+    };
+
+    await firebase.firestore().collection('products').doc(productId).set(productData, { merge: true });
+    console.log('Producto guardado en Firestore con ID:', productId);
+
+    showMessage(messageElement, productId ? 'Producto actualizado correctamente' : 'Producto guardado correctamente', 'success');
+    setTimeout(() => {
+      hideModal('productModal');
+      loadMyProducts();
+    }, 1500);
+
+  } catch (error) {
+    showMessage(messageElement, `Error al guardar el producto: ${error.message}`, 'error');
+    console.error('Error en saveProduct:', error);
+  }
+}
+
+// Actualizar renderMyProductCard para usar imageBase64
+function renderMyProductCard(container, product) {
+  const productCard = document.createElement('div');
+  productCard.className = 'product-card';
+  productCard.innerHTML = `
+    <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}">
+      ${!product.imageBase64 ? '<i class="fas fa-shopping-bag"></i>' : ''}
+    </div>
+    <div class="product-info">
+      <h3 class="product-title">${product.name}</h3>
+      <div class="product-price">$${product.price.toFixed(2)}</div>
+      <p class="product-description">${product.description}</p>
+      <div class="product-actions">
+        <button class="action-btn edit-btn" onclick="showProductModal('${product.id}')">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="action-btn delete-btn" onclick="confirmDeleteProduct('${product.id}')">
+          <i class="fas fa-trash"></i>
+        </button>
+        <button class="action-btn status-btn" onclick="toggleProductStatus('${product.id}', ${!product.published})">
+          <i class="fas fa-eye${product.published ? '' : '-slash'}"></i>
+        </button>
+      </div>
+    </div>
+  `;
+  container.appendChild(productCard);
+}
+
+// Actualizar renderProductCard para usar imageBase64
+function renderProductCard(container, product) {
+  const productCard = document.createElement('div');
+  productCard.className = 'product-card';
+  productCard.innerHTML = `
+    <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}">
+      ${!product.imageBase64 ? '<i class="fas fa-shopping-bag"></i>' : ''}
+    </div>
+    <div class="product-info">
+      <h3 class="product-title">${product.name}</h3>
+      <div class="product-price">$${product.price.toFixed(2)}</div>
+      <p class="product-description">${product.description}</p>
+      <div class="product-vendor">
+        <i class="fas fa-store"></i>
+        <span>${product.vendorName || 'Vendedor'}</span>
+      </div>
+      <div class="product-category">
+        <span class="category-badge">${product.category || 'General'}</span>
+      </div>
+    </div>
+  `;
+  container.appendChild(productCard);
+}
         // Function to reset product form
         function resetProductForm() {
             document.getElementById('productName').value = '';
