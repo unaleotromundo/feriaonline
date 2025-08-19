@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-storage-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -525,6 +525,25 @@
             max-width: 400px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             animation: modalAppear 0.4s ease;
+            position: relative;
+        }
+
+        /* Close button for modals */
+        .close-modal-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .close-modal-btn:hover {
+            color: #1f2937;
+            transform: scale(1.1);
         }
         
         @keyframes modalAppear {
@@ -865,7 +884,6 @@ nav a {
 
 </head>
 <body>
-    <!-- Header -->
     <header class="header">
         <a href="#" class="logo" onclick="showSection('home')">
             <i class="fas fa-store"></i>
@@ -897,7 +915,6 @@ nav a {
         </div>
     </header>
 
-    <!-- Home Section -->
     <section id="home" class="section active-section">
         <div class="hero">
             <h1>Conecta tu pequeño negocio con el mundo</h1>
@@ -922,18 +939,15 @@ nav a {
 </section>
 
 
-    <!-- Products Section -->
     <section id="products" class="section">
         <div class="products-header">
             <h2 class="section-title">Productos Destacados</h2>
         </div>
         
         <div class="products-grid" id="productsGrid">
-            <!-- Product cards will be loaded here -->
-        </div>
+            </div>
     </section>
 
-    <!-- Profile Section -->
     <section id="profile" class="section">
         <h2 class="section-title">Mi Perfil</h2>
         
@@ -978,7 +992,6 @@ nav a {
         </div>
     </section>
 
-    <!-- My Store Section -->
     <section id="my-store" class="section">
         <h2 class="section-title">Gestión de mi Puesto</h2>
         
@@ -1019,17 +1032,15 @@ nav a {
         
         <div class="products-header" style="margin-top: 3rem;">
             <h2 class="section-title">Mis Productos</h2>
-            <button class="btn btn-primary" onclick="showAddProduct()">
+            <button class="btn btn-primary" onclick="showProductModal()">
                 <i class="fas fa-plus"></i> Nuevo Producto
             </button>
         </div>
         
         <div class="products-grid" id="myProductsGrid">
-            <!-- Products will be loaded here -->
-        </div>
+            </div>
     </section>
 
-    <!-- Registration Section -->
     <section id="register" class="section">
         <h2 class="section-title">Registro de Comerciante</h2>
         
@@ -1075,9 +1086,11 @@ nav a {
         </div>
     </section>
 
-    <!-- Login Modal -->
     <div class="login-modal" id="loginModal">
         <div class="login-box">
+            <button type="button" class="close-modal-btn" onclick="hideLogin()">
+                <i class="fas fa-times"></i>
+            </button>
             <div class="login-header">
                 <h2>Acceso Comerciantes</h2>
                 <p>Ingresa para gestionar tu puesto</p>
@@ -1105,13 +1118,17 @@ nav a {
         </div>
     </div>
 
-    <!-- Add Product Modal -->
-    <div class="login-modal" id="addProductModal">
+    <div class="login-modal" id="productModal">
         <div class="login-box">
+            <button type="button" class="close-modal-btn" onclick="hideModal('productModal')">
+                <i class="fas fa-times"></i>
+            </button>
             <div class="login-header">
-                <h2>Agregar Nuevo Producto</h2>
+                <h2 id="productModalTitle">Agregar Nuevo Producto</h2>
             </div>
             
+            <div id="productModalMessage" class="login-message"></div>
+
             <div class="form-group">
                 <label for="productName">Nombre del Producto</label>
                 <input type="text" id="productName" class="form-control" placeholder="Ej: Tazas Artesanales">
@@ -1147,13 +1164,12 @@ nav a {
             </div>
             
             <div class="form-footer">
-                <button class="btn btn-secondary" onclick="hideModal('addProductModal')">Cancelar</button>
+                <button class="btn btn-secondary" onclick="hideModal('productModal')">Cancelar</button>
                 <button class="btn btn-primary" onclick="saveProduct()">Guardar Producto</button>
             </div>
         </div>
     </div>
 
-    <!-- Footer -->
     <footer class="footer">
         <p>Únete a la comunidad de pequeños comerciantes que ya están creciendo con Feria Virtual</p>
         
@@ -1249,9 +1265,29 @@ nav a {
             document.getElementById('loginMessage').style.display = 'none';
         }
         
-        // Function to show add product modal
-        function showAddProduct() {
-            document.getElementById('addProductModal').style.display = 'flex';
+        // Function to show add/edit product modal
+        function showProductModal(productId = null) {
+            const modal = document.getElementById('productModal');
+            const title = document.getElementById('productModalTitle');
+            const message = document.getElementById('productModalMessage');
+            const saveButton = modal.querySelector('.btn-primary');
+
+            resetProductForm();
+            modal.style.display = 'flex';
+            message.style.display = 'none';
+            
+            if (productId) {
+                // Modo edición
+                title.textContent = 'Editar Producto';
+                saveButton.textContent = 'Actualizar Producto';
+                modal.dataset.productId = productId;
+                loadProductForEdit(productId);
+            } else {
+                // Modo agregar
+                title.textContent = 'Agregar Nuevo Producto';
+                saveButton.textContent = 'Guardar Producto';
+                delete modal.dataset.productId;
+            }
         }
         
         // Function to hide modal
@@ -1359,7 +1395,7 @@ nav a {
                     <div class="product-price">$${product.price.toFixed(2)}</div>
                     <p class="product-description">${product.description}</p>
                     <div class="product-actions">
-                        <button class="action-btn edit-btn" onclick="editProduct('${product.id}')">
+                        <button class="action-btn edit-btn" onclick="showProductModal('${product.id}')">
                             <i class="fas fa-edit"></i>
                         </button>
                         <button class="action-btn delete-btn" onclick="confirmDeleteProduct('${product.id}')">
@@ -1548,7 +1584,7 @@ nav a {
         
         // Setup image upload functionality
         function setupImageUpload() {
-            const uploadArea = document.querySelector('#addProductModal .product-image-upload');
+            const uploadArea = document.querySelector('#productModal .product-image-upload');
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = 'image/*';
@@ -1571,11 +1607,12 @@ nav a {
                 
                 try {
                     const imageUrl = await uploadProductImage(file);
-                    uploadArea.innerHTML = `<img src="${imageUrl}" class="preview-image"><button class="remove-image-btn" onclick="removeUploadedImage(this)"><i class="fas fa-times"></i></button>`;
+                    uploadArea.innerHTML = `<img src="${imageUrl}" class="preview-image"><button type="button" class="remove-image-btn" onclick="removeUploadedImage(this, '${imageUrl}')"><i class="fas fa-times"></i></button>`;
                     uploadArea.dataset.imageUrl = imageUrl;
                 } catch (error) {
                     console.error("Upload error:", error);
                     uploadArea.innerHTML = '<div class="upload-error"><i class="fas fa-exclamation-circle"></i> Error al subir imagen</div>';
+                    showErrorMessage('Error al subir la imagen');
                 }
             });
         }
@@ -1592,24 +1629,65 @@ nav a {
         }
         
         // Function to remove uploaded image
-        function removeUploadedImage(btn) {
+        function removeUploadedImage(btn, imageUrl) {
             const uploadArea = btn.closest('.product-image-upload');
             uploadArea.innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic o arrastra una imagen aquí</p>';
             uploadArea.removeAttribute('data-image-url');
+
+            // Optionally, delete image from storage to save space, but handle errors silently
+            if (imageUrl && imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
+                 const imageRef = storage.refFromURL(imageUrl);
+                 imageRef.delete().catch(err => console.warn("No se pudo eliminar la imagen de Storage:", err));
+            }
+        }
+
+        // Function to load product data into the modal for editing
+        async function loadProductForEdit(productId) {
+            showLoading('Cargando producto...');
+            try {
+                const doc = await db.collection('products').doc(productId).get();
+                if (doc.exists) {
+                    const product = doc.data();
+                    document.getElementById('productName').value = product.name;
+                    document.getElementById('productPrice').value = product.price;
+                    document.getElementById('productCategory').value = product.category;
+                    document.getElementById('productDescription').value = product.description;
+
+                    const uploadArea = document.querySelector('#productModal .product-image-upload');
+                    if (product.imageUrl) {
+                        uploadArea.innerHTML = `<img src="${product.imageUrl}" class="preview-image"><button type="button" class="remove-image-btn" onclick="removeUploadedImage(this, '${product.imageUrl}')"><i class="fas fa-times"></i></button>`;
+                        uploadArea.dataset.imageUrl = product.imageUrl;
+                    } else {
+                        uploadArea.innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic o arrastra una imagen aquí</p>';
+                        uploadArea.removeAttribute('data-image-url');
+                    }
+                } else {
+                    showErrorMessage('El producto no existe');
+                    hideModal('productModal');
+                }
+            } catch (error) {
+                console.error("Error al cargar el producto para editar:", error);
+                showErrorMessage('Error al cargar el producto');
+                hideModal('productModal');
+            } finally {
+                hideLoading();
+            }
         }
         
-        // Function to save product
+        // Function to save or update product
         async function saveProduct() {
             if (!currentUser) {
                 showErrorMessage('Debes iniciar sesión para agregar productos');
                 return;
             }
 
+            const modal = document.getElementById('productModal');
+            const productId = modal.dataset.productId;
             const name = document.getElementById('productName').value.trim();
             const price = parseFloat(document.getElementById('productPrice').value);
             const category = document.getElementById('productCategory').value;
             const description = document.getElementById('productDescription').value.trim();
-            const uploadArea = document.querySelector('#addProductModal .product-image-upload');
+            const uploadArea = document.querySelector('#productModal .product-image-upload');
             const imageUrl = uploadArea.dataset.imageUrl || null;
 
             // Improved validation
@@ -1624,7 +1702,7 @@ nav a {
             }
 
             try {
-                showLoading('Guardando producto...');
+                showLoading(productId ? 'Actualizando producto...' : 'Guardando producto...');
                 
                 const productData = {
                     name,
@@ -1634,21 +1712,27 @@ nav a {
                     vendorId: currentUser.uid,
                     vendorName: document.getElementById('userBusiness').textContent,
                     imageUrl,
-                    published: true,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
-                await db.collection('products').add(productData);
+                if (productId) {
+                    // Modo edición: actualiza el producto
+                    await db.collection('products').doc(productId).update(productData);
+                    showSuccessMessage('Producto actualizado exitosamente');
+                } else {
+                    // Modo agregar: añade un nuevo producto
+                    productData.published = true; // New products are published by default
+                    productData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection('products').add(productData);
+                    showSuccessMessage('Producto agregado exitosamente');
+                }
                 
                 // Clear form
                 resetProductForm();
                 
                 // Close modal and refresh list
-                hideModal('addProductModal');
+                hideModal('productModal');
                 await loadMyProducts();
-                
-                showSuccessMessage('Producto agregado exitosamente');
                 
             } catch (error) {
                 console.error("Error saving product:", error);
@@ -1663,15 +1747,9 @@ nav a {
             document.getElementById('productName').value = '';
             document.getElementById('productPrice').value = '';
             document.getElementById('productDescription').value = '';
-            const uploadArea = document.querySelector('#addProductModal .product-image-upload');
+            const uploadArea = document.querySelector('#productModal .product-image-upload');
             uploadArea.innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic o arrastra una imagen aquí</p>';
             uploadArea.removeAttribute('data-image-url');
-        }
-        
-        // Function to edit product
-        function editProduct(productId) {
-            alert('Editar producto: ' + productId);
-            // Implement edit logic
         }
         
         // Function to confirm product deletion
@@ -1686,22 +1764,31 @@ nav a {
             try {
                 showLoading('Eliminando producto...');
                 
-                // Optional: Delete associated image if exists
+                // 1. Get product document to get the image URL
                 const productDoc = await db.collection('products').doc(productId).get();
+                if (!productDoc.exists) {
+                    showErrorMessage('El producto no existe');
+                    return;
+                }
                 const product = productDoc.data();
                 
+                // 2. Delete the product document from Firestore
+                await db.collection('products').doc(productId).delete();
+                
+                // 3. Delete the associated image from Firebase Storage if it exists
                 if (product.imageUrl) {
                     try {
                         const imageRef = storage.refFromURL(product.imageUrl);
                         await imageRef.delete();
                     } catch (storageError) {
-                        console.warn("No se pudo eliminar la imagen:", storageError);
+                        console.warn("No se pudo eliminar la imagen de Storage:", storageError);
+                        // Do not show an error to the user if image deletion fails,
+                        // as the product document is already gone.
                     }
                 }
                 
-                await db.collection('products').doc(productId).delete();
+                // 4. Reload the products list and show success message
                 await loadMyProducts();
-                
                 showSuccessMessage('Producto eliminado correctamente');
             } catch (error) {
                 console.error("Error deleting product:", error);
@@ -1907,7 +1994,6 @@ nav a {
         document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 
-<!-- Chatbot Floating Container -->
 <div class="chatbot-floating" id="chatbotFloatingContainer" aria-live="polite">
     <div class="chatbot-container-floating" id="chatbotContainer" aria-hidden="true">
         <div class="chatbot-header-floating">
