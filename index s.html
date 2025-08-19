@@ -1,4 +1,43 @@
-<!DOCTYPE html>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -20,6 +59,14 @@
             --gray: #e5e7eb;
             --error: #ef4444;
             --success: #10b981;
+            /* Dark mode variables */
+            --dark-bg: #1a202c;
+            --dark-card: #2d3748;
+            --dark-text: #e2e8f0;
+            --dark-gray: #4b5563;
+            --dark-light: #2d3748;
+            --dark-cyan: #22d3ee;
+            --dark-magenta: #d946ef;
         }
         
         * {
@@ -36,6 +83,237 @@
             display: flex;
             flex-direction: column;
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="none" stroke="%2306b6d4" stroke-width="0.5" opacity="0.1"/></svg>');
+            transition: background 0.5s ease, color 0.5s ease;
+        }
+        
+        /* Dark mode styles */
+        body.dark-mode {
+            background: linear-gradient(135deg, #2d3748, #4b5563);
+            color: var(--dark-text);
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="none" stroke="%2322d3ee" stroke-width="0.5" opacity="0.1"/></svg>');
+        }
+        
+        body.dark-mode .header {
+            background: linear-gradient(135deg, var(--dark-cyan), var(--dark-magenta));
+        }
+        
+        body.dark-mode .nav-link {
+            color: var(--dark-text);
+        }
+        
+        body.dark-mode .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        body.dark-mode .dropdown-menu {
+            background: var(--dark-card);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        
+        body.dark-mode .dropdown-menu a {
+            color: var(--dark-text);
+        }
+        
+        body.dark-mode .dropdown-menu a:hover {
+            background: var(--dark-light);
+            color: var(--dark-cyan);
+        }
+        
+        body.dark-mode .dropdown-divider {
+            background: var(--dark-gray);
+        }
+        
+        body.dark-mode .section {
+            color: var(--dark-text);
+        }
+        
+        body.dark-mode .hero h1 {
+            background: linear-gradient(135deg, var(--dark-cyan), var(--dark-magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        body.dark-mode .hero p {
+            color: var(--dark-gray);
+        }
+        
+        body.dark-mode .btn-primary {
+            background: var(--dark-magenta);
+        }
+        
+        body.dark-mode .btn-secondary {
+            background: var(--dark-cyan);
+        }
+        
+        body.dark-mode .profile-card {
+            background: var(--dark-card);
+            border-top-color: var(--dark-cyan);
+        }
+        
+        body.dark-mode .profile-info p {
+            color: var(--dark-gray);
+        }
+        
+        body.dark-mode .detail-item {
+            background: var(--dark-light);
+        }
+        
+        body.dark-mode .detail-item h3 {
+            color: var(--dark-cyan);
+        }
+        
+        body.dark-mode .products-header .section-title {
+            background: linear-gradient(135deg, var(--dark-cyan), var(--dark-magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        body.dark-mode .product-card {
+            background: var(--dark-card);
+        }
+        
+        body.dark-mode .product-image {
+            background: linear-gradient(135deg, #2d3748, #4b5563);
+        }
+        
+        body.dark-mode .product-description {
+            color: var(--dark-gray);
+        }
+        
+        body.dark-mode .product-vendor {
+            color: var(--dark-gray);
+        }
+        
+        body.dark-mode .category-badge {
+            background: var(--dark-light);
+            color: var(--dark-cyan);
+        }
+        
+        body.dark-mode .form-container {
+            background: var(--dark-card);
+            border-top-color: var(--dark-magenta);
+        }
+        
+        body.dark-mode .form-title {
+            color: var(--dark-magenta);
+        }
+        
+        body.dark-mode .form-group label {
+            color: var(--dark-text);
+        }
+        
+        body.dark-mode .form-control {
+            background: var(--dark-light);
+            border-color: var(--dark-gray);
+            color: var(--dark-text);
+        }
+        
+        body.dark-mode .form-control:focus {
+            border-color: var(--dark-cyan);
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2);
+        }
+        
+        body.dark-mode .footer {
+            background: linear-gradient(135deg, var(--dark-cyan), var(--dark-magenta));
+        }
+        
+        body.dark-mode .login-box {
+            background: var(--dark-card);
+        }
+        
+        body.dark-mode .login-header h2 {
+            background: linear-gradient(135deg, var(--dark-cyan), var(--dark-magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        body.dark-mode .login-success {
+            background: #1a4731;
+            color: #6ee7b7;
+            border-color: #34d399;
+        }
+        
+        body.dark-mode .login-error {
+            background: #7f1d1d;
+            color: #f87171;
+            border-color: #f87171;
+        }
+        
+        body.dark-mode .product-image-upload {
+            border-color: var(--dark-gray);
+        }
+        
+        body.dark-mode .product-image-upload:hover {
+            border-color: var(--dark-cyan);
+            background: rgba(34, 211, 238, 0.05);
+        }
+        
+        body.dark-mode .product-image-upload i {
+            color: var(--dark-cyan);
+        }
+        
+        body.dark-mode .no-products,
+        body.dark-mode .error-message {
+            color: var(--dark-text);
+        }
+        
+        body.dark-mode .no-products i,
+        body.dark-mode .error-message i {
+            color: var(--dark-magenta);
+        }
+        
+        body.dark-mode .product-badge {
+            background: var(--dark-magenta);
+        }
+        
+        body.dark-mode .chatbot-container-floating {
+            background: var(--dark-card);
+        }
+        
+        body.dark-mode .chatbot-header-floating {
+            background: linear-gradient(135deg, var(--dark-cyan), var(--dark-magenta));
+        }
+        
+        body.dark-mode .chatbot-toggle {
+            background: linear-gradient(135deg, var(--dark-cyan), var(--dark-magenta));
+        }
+        
+        /* Dark mode toggle button */
+        .dark-mode-toggle {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--cyan), var(--magenta));
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.5s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .dark-mode-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        }
+        
+        .dark-mode-toggle i {
+            color: white;
+            font-size: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+        
+        body.dark-mode .dark-mode-toggle {
+            background: linear-gradient(135deg, var(--dark-cyan), var(--dark-magenta));
+        }
+        
+        body.dark-mode .dark-mode-toggle i {
+            transform: rotate(180deg);
         }
         
         /* Header Styles */
@@ -49,6 +327,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            transition: background 0.5s ease;
         }
         
         .logo {
@@ -103,6 +382,7 @@
             border-radius: 0.5rem;
             overflow: hidden;
             z-index: 1000;
+            transition: background 0.5s ease;
         }
         
         .dropdown-menu a {
@@ -110,7 +390,7 @@
             padding: 0.75rem 1rem;
             color: var(--black);
             text-decoration: none;
-            transition: all 0.2s;
+            transition: all 0.2s, color 0.5s ease;
         }
         
         .dropdown-menu a:hover {
@@ -128,6 +408,7 @@
             height: 1px;
             background: var(--gray);
             margin: 0.25rem 0;
+            transition: background 0.5s ease;
         }
         
         /* Main Content Sections */
@@ -138,6 +419,7 @@
             margin: 0 auto;
             width: 100%;
             animation: fadeIn 0.5s ease;
+            transition: color 0.5s ease;
         }
         
         @keyframes fadeIn {
@@ -170,6 +452,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             line-height: 1.2;
+            transition: background 0.5s ease;
         }
         
         .hero p {
@@ -178,6 +461,7 @@
             margin-bottom: 3rem;
             max-width: 700px;
             line-height: 1.6;
+            transition: color 0.5s ease;
         }
         
         .buttons {
@@ -240,11 +524,13 @@
         .btn-primary {
             background-color: var(--magenta);
             color: white;
+            transition: background-color 0.5s ease;
         }
         
         .btn-secondary {
             background-color: var(--cyan);
             color: white;
+            transition: background-color 0.5s ease;
         }
         
         /* Profile Section */
@@ -262,6 +548,7 @@
             flex: 1;
             min-width: 300px;
             border-top: 5px solid var(--cyan);
+            transition: background 0.5s ease, border-top-color 0.5s ease;
         }
         
         .profile-header {
@@ -271,6 +558,7 @@
             margin-bottom: 2rem;
             padding-bottom: 1.5rem;
             border-bottom: 1px solid var(--gray);
+            transition: border-bottom-color 0.5s ease;
         }
         
         .profile-pic {
@@ -283,15 +571,18 @@
             justify-content: center;
             color: white;
             font-size: 2.5rem;
+            transition: background 0.5s ease;
         }
         
         .profile-info h2 {
             font-size: 1.8rem;
             margin-bottom: 0.5rem;
+            transition: color 0.5s ease;
         }
         
         .profile-info p {
             color: #4b5563;
+            transition: color 0.5s ease;
         }
         
         .profile-details {
@@ -304,11 +595,13 @@
             background: var(--light);
             padding: 1.5rem;
             border-radius: 0.8rem;
+            transition: background 0.5s ease;
         }
         
         .detail-item h3 {
             color: var(--cyan);
             margin-bottom: 0.5rem;
+            transition: color 0.5s ease;
         }
         
         /* Products Section */
@@ -325,6 +618,7 @@
             background: linear-gradient(135deg, var(--cyan), var(--magenta));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            transition: background 0.5s ease;
         }
         
         .products-grid {
@@ -338,7 +632,7 @@
             border-radius: 1rem;
             overflow: hidden;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
+            transition: all 0.3s ease, background 0.5s ease;
         }
         
         .product-card:hover {
@@ -356,6 +650,7 @@
             font-size: 3rem;
             background-size: cover;
             background-position: center;
+            transition: background 0.5s ease;
         }
         
         .product-info {
@@ -366,6 +661,7 @@
             font-size: 1.25rem;
             font-weight: 600;
             margin-bottom: 0.5rem;
+            transition: color 0.5s ease;
         }
         
         .product-price {
@@ -373,12 +669,14 @@
             font-weight: 700;
             color: var(--success);
             margin-bottom: 1rem;
+            transition: color 0.5s ease;
         }
         
         .product-description {
             color: #4b5563;
             margin-bottom: 1rem;
             font-size: 0.9rem;
+            transition: color 0.5s ease;
         }
         
         .product-vendor {
@@ -388,6 +686,7 @@
             color: #6b7280;
             font-size: 0.9rem;
             margin-top: 1rem;
+            transition: color 0.5s ease;
         }
         
         .product-category {
@@ -407,7 +706,7 @@
             background: var(--light);
             border: none;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s, background 0.5s ease;
         }
         
         .action-btn:hover {
@@ -424,6 +723,7 @@
             max-width: 600px;
             margin: 0 auto;
             border-top: 5px solid var(--magenta);
+            transition: background 0.5s ease, border-top 0.5s ease;
         }
         
         .form-title {
@@ -431,6 +731,7 @@
             margin-bottom: 1.5rem;
             color: var(--magenta);
             text-align: center;
+            transition: color 0.5s ease;
         }
         
         .form-group {
@@ -442,6 +743,7 @@
             margin-bottom: 0.5rem;
             font-weight: 600;
             color: var(--black);
+            transition: color 0.5s ease;
         }
         
         .form-control {
@@ -450,7 +752,7 @@
             border: 1px solid #ddd;
             border-radius: 0.5rem;
             font-size: 1rem;
-            transition: all 0.2s;
+            transition: all 0.2s, background 0.5s ease, border-color 0.5s ease, color 0.5s ease;
         }
         
         .form-control:focus {
@@ -473,6 +775,7 @@
             text-align: center;
             padding: 2rem;
             margin-top: auto;
+            transition: background 0.5s ease;
         }
         
         .footer p {
@@ -515,6 +818,7 @@
             z-index: 2000;
             justify-content: center;
             align-items: center;
+            transition: background 0.5s ease;
         }
         
         .login-box {
@@ -526,6 +830,7 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             animation: modalAppear 0.4s ease;
             position: relative;
+            transition: background 0.5s ease;
         }
 
         /* Close button for modals */
@@ -538,7 +843,7 @@
             font-size: 1.2rem;
             color: #9ca3af;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s ease, color 0.5s ease;
         }
 
         .close-modal-btn:hover {
@@ -562,6 +867,7 @@
             background: linear-gradient(135deg, var(--cyan), var(--magenta));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            transition: background 0.5s ease;
         }
         
         .login-message {
@@ -570,18 +876,21 @@
             border-radius: 0.5rem;
             text-align: center;
             display: none;
+            transition: background 0.5s ease, color 0.5s ease, border-color 0.5s ease;
         }
         
         .login-success {
             background: #dcfce7;
             color: #166534;
             border: 1px solid #bbf7d0;
+            transition: background 0.5s ease, color 0.5s ease, border-color 0.5s ease;
         }
         
         .login-error {
             background: #fee2e2;
             color: #b91c1c;
             border: 1px solid #fecaca;
+            transition: background 0.5s ease, color 0.5s ease, border-color 0.5s ease;
         }
         
         .login-footer {
@@ -593,6 +902,7 @@
             color: var(--cyan);
             text-decoration: none;
             font-weight: 500;
+            transition: color 0.5s ease;
         }
         
         .login-footer a:hover {
@@ -606,7 +916,7 @@
             padding: 2rem;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s, border-color 0.5s ease;
             position: relative;
         }
         
@@ -619,6 +929,7 @@
             font-size: 3rem;
             color: var(--cyan);
             margin-bottom: 1rem;
+            transition: color 0.5s ease;
         }
         
         .preview-image {
@@ -641,6 +952,7 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            transition: background 0.5s ease;
         }
         
         /* Loading states */
@@ -652,6 +964,7 @@
             padding: 2rem;
             color: var(--cyan);
             gap: 1rem;
+            transition: color 0.5s ease;
         }
         
         .loading-spinner i, .upload-progress i {
@@ -663,16 +976,19 @@
             text-align: center;
             color: var(--black);
             grid-column: 1 / -1;
+            transition: color 0.5s ease;
         }
         
         .no-products i, .error-message i {
             font-size: 2rem;
             margin-bottom: 1rem;
             color: var(--magenta);
+            transition: color 0.5s ease;
         }
         
         .error-message {
             color: var(--error);
+            transition: color 0.5s ease;
         }
         
         /* Category badges */
@@ -684,6 +1000,7 @@
             border-radius: 50px;
             font-size: 0.8rem;
             margin-top: 0.5rem;
+            transition: background 0.5s ease, color 0.5s ease;
         }
         
         /* Action buttons */
@@ -718,6 +1035,7 @@
             justify-content: center;
             align-items: center;
             z-index: 3000;
+            transition: background 0.5s ease;
         }
 
         .loading-overlay {
@@ -726,12 +1044,14 @@
             border-radius: 1rem;
             text-align: center;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: background 0.5s ease;
         }
 
         .loading-content i {
             font-size: 2rem;
             color: var(--cyan);
             margin-bottom: 1rem;
+            transition: color 0.5s ease;
         }
 
         /* Toast Notifications */
@@ -747,14 +1067,17 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
             z-index: 2000;
             animation: slideIn 0.3s ease-out;
+            transition: color 0.5s ease;
         }
 
         .toast-success {
             background-color: var(--success);
+            transition: background-color 0.5s ease;
         }
 
         .toast-error {
             background-color: var(--error);
+            transition: background-color 0.5s ease;
         }
 
         .fade-out {
@@ -784,6 +1107,7 @@
         .form-control:disabled {
             background-color: #f3f4f6;
             cursor: not-allowed;
+            transition: background-color 0.5s ease;
         }
 
         /* Mejoras para tarjetas de productos */
@@ -801,6 +1125,7 @@
             border-radius: 0.25rem;
             font-size: 0.75rem;
             font-weight: 600;
+            transition: background 0.5s ease;
         }
         
         /* Responsive Styles */
@@ -864,24 +1189,128 @@
                 gap: 1rem;
                 align-items: flex-start;
             }
+            
+            .chatbot-container-floating {
+                width: 92vw;
+                height: 70vh;
+            }
+            
+            .chatbot-floating {
+                bottom: 12px;
+                left: 12px;
+            }
+            
+            .dark-mode-toggle {
+                bottom: 12px;
+                right: 12px;
+            }
+        }
+
+        /* Chatbot Floating Styles - Left side */
+        .chatbot-floating {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: auto;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+            transition: all 0.5s ease;
+        }
+
+        .chatbot-toggle {
+            background: linear-gradient(135deg, var(--cyan, #06b6d4), var(--magenta, #c026d3));
+            border: none;
+            color: white;
+            padding: 1rem;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            cursor: pointer;
+            transition: transform 0.3s ease, background 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3001;
+            will-change: transform;
+        }
+
+        .chatbot-toggle:hover { transform: scale(1.08); }
+        .chatbot-toggle:active { transform: scale(0.96); }
+
+        .chatbot-container-floating {
+            width: 360px;
+            height: 520px;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            transform-origin: bottom left;
+            transform: scale(0.9);
+            opacity: 0;
+            transition: opacity 0.25s ease, background 0.5s ease;
+            display: none;
+            visibility: hidden;
+            pointer-events: none;
+            will-change: transform, opacity;
+        }
+
+        .chatbot-container-floating.visible {
+            display: block;
+            visibility: visible;
+            pointer-events: auto;
+            opacity: 1;
+        }
+
+        .chatbot-iframe-floating {
+            width: 100%;
+            height: calc(100% - 54px);
+            border: none;
+            display: block;
+        }
+
+        .chatbot-header-floating {
+            background: linear-gradient(135deg, var(--cyan, #06b6d4), var(--magenta, #c026d3));
+            color: white;
+            padding: 12px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.5s ease;
+        }
+
+        .chatbot-header-floating h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: .2px;
+        }
+
+        .close-chatbot-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.15rem;
+            cursor: pointer;
+        }
+
+        /* Navigation active state */
+        nav a.active {
+            background: linear-gradient(135deg, #06b6d4, #c026d3);
+            color: white !important;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        nav a {
+            transition: all 0.3s ease;
+            padding: 0.5rem 1rem;
+            display: inline-block;
         }
     </style>
-
-<style>
-nav a.active {
-    background: linear-gradient(135deg, #06b6d4, #c026d3);
-    color: white !important;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    transition: all 0.3s ease;
-}
-nav a {
-    transition: all 0.3s ease;
-    padding: 0.5rem 1rem;
-    display: inline-block;
-}
-</style>
-
 </head>
 <body>
     <header class="header">
@@ -933,19 +1362,17 @@ nav a {
         </div>
     </section>
 
-<section id="puestos" style="display:none; padding: 2rem;">
-  <h2 style="color:#06b6d4;">Puestos</h2>
-  <p>Esta es la sección de puestos. Aquí se mostrarán todos los stands o expositores.</p>
-</section>
-
+    <section id="puestos" style="display:none; padding: 2rem;">
+        <h2 style="color:#06b6d4;">Puestos</h2>
+        <p>Esta es la sección de puestos. Aquí se mostrarán todos los stands o expositores.</p>
+    </section>
 
     <section id="products" class="section">
         <div class="products-header">
             <h2 class="section-title">Productos Destacados</h2>
         </div>
         
-        <div class="products-grid" id="productsGrid">
-            </div>
+        <div class="products-grid" id="productsGrid"></div>
     </section>
 
     <section id="profile" class="section">
@@ -1037,8 +1464,7 @@ nav a {
             </button>
         </div>
         
-        <div class="products-grid" id="myProductsGrid">
-            </div>
+        <div class="products-grid" id="myProductsGrid"></div>
     </section>
 
     <section id="register" class="section">
@@ -1183,13 +1609,35 @@ nav a {
         <p class="copyright">&copy; 2025 Feria Virtual. Todos los derechos reservados.</p>
     </footer>
 
+    <div class="chatbot-floating" id="chatbotFloatingContainer" aria-live="polite">
+        <div class="chatbot-container-floating" id="chatbotContainer" aria-hidden="true">
+            <div class="chatbot-header-floating">
+                <h3>Asistente de marketing</h3>
+                <button class="close-chatbot-btn" type="button" onclick="toggleChatbot()" aria-label="Cerrar chat">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <iframe class="chatbot-iframe-floating"
+                src="https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/13/17/20250813172155-WZV5LKVX.json"
+                allow="microphone; geolocation; fullscreen" title="Chat Asistente de marketing">
+            </iframe>
+        </div>
+        <button class="chatbot-toggle" id="chatbotToggleBtn" type="button" onclick="toggleChatbot()" aria-expanded="false" aria-controls="chatbotContainer">
+            <i class="fas fa-comment-dots"></i>
+        </button>
+    </div>
+
+    <button class="dark-mode-toggle" id="darkModeToggle" aria-label="Alternar modo claro/oscuro">
+        <i class="fas fa-moon"></i>
+    </button>
+
     <script>
         // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAlqGoYrHkASbhmE2aBKIOXqkkNBBEEiGU",
             authDomain: "feria-online-ec7c6.firebaseapp.com",
             projectId: "feria-online-ec7c6",
-            storageBucket: "feria-online-ec7c6.firebasestorage.app",
+            storageBucket: "feria-online-ec7c6.appspot.com",
             messagingSenderId: "1001881267179",
             appId: "1:1001881267179:web:fc5ac0fd940964537887ae"
         };
@@ -1224,6 +1672,14 @@ nav a {
             // Show the selected section
             const targetSection = document.getElementById(sectionId);
             targetSection.classList.add('active-section', 'fade-in');
+            
+            // Update active nav link
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('onclick').includes("'" + sectionId + "'")) {
+                    link.classList.add('active');
+                }
+            });
             
             // Load content according to section
             switch(sectionId) {
@@ -1277,13 +1733,11 @@ nav a {
             message.style.display = 'none';
             
             if (productId) {
-                // Modo edición
                 title.textContent = 'Editar Producto';
                 saveButton.textContent = 'Actualizar Producto';
                 modal.dataset.productId = productId;
                 loadProductForEdit(productId);
             } else {
-                // Modo agregar
                 title.textContent = 'Agregar Nuevo Producto';
                 saveButton.textContent = 'Guardar Producto';
                 delete modal.dataset.productId;
@@ -1589,92 +2043,76 @@ nav a {
             fileInput.type = 'file';
             fileInput.accept = 'image/*';
             fileInput.style.display = 'none';
-            
             uploadArea.appendChild(fileInput);
-            
+
             uploadArea.addEventListener('click', () => fileInput.click());
-            
-            fileInput.addEventListener('change', async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                if (file.size > 5 * 1024 * 1024) { // 5MB max
-                    showErrorMessage('La imagen es demasiado grande (máximo 5MB)');
-                    return;
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'var(--cyan)';
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = 'var(--gray)';
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'var(--gray)';
+                const file = e.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    handleImageFile(file, uploadArea);
                 }
-                
-                uploadArea.innerHTML = '<div class="upload-progress"><i class="fas fa-spinner fa-spin"></i> Subiendo imagen...</div>';
-                
-                try {
-                    const imageUrl = await uploadProductImage(file);
-                    uploadArea.innerHTML = `<img src="${imageUrl}" class="preview-image"><button type="button" class="remove-image-btn" onclick="removeUploadedImage(this, '${imageUrl}')"><i class="fas fa-times"></i></button>`;
-                    uploadArea.dataset.imageUrl = imageUrl;
-                } catch (error) {
-                    console.error("Upload error:", error);
-                    uploadArea.innerHTML = '<div class="upload-error"><i class="fas fa-exclamation-circle"></i> Error al subir imagen</div>';
-                    showErrorMessage('Error al subir la imagen');
+            });
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    handleImageFile(file, uploadArea);
                 }
             });
         }
-        
-        // Function to upload product image
-        async function uploadProductImage(file) {
-            if (!currentUser) throw new Error("Usuario no autenticado");
-            
-            const storageRef = storage.ref();
-            const fileRef = storageRef.child(`products/${currentUser.uid}/${Date.now()}_${file.name}`);
-            
-            const snapshot = await fileRef.put(file);
-            return await snapshot.ref.getDownloadURL();
-        }
-        
-        // Function to remove uploaded image
-        function removeUploadedImage(btn, imageUrl) {
-            const uploadArea = btn.closest('.product-image-upload');
-            uploadArea.innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic o arrastra una imagen aquí</p>';
-            uploadArea.removeAttribute('data-image-url');
 
-            // Optionally, delete image from storage to save space, but handle errors silently
-            if (imageUrl && imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
-                 const imageRef = storage.refFromURL(imageUrl);
-                 imageRef.delete().catch(err => console.warn("No se pudo eliminar la imagen de Storage:", err));
-            }
+        // Function to handle image file
+        function handleImageFile(file, uploadArea) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                uploadArea.innerHTML = `
+                    <img src="${reader.result}" class="preview-image" alt="Vista previa del producto">
+                    <button class="remove-image-btn" onclick="this.parentElement.innerHTML='<i class=\\'fas fa-cloud-upload-alt\\'></i><p>Haz clic o arrastra una imagen aquí</p>';">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                uploadArea.dataset.image = reader.result;
+            };
+            reader.readAsDataURL(file);
         }
 
-        // Function to load product data into the modal for editing
+        // Function to load product for editing
         async function loadProductForEdit(productId) {
-            showLoading('Cargando producto...');
             try {
                 const doc = await db.collection('products').doc(productId).get();
                 if (doc.exists) {
                     const product = doc.data();
                     document.getElementById('productName').value = product.name;
                     document.getElementById('productPrice').value = product.price;
-                    document.getElementById('productCategory').value = product.category;
                     document.getElementById('productDescription').value = product.description;
-
+                    document.getElementById('productCategory').value = product.category || 'General';
+                    
                     const uploadArea = document.querySelector('#productModal .product-image-upload');
                     if (product.imageUrl) {
-                        uploadArea.innerHTML = `<img src="${product.imageUrl}" class="preview-image"><button type="button" class="remove-image-btn" onclick="removeUploadedImage(this, '${product.imageUrl}')"><i class="fas fa-times"></i></button>`;
+                        uploadArea.innerHTML = `
+                            <img src="${product.imageUrl}" class="preview-image" alt="Vista previa del producto">
+                            <button class="remove-image-btn" onclick="this.parentElement.innerHTML='<i class=\\'fas fa-cloud-upload-alt\\'></i><p>Haz clic o arrastra una imagen aquí</p>';">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        `;
                         uploadArea.dataset.imageUrl = product.imageUrl;
-                    } else {
-                        uploadArea.innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic o arrastra una imagen aquí</p>';
-                        uploadArea.removeAttribute('data-image-url');
                     }
-                } else {
-                    showErrorMessage('El producto no existe');
-                    hideModal('productModal');
                 }
             } catch (error) {
-                console.error("Error al cargar el producto para editar:", error);
-                showErrorMessage('Error al cargar el producto');
-                hideModal('productModal');
-            } finally {
-                hideLoading();
+                console.error("Error loading product for edit:", error);
+                showErrorMessage('Error al cargar el producto para editar');
             }
         }
-        
-        // Function to save or update product
+
+ // Function to save or update product
         async function saveProduct() {
             if (!currentUser) {
                 showErrorMessage('Debes iniciar sesión para agregar productos');
