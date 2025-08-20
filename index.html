@@ -1098,98 +1098,107 @@
         });
     }
 
-    // --- NUEVA FUNCIÓN PARA EXPORTAR PDF ---
+    // --- FUNCIÓN PARA EXPORTAR PDF (VERSIÓN CORREGIDA Y ROBUSTA) ---
     async function exportCatalogToPDF() {
-    if (!currentUser || !currentMerchantData) {
-        showToast('Debes iniciar sesión como comerciante.', 'error');
-        return;
-    }
-
-    const exportBtn = document.getElementById('exportPdfBtn');
-    exportBtn.disabled = true;
-    exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
-
-    try {
-        const snapshot = await db.collection('products')
-            .where('vendorId', '==', currentUser.uid)
-            .where('published', '==', true)
-            .orderBy('createdAt', 'desc')
-            .get();
-
-        if (snapshot.empty) {
-            showToast('No tienes productos publicados para incluir en el catálogo.', 'error');
-            exportBtn.disabled = false; // Restaurar el botón si no hay productos
-            exportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Exportar Catálogo';
+        if (!currentUser || !currentMerchantData) {
+            showToast('Debes iniciar sesión como comerciante.', 'error');
             return;
         }
 
-        const products = snapshot.docs.map(doc => doc.data());
+        const exportBtn = document.getElementById('exportPdfBtn');
+        exportBtn.disabled = true;
+        exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparando...';
 
-        // 1. Crear el contenedor HTML que será la fuente del PDF
-        const catalogElement = document.createElement('div');
-        catalogElement.id = 'pdf-render-area';
-        catalogElement.style.position = 'absolute';
-         // Lo mantenemos fuera de la pantalla
+        try {
+            const snapshot = await db.collection('products')
+                .where('vendorId', '==', currentUser.uid)
+                .where('published', '==', true)
+                .orderBy('createdAt', 'desc')
+                .get();
 
-        // 2. Construir el contenido HTML del catálogo
-        let contentHTML = `<div class="pdf-catalog">`;
-        contentHTML += `
-            <div class="pdf-cover">
-                <h1>Catálogo de Productos</h1>
-                <h2>${currentMerchantData.business}</h2>
-                <p>Generado el ${new Date().toLocaleDateString()}</p>
-            </div>
-        `;
-        products.forEach(product => {
+            if (snapshot.empty) {
+                showToast('No tienes productos publicados para incluir.', 'error');
+                exportBtn.disabled = false;
+                exportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Exportar Catálogo';
+                return;
+            }
+
+            const products = snapshot.docs.map(doc => doc.data());
+
+            const catalogElement = document.createElement('div');
+            catalogElement.id = 'pdf-render-area';
+            catalogElement.style.position = 'absolute';
+            catalogElement.style.top = '0';
+            catalogElement.style.left = '0';
+            catalogElement.style.zIndex = '-1';
+            catalogElement.style.opacity = '0';
+
+            let contentHTML = `<div class="pdf-catalog">`;
             contentHTML += `
-                <div class="pdf-product-item">
-                    ${product.imageBase64 ? `<img src="${product.imageBase64}" alt="${product.name}">` : '<div style="width:200px; height:200px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; color:#ccc;">Sin imagen</div>'}
-                    <div class="pdf-product-details">
-                        <h3>${product.name}</h3>
-                        <div class="price">$${(product.price || 0).toFixed(2)}</div>
-                        <p class="description">${product.description || 'Sin descripción.'}</p>
-                    </div>
+                <div class="pdf-cover">
+                    <h1>Catálogo de Productos</h1>
+                    <h2>${currentMerchantData.business}</h2>
+                    <p>Generado el ${new Date().toLocaleDateString()}</p>
                 </div>
             `;
-        });
-        contentHTML += `</div>`;
-        catalogElement.innerHTML = contentHTML;
-        document.body.appendChild(catalogElement);
+            products.forEach(product => {
+                contentHTML += `
+                    <div class="pdf-product-item">
+                        ${product.imageBase64 ? `<img src="${product.imageBase64}" alt="${product.name}">` : '<div style="width:200px; height:200px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; color:#ccc; border-radius:8px;">Sin imagen</div>'}
+                        <div class="pdf-product-details">
+                            <h3>${product.name}</h3>
+                            <div class="price">$${(product.price || 0).toFixed(2)}</div>
+                            <p class="description">${product.description || 'Sin descripción.'}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            contentHTML += `</div>`;
+            catalogElement.innerHTML = contentHTML;
+            document.body.appendChild(catalogElement);
 
-        // 3. Configurar las opciones de html2pdf
-        const options = {
-            margin:       0.5,
-            filename:     `catalogo-${currentMerchantData.business.replace(/\s+/g, '-')}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, logging: true, letterRendering: true },
-            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-        };
+            const images = catalogElement.querySelectorAll('img');
+            const imagePromises = [];
+            images.forEach(img => {
+                imagePromises.push(new Promise((resolve) => {
+                    if (img.complete) {
+                        resolve();
+                    } else {
+                        img.onload = resolve;
+                        img.onerror = resolve;
+                    }
+                }));
+            });
+            
+            await Promise.all(imagePromises);
+            
+            exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando PDF...';
 
-        // 4. CAMBIO CLAVE: Usamos la sintaxis de promesa `.then()` para asegurar la secuencia correcta
-        // Esto le da tiempo al navegador para renderizar el contenido antes de que se genere el PDF.
-        html2pdf().from(catalogElement).set(options).toPdf().get('pdf').then(function (pdf) {
-            // El trabajo de generación está hecho
-            console.log('El PDF fue generado.');
-        }).save().then(function() {
-            // El guardado se completó, ahora limpiamos
+            const options = {
+                margin:       0.5,
+                filename:     `catalogo-${currentMerchantData.business.replace(/\s+/g, '-')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            await html2pdf().from(catalogElement).set(options).save();
+            
             showToast('Catálogo PDF generado exitosamente.', 'success');
+
+        } catch (error) {
+            console.error("Error generando el PDF:", error);
+            showToast('Hubo un error al generar el catálogo.', 'error');
+        } finally {
             exportBtn.disabled = false;
             exportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Exportar Catálogo';
-            document.body.removeChild(catalogElement);
-        });
-
-    } catch (error) {
-        console.error("Error generando el PDF:", error);
-        showToast('Hubo un error al generar el catálogo.', 'error');
-        exportBtn.disabled = false;
-        exportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Exportar Catálogo';
-        const renderedElement = document.getElementById('pdf-render-area');
-        if (renderedElement) {
-            document.body.removeChild(renderedElement);
+            const renderedElement = document.getElementById('pdf-render-area');
+            if (renderedElement) {
+                document.body.removeChild(renderedElement);
+            }
         }
     }
-}
-    // --- FIN DE LA NUEVA FUNCIÓN ---
+    // --- FIN DE LA FUNCIÓN ---
 
     function logout() { auth.signOut(); }
 
