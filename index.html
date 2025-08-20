@@ -927,11 +927,11 @@
         loadProducts('vendorProductsGrid', { vendorId: vendorId });
     }
 
-    function toggleStoreEditMode(isEditing) {
-        document.getElementById('storeName').readOnly = !isEditing;
-        document.getElementById('storeDescription').readOnly = !isEditing;
-        document.getElementById('editStoreBtn').style.display = isEditing ? 'none' : 'block';
-        document.getElementById('storeFormFooter').style.display = isEditing ? 'flex' : 'none';
+function toggleStoreEditMode(isEditing) {
+    document.getElementById('storeName').readOnly = !isEditing;
+    document.getElementById('storeDescription').readOnly = !isEditing;
+    document.getElementById('editStoreBtn').style.display = isEditing ? 'none' : 'block';
+    document.getElementById('storeFormFooter').style.display = isEditing ? 'flex' : 'none';
         
         // Si se cancela, se restauran los valores desde la variable global
         if (!isEditing && currentMerchantData) {
