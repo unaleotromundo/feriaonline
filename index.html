@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -45,12 +44,16 @@
         .logo { display: flex; align-items: center; gap: 0.75rem; font-size: 1.75rem; font-weight: 800; color: white; text-decoration: none; }
         .logo i { font-size: 2rem; }
         
-        .nav-container { display: flex; gap: 1.5rem; }
+        .nav-container { display: flex; gap: 1rem; }
         .nav-link {
             color: white; text-decoration: none; display: flex; align-items: center;
             gap: 0.5rem; font-weight: 500; padding: 0.5rem 1rem; border-radius: 50px; transition: all 0.3s;
         }
         .nav-link:hover { background: rgba(255, 255, 255, 0.2); }
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
         
         .user-dropdown { position: relative; }
         .dropdown-menu {
@@ -63,8 +66,11 @@
         .dropdown-menu a i { margin-right: 0.5rem; width: 20px; text-align: center; }
         .dropdown-divider { height: 1px; background: var(--gray); margin: 0.25rem 0; }
         
-        .section { display: none; padding: 3rem 1rem; max-width: 1200px; margin: 0 auto; width: 100%; animation: fadeIn 0.5s ease; }
+        .section { display: none; padding: 3rem 1rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+        .section.fade-in { animation: fadeIn 0.5s ease forwards; }
+        .section.fade-out { animation: fadeOut 0.3s ease forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; display: none; } }
         .active-section { display: block; }
         
         .hero {
@@ -161,13 +167,6 @@
         }
         .login-modal { display: none; }
         
-        .product-image-upload {
-            border: 2px dashed var(--gray); border-radius: 0.5rem; padding: 2rem; text-align: center;
-            cursor: pointer; transition: all 0.3s; position: relative; min-height: 150px;
-            display: flex; align-items: center; justify-content: center; flex-direction: column;
-        }
-        .preview-image { max-width: 100%; max-height: 200px; border-radius: 0.5rem; }
-        
         .toast {
             position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
             padding: 1rem 2rem; border-radius: 0.5rem; color: white; font-weight: 500;
@@ -205,7 +204,7 @@
     </style>
 
 <style>
-nav a.active { background: linear-gradient(135deg, #06b6d4, #c026d3); color: white !important; border-radius: 0.5rem; }
+/* --- DARK THEME & OVERRIDES --- */
 body[data-theme="dark"] {
     --black: #f9fafb; --light: #1f2937; --gray: #374151;
     background: linear-gradient(135deg, #1e293b, #111827); color: #e5e7eb;
@@ -218,6 +217,8 @@ body[data-theme="dark"] .form-control { background-color: #4b5563; border-color:
 body[data-theme="dark"] .form-control[readonly] { background-color: #374151; }
 body[data-theme="dark"] .edit-store-btn { background: #4b5563; border-color: #6b7280; }
 body[data-theme="dark"] .vendor-location-info { color: var(--black); }
+
+/* --- THEME TOGGLE --- */
 .theme-toggle {
     position: fixed; bottom: 20px; right: 20px; z-index: 3001;
     width: 50px; height: 50px; border-radius: 50%; background: var(--light); color: var(--black);
@@ -229,6 +230,7 @@ body[data-theme="dark"] .vendor-location-info { color: var(--black); }
 body[data-theme="dark"] .theme-toggle .fa-sun { display: block; }
 body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
 
+/* --- CHATBOT --- */
 .chatbot-floating { position: fixed; bottom: 20px; left: 20px; z-index: 3000; }
 .chatbot-toggle {
     background: linear-gradient(135deg, var(--cyan, #06b6d4), var(--magenta, #c026d3));
@@ -244,6 +246,8 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
     transition: opacity 0.25s ease; display: none; visibility: hidden; pointer-events: none;
 }
 .chatbot-container-floating.visible { display: block; visibility: visible; pointer-events: auto; opacity: 1; }
+
+/* --- LIGHTBOX --- */
 .image-lightbox {
     display: none; position: fixed; z-index: 4000; left: 0; top: 0;
     width: 100%; height: 100%; background-color: rgba(0,0,0,0.85);
@@ -256,31 +260,15 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
 <body>
     <header class="header">
         <a href="#" class="logo" onclick="showSection('home')">
-            <i class="fas fa-store"></i>
-            <span>Feria Virtual</span>
+            <i class="fas fa-store"></i><span>Feria Virtual</span>
         </a>
         <div class="nav-container">
-            <a href="#" class="nav-link" onclick="showSection('home')">
-                <i class="fas fa-home"></i>
-                <span>Inicio</span>
-            </a>
-            <a href="#" class="nav-link" onclick="showSection('products')">
-                <i class="fas fa-shopping-bag"></i>
-                <span>Productos</span>
-            </a>
-            <a href="#" class="nav-link" onclick="showSection('profile')" id="profileLink" style="display: none;">
-                <i class="fas fa-user"></i>
-                <span>Mi Perfil</span>
-            </a>
-            <a href="#" class="nav-link" onclick="showSection('my-store')" id="storeLink" style="display: none;">
-                <i class="fas fa-store"></i>
-                <span>Mi Puesto</span>
-            </a>
+            <a href="#" class="nav-link" onclick="showSection('home')"><i class="fas fa-home"></i><span>Inicio</span></a>
+            <a href="#" class="nav-link" onclick="showSection('products')"><i class="fas fa-shopping-bag"></i><span>Productos</span></a>
+            <a href="#" class="nav-link" onclick="showSection('profile')" id="profileLink" style="display: none;"><i class="fas fa-user"></i><span>Mi Perfil</span></a>
+            <a href="#" class="nav-link" onclick="showSection('my-store')" id="storeLink" style="display: none;"><i class="fas fa-store"></i><span>Mi Puesto</span></a>
             <div id="authContainer">
-                <a href="#" class="nav-link" onclick="showLogin()">
-                    <i class="fas fa-sign-in-alt"></i>
-                    <span>Iniciar sesión</span>
-                </a>
+                <a href="#" class="nav-link" onclick="showLogin()"><i class="fas fa-sign-in-alt"></i><span>Iniciar sesión</span></a>
             </div>
         </div>
     </header>
@@ -297,9 +285,7 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
     </section>
 
     <section id="products" class="section">
-        <div class="products-header">
-            <h2 class="section-title">Productos Destacados</h2>
-        </div>
+        <div class="products-header"><h2 class="section-title">Productos Destacados</h2></div>
         <div class="products-grid" id="productsGrid"></div>
     </section>
 
@@ -321,29 +307,13 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
             <div class="profile-card">
                 <div class="profile-header">
                     <div class="profile-pic"><i class="fas fa-user"></i></div>
-                    <div class="profile-info">
-                        <h2 id="userName"></h2>
-                        <p id="userEmail"></p>
-                    </div>
+                    <div class="profile-info"><h2 id="userName"></h2><p id="userEmail"></p></div>
                 </div>
                 <div class="profile-details">
-                    <div class="detail-item">
-                        <h3>Información de contacto</h3>
-                        <p><i class="fas fa-phone"></i> <span id="userPhone"></span></p>
-                        <p><i class="fas fa-map-marker-alt"></i> <span id="userLocation"></span></p>
-                    </div>
-                    <div class="detail-item">
-                        <h3>Mi negocio</h3>
-                        <p><i class="fas fa-store"></i> <span id="userBusiness"></span></p>
-                    </div>
-                    <div class="detail-item">
-                        <h3>Estadísticas</h3>
-                        <p><i class="fas fa-box"></i> <span id="userProducts">0</span> productos publicados</p>
-                    </div>
-                    <div class="detail-item">
-                        <h3>Miembro desde</h3>
-                        <p><i class="fas fa-calendar"></i> <span id="userSince"></span></p>
-                    </div>
+                    <div class="detail-item"><h3>Información de contacto</h3><p><i class="fas fa-phone"></i> <span id="userPhone"></span></p><p><i class="fas fa-map-marker-alt"></i> <span id="userLocation"></span></p></div>
+                    <div class="detail-item"><h3>Mi negocio</h3><p><i class="fas fa-store"></i> <span id="userBusiness"></span></p></div>
+                    <div class="detail-item"><h3>Estadísticas</h3><p><i class="fas fa-box"></i> <span id="userProducts">0</span></p></div>
+                    <div class="detail-item"><h3>Miembro desde</h3><p><i class="fas fa-calendar"></i> <span id="userSince"></span></p></div>
                 </div>
             </div>
         </div>
@@ -354,18 +324,9 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
         <div class="form-container" id="storeFormContainer">
             <button id="editStoreBtn" class="edit-store-btn" onclick="toggleStoreEditMode(true)"><i class="fas fa-pencil-alt"></i></button>
             <h3 class="form-title">Información del Puesto</h3>
-            <div class="form-group">
-                <label for="storeName">Nombre del puesto</label>
-                <input type="text" id="storeName" class="form-control" readonly>
-            </div>
-            <div class="form-group">
-                <label for="storeDescription">Descripción</label>
-                <textarea id="storeDescription" class="form-control" rows="3" readonly></textarea>
-            </div>
-            <div class="form-group">
-                <label for="storeContact">Contacto (WhatsApp)</label>
-                <input type="text" id="storeContact" class="form-control" readonly>
-            </div>
+            <div class="form-group"><label for="storeName">Nombre del puesto</label><input type="text" id="storeName" class="form-control" readonly></div>
+            <div class="form-group"><label for="storeDescription">Descripción</label><textarea id="storeDescription" class="form-control" rows="3" readonly></textarea></div>
+            <div class="form-group"><label for="storeContact">Contacto (WhatsApp)</label><input type="text" id="storeContact" class="form-control" readonly></div>
             <div class="form-group">
                 <label for="storeLocation">Ubicación (Ciudad, Provincia)</label>
                 <input type="text" id="storeLocation" class="form-control" placeholder="Ej: Palermo, CABA" readonly>
@@ -412,7 +373,6 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
         </div>
     </section>
     
-    <!-- Modals -->
     <div class="login-modal" id="loginModal">
         <div class="login-box">
             <button type="button" class="close-modal-btn" onclick="hideLogin()"><i class="fas fa-times"></i></button>
@@ -493,11 +453,27 @@ const firebaseConfig = {
     let currentUser = null;
     let isMerchant = false;
     let selectedProductFile = null;
-
+    
     function showSection(sectionId) {
-        document.querySelectorAll('.section').forEach(section => section.classList.remove('active-section'));
+        document.querySelectorAll('.nav-link').forEach(link => {
+            const linkSection = link.getAttribute('onclick')?.match(/'([^']+)'/);
+            if (linkSection && linkSection[1] === sectionId) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+
+        const currentActive = document.querySelector('.active-section');
+        if (currentActive) {
+            currentActive.classList.remove('active-section');
+        }
+        
         const targetSection = document.getElementById(sectionId);
-        if (targetSection) targetSection.classList.add('active-section');
+        if (targetSection) {
+            targetSection.classList.add('active-section', 'fade-in');
+        }
+        
         if (sectionId === 'products') loadProducts();
         if (sectionId === 'my-store' && isMerchant) loadMyProducts();
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -539,7 +515,6 @@ const firebaseConfig = {
             }
             snapshot.forEach(doc => renderProductCard(productsGrid, { id: doc.id, ...doc.data() }));
         } catch (error) {
-            console.error("Error loading products:", error);
             productsGrid.innerHTML = `<div class="error-message">Error al cargar productos.</div>`;
         }
     }
@@ -556,7 +531,7 @@ const firebaseConfig = {
                 return;
             }
             snapshot.forEach(doc => renderMyProductCard(productsGrid, { id: doc.id, ...doc.data() }));
-        } catch (error) { console.error("Error loading user products:", error); }
+        } catch (error) { console.error(error); }
     }
 
     async function registerMerchant() {
@@ -570,17 +545,14 @@ const firebaseConfig = {
         const showLocation = document.getElementById('regShowLocation').checked;
         const msgEl = document.getElementById('registerMessage');
         
-        if (!name || !email || !password || !business) return showMessage(msgEl, 'Por favor completa los campos requeridos.', 'error');
-        if (password.length < 6) return showMessage(msgEl, 'La contraseña debe tener al menos 6 caracteres.', 'error');
+        if (!name || !email || !password || !business) return showMessage(msgEl, 'Campos requeridos.', 'error');
+        if (password.length < 6) return showMessage(msgEl, 'La contraseña es muy corta.', 'error');
 
         try {
-            showMessage(msgEl, 'Registrando tu cuenta...', 'success');
+            showMessage(msgEl, 'Registrando...', 'success');
             const userCredential = await auth.createUserWithEmailAndPassword(email, password);
             const user = userCredential.user;
-            await db.collection('merchants').doc(user.uid).set({
-                name, email, business, phone, description, location, showLocation,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            await db.collection('merchants').doc(user.uid).set({ name, email, business, phone, description, location, showLocation, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
             showMessage(msgEl, '¡Registro exitoso!', 'success');
             setTimeout(() => { showSection('profile'); }, 1500);
         } catch (error) { showMessage(msgEl, 'Error en el registro.', 'error'); }
@@ -590,14 +562,13 @@ const firebaseConfig = {
         const email = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value;
         const msgEl = document.getElementById('loginMessage');
-        if (!email || !password) return showMessage(msgEl, 'Por favor completa todos los campos.', 'error');
+        if (!email || !password) return showMessage(msgEl, 'Completa los campos.', 'error');
 
         try {
             showMessage(msgEl, 'Iniciando sesión...', 'success');
             await auth.signInWithEmailAndPassword(email, password);
-            showMessage(msgEl, '¡Bienvenido!', 'success');
             setTimeout(() => { hideLogin(); showSection('profile'); }, 1000);
-        } catch (error) { showMessage(msgEl, 'Correo o contraseña incorrectos.', 'error'); }
+        } catch (error) { showMessage(msgEl, 'Datos incorrectos.', 'error'); }
     }
 
     async function updateUserProfile(userId) {
@@ -623,7 +594,7 @@ const firebaseConfig = {
                 document.getElementById('storeShowLocation').checked = data.showLocation || false;
                 toggleStoreEditMode(false);
             }
-        } catch (error) { console.error("Error loading profile:", error); }
+        } catch (error) { console.error(error); }
     }
 
     function setupImageUpload() {
@@ -651,7 +622,7 @@ const firebaseConfig = {
     }
 
     async function loadProductForEdit(productId) {
-        showLoading('Cargando producto...');
+        showLoading('Cargando...');
         try {
             const doc = await db.collection('products').doc(productId).get();
             if (doc.exists) {
@@ -659,14 +630,13 @@ const firebaseConfig = {
                 document.getElementById('productName').value = product.name;
                 document.getElementById('productPrice').value = product.price;
                 document.getElementById('productDescription').value = product.description;
-                const uploadArea = document.getElementById('productImageUploadArea');
                 if (product.imageBase64) {
+                    const uploadArea = document.getElementById('productImageUploadArea');
                     uploadArea.innerHTML = `<img src="${product.imageBase64}" class="preview-image"><button type="button" class="remove-image-btn" onclick="removeUploadedImage(event)"><i class="fas fa-times"></i></button>`;
                     uploadArea.dataset.existingImage = product.imageBase64;
                 }
             }
-        } catch (error) { console.error("Error loading product for edit:", error); } 
-        finally { hideLoading(); }
+        } catch (error) { console.error(error); } finally { hideLoading(); }
     }
 
     async function saveProduct() {
@@ -684,19 +654,17 @@ const firebaseConfig = {
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        if (!productData.name || isNaN(productData.price)) return showMessage(msgEl, 'Nombre y precio son requeridos.', 'error');
+        if (!productData.name || isNaN(productData.price)) return showMessage(msgEl, 'Nombre y precio requeridos.', 'error');
         
-        showLoading(isEditing ? 'Actualizando...' : 'Guardando...');
-
+        showLoading('Guardando...');
         try {
             let imageBase64 = document.getElementById('productImageUploadArea').dataset.existingImage || null;
             if (selectedProductFile) {
-                showLoading('Procesando imagen...');
                 const compressedFile = await imageCompression(selectedProductFile, { maxSizeMB: 0.5, maxWidthOrHeight: 800 });
                 imageBase64 = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = () => resolve(reader.result);
-                    reader.onerror = error => reject(error);
+                    reader.onerror = reject;
                     reader.readAsDataURL(compressedFile);
                 });
             }
@@ -708,11 +676,11 @@ const firebaseConfig = {
                 productData.published = true;
             }
             await docRef.set(productData, { merge: true });
+
             showSuccessMessage('¡Producto guardado!');
             hideModal('productModal');
             loadMyProducts();
-        } catch (error) { showErrorMessage('Error al guardar. La imagen puede ser muy grande.'); } 
-        finally { hideLoading(); }
+        } catch (error) { showErrorMessage('Error al guardar.'); } finally { hideLoading(); }
     }
 
     function resetProductForm() {
@@ -725,54 +693,23 @@ const firebaseConfig = {
     function renderProductCard(container, product) {
         const card = document.createElement('div');
         card.className = 'product-card';
-        card.innerHTML = `
-            <div class="product-image" ${product.imageBase64 ? `style="background-image: url('${product.imageBase64}')" onclick="showImageLightbox('${product.imageBase64}')"` : ''}>
-                ${!product.imageBase64 ? '<i class="fas fa-shopping-bag"></i>' : ''}
-            </div>
-            <div class="product-info">
-                <h3 class="product-title">${product.name}</h3>
-                <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
-                <p class="product-description">${product.description || ''}</p>
-                <div class="product-vendor">
-                    <i class="fas fa-store"></i>
-                    <a href="#" onclick="event.preventDefault(); showVendorPage('${product.vendorId}', '${product.vendorName}')">${product.vendorName || ''}</a>
-                </div>
-            </div>`;
+        card.innerHTML = `<div class="product-image" ${product.imageBase64 ? `style="background-image: url('${product.imageBase64}')" onclick="showImageLightbox('${product.imageBase64}')"` : ''}>${!product.imageBase64 ? '<i class="fas fa-shopping-bag"></i>' : ''}</div><div class="product-info"><h3 class="product-title">${product.name}</h3><div class="product-price">$${(product.price || 0).toFixed(2)}</div><p class="product-description">${product.description || ''}</p><div class="product-vendor"><i class="fas fa-store"></i><a href="#" onclick="event.preventDefault(); showVendorPage('${product.vendorId}', '${product.vendorName}')">${product.vendorName || ''}</a></div></div>`;
         container.appendChild(card);
     }
 
     function renderMyProductCard(container, product) {
         const card = document.createElement('div');
         card.className = 'product-card';
-        card.innerHTML = `
-            <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}')"` : ''}>
-                ${!product.imageBase64 ? '<i class="fas fa-shopping-bag"></i>' : ''}
-            </div>
-            <div class="product-info">
-                <h3 class="product-title">${product.name}</h3>
-                <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
-                <div class="product-actions">
-                    <button class="action-btn edit-btn" onclick="showProductModal('${product.id}')"><i class="fas fa-edit"></i></button>
-                    <button class="action-btn delete-btn" onclick="confirmDeleteProduct('${product.id}')"><i class="fas fa-trash"></i></button>
-                    <button class="action-btn status-btn" onclick="toggleProductStatus('${product.id}', ${!product.published})"><i class="fas fa-eye${product.published ? '' : '-slash'}"></i></button>
-                </div>
-            </div>`;
+        card.innerHTML = `<div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}')"` : ''}>${!product.imageBase64 ? '<i class="fas fa-shopping-bag"></i>' : ''}</div><div class="product-info"><h3 class="product-title">${product.name}</h3><div class="product-price">$${(product.price || 0).toFixed(2)}</div><div class="product-actions"><button class="action-btn edit-btn" onclick="showProductModal('${product.id}')"><i class="fas fa-edit"></i></button><button class="action-btn delete-btn" onclick="confirmDeleteProduct('${product.id}')"><i class="fas fa-trash"></i></button><button class="action-btn status-btn" onclick="toggleProductStatus('${product.id}', ${!product.published})"><i class="fas fa-eye${product.published ? '' : '-slash'}"></i></button></div></div>`;
         container.appendChild(card);
     }
     
-    function confirmDeleteProduct(productId) {
-        if (confirm('¿Estás seguro?')) { deleteProduct(productId); }
-    }
-
+    function confirmDeleteProduct(productId) { if (confirm('¿Seguro?')) deleteProduct(productId); }
     async function deleteProduct(productId) {
         showLoading('Eliminando...');
-        try {
-            await db.collection('products').doc(productId).delete();
-            await loadMyProducts();
-            showSuccessMessage('Producto eliminado.');
-        } catch (error) { console.error(error); } finally { hideLoading(); }
+        try { await db.collection('products').doc(productId).delete(); await loadMyProducts(); showSuccessMessage('Producto eliminado.'); } 
+        catch (error) { console.error(error); } finally { hideLoading(); }
     }
-
     async function toggleProductStatus(productId, newStatus) {
         await db.collection('products').doc(productId).update({ published: newStatus });
         await loadMyProducts();
@@ -781,48 +718,26 @@ const firebaseConfig = {
     async function showVendorPage(vendorId, vendorName) {
         showSection('vendor-page');
         document.getElementById('vendorPageTitle').textContent = vendorName;
-        
-        const contactInfo = document.getElementById('vendorContactInfo');
-        const whatsappBtn = document.getElementById('vendorWhatsAppBtn');
-        const locationInfo = document.getElementById('vendorLocationInfo');
-        
+        const contactInfo = document.getElementById('vendorContactInfo'), whatsappBtn = document.getElementById('vendorWhatsAppBtn'), locationInfo = document.getElementById('vendorLocationInfo');
         try {
             const doc = await db.collection('merchants').doc(vendorId).get();
             if (doc.exists) {
-                const data = doc.data();
-                let hasContactInfo = false;
-                
+                const data = doc.data(); let hasContactInfo = false;
                 if (data.phone) {
-                    const phone = data.phone.replace(/[^0-9]/g, '');
-                    whatsappBtn.href = `https://wa.me/${phone}`;
-                    whatsappBtn.style.display = 'inline-flex';
-                    hasContactInfo = true;
-                } else {
-                    whatsappBtn.style.display = 'none';
-                }
-
+                    whatsappBtn.href = `https://wa.me/${data.phone.replace(/[^0-9]/g, '')}`; whatsappBtn.style.display = 'inline-flex'; hasContactInfo = true;
+                } else { whatsappBtn.style.display = 'none'; }
                 if (data.showLocation && data.location) {
-                    document.getElementById('vendorLocationText').textContent = data.location;
-                    locationInfo.style.display = 'block';
-                    hasContactInfo = true;
-                } else {
-                    locationInfo.style.display = 'none';
-                }
-                
+                    document.getElementById('vendorLocationText').textContent = data.location; locationInfo.style.display = 'block'; hasContactInfo = true;
+                } else { locationInfo.style.display = 'none'; }
                 contactInfo.style.display = hasContactInfo ? 'flex' : 'none';
             }
-        } catch (error) { console.error("Error fetching vendor data:", error); }
-        
+        } catch (error) { console.error(error); }
         loadProducts('vendorProductsGrid', { vendorId: vendorId });
     }
 
     function toggleStoreEditMode(isEditing) {
         const fields = ['storeName', 'storeDescription', 'storeContact', 'storeLocation', 'storeShowLocation'];
-        fields.forEach(id => {
-            const el = document.getElementById(id);
-            el.readOnly = !isEditing;
-            el.disabled = !isEditing;
-        });
+        fields.forEach(id => { const el = document.getElementById(id); el.readOnly = !isEditing; el.disabled = !isEditing; });
         document.getElementById('editStoreBtn').style.display = isEditing ? 'none' : 'block';
         document.getElementById('storeFormFooter').style.display = isEditing ? 'flex' : 'none';
         if (!isEditing) { updateUserProfile(currentUser.uid); }
@@ -850,47 +765,22 @@ const firebaseConfig = {
 
     function updateAuthUI() {
         if (isMerchant && currentUser) {
-            authContainer.innerHTML = `<div class="user-dropdown">...</div>`; // Abreviado para brevedad
-            profileLink.style.display = 'flex';
-            storeLink.style.display = 'flex';
+            document.getElementById('authContainer').innerHTML = `<div class="user-dropdown"><div class="nav-link" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'block' ? 'none' : 'block'"><i class="fas fa-user-circle"></i><span>Mi Cuenta</span></div><div class="dropdown-menu"><a href="#" onclick="showSection('profile')"><i class="fas fa-user"></i> Mi Perfil</a><a href="#" onclick="showSection('my-store')"><i class="fas fa-store"></i> Mi Puesto</a><div class="dropdown-divider"></div><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a></div></div>`;
+            profileLink.style.display = 'flex'; storeLink.style.display = 'flex';
         } else {
-            authContainer.innerHTML = `<a href="#" class="nav-link" onclick="showLogin()"><i class="fas fa-sign-in-alt"></i><span>Iniciar sesión</span></a>`;
-            profileLink.style.display = 'none';
-            storeLink.style.display = 'none';
-        }
-        // Lógica completa del dropdown
-        if (isMerchant && currentUser) {
-            authContainer.innerHTML = `<div class="user-dropdown"><div class="nav-link" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'block' ? 'none' : 'block'"><i class="fas fa-user-circle"></i><span>Mi Cuenta</span></div><div class="dropdown-menu"><a href="#" onclick="showSection('profile')"><i class="fas fa-user"></i> Mi Perfil</a><a href="#" onclick="showSection('my-store')"><i class="fas fa-store"></i> Mi Puesto</a><div class="dropdown-divider"></div><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a></div></div>`;
+            document.getElementById('authContainer').innerHTML = `<a href="#" class="nav-link" onclick="showLogin()"><i class="fas fa-sign-in-alt"></i><span>Iniciar sesión</span></a>`;
+            profileLink.style.display = 'none'; storeLink.style.display = 'none';
         }
     }
     
-    function showMessage(element, message, type) {
-        element.textContent = message;
-        element.className = `login-message login-${type}`;
-        element.style.display = 'block';
-    }
-
-    function showLoading(message = 'Cargando...') {
-        let el = document.querySelector('.global-loading');
-        if (!el) { el = document.createElement('div'); el.className = 'global-loading'; document.body.appendChild(el); }
-        el.innerHTML = `<div class="loading-overlay"><div class="loading-content"><i class="fas fa-spinner fa-spin"></i><p>${message}</p></div></div>`;
-    }
+    function showMessage(el, msg, type) { el.textContent = msg; el.className = `login-message login-${type}`; el.style.display = 'block'; }
+    function showLoading(msg = 'Cargando...') { let el = document.querySelector('.global-loading'); if (!el) { el = document.createElement('div'); el.className = 'global-loading'; document.body.appendChild(el); } el.innerHTML = `<div class="loading-overlay"><div class="loading-content"><i class="fas fa-spinner fa-spin"></i><p>${msg}</p></div></div>`; }
     function hideLoading() { document.querySelector('.global-loading')?.remove(); }
-
-    function showToast(message, type = 'success') {
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.textContent = message;
-        document.body.appendChild(toast);
-        setTimeout(() => { toast.remove(); }, 3500);
-    }
+    function showToast(msg, type = 'success') { const t = document.createElement('div'); t.className = `toast toast-${type}`; t.textContent = msg; document.body.appendChild(t); setTimeout(() => { t.remove(); }, 3500); }
     const showSuccessMessage = (msg) => showToast(msg, 'success');
     const showErrorMessage = (msg) => showToast(msg, 'error');
 
-    function showImageLightbox(imageBase64) {
-        document.getElementById('lightboxImg').src = imageBase64;
-        document.getElementById('imageLightbox').style.display = 'flex';
-    }
+    function showImageLightbox(imageBase64) { document.getElementById('lightboxImg').src = imageBase64; document.getElementById('imageLightbox').style.display = 'flex'; }
     function hideImageLightbox() { document.getElementById('imageLightbox').style.display = 'none'; }
 
     function initializeApp() {
@@ -906,8 +796,6 @@ const firebaseConfig = {
             updateAuthUI();
         });
         setupImageUpload();
-        loadProducts();
-
         const themeToggle = document.getElementById('themeToggle');
         const applyTheme = (theme) => { document.body.dataset.theme = theme; localStorage.setItem('theme', theme); };
         themeToggle.addEventListener('click', () => applyTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
