@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -347,6 +346,10 @@
             transform: translateY(-5px);
             box-shadow: 0 10px 20px rgba(0,0,0,0.15);
         }
+
+        .product-card.clickable {
+            cursor: pointer;
+        }
         
         .product-image {
             height: 200px;
@@ -356,8 +359,11 @@
             justify-content: center;
             color: #9ca3af;
             font-size: 3rem;
-            background-size: cover;
+            /* INICIO CAMBIO: Ajuste de imagen */
+            background-size: contain;
             background-position: center;
+            background-repeat: no-repeat;
+            /* FIN CAMBIO */
         }
         
         .product-info {
@@ -389,10 +395,6 @@
             gap: 0.5rem;
             color: #6b7280;
             font-size: 0.9rem;
-            margin-top: 1rem;
-        }
-        
-        .product-category {
             margin-top: 1rem;
         }
         
@@ -682,17 +684,6 @@
             color: var(--error);
         }
         
-        /* Category badges */
-        .category-badge {
-            display: inline-block;
-            background: var(--light);
-            color: var(--cyan);
-            padding: 0.25rem 0.75rem;
-            border-radius: 50px;
-            font-size: 0.8rem;
-            margin-top: 0.5rem;
-        }
-        
         /* Action buttons */
         .action-btn {
             transition: all 0.2s;
@@ -777,110 +768,35 @@
             from { opacity: 1; }
             to { opacity: 0; }
         }
-
-        /* Animaciones para secciones */
-        .fade-in {
-            animation: fadeIn 0.5s ease forwards;
-        }
-
-        .fade-out {
-            animation: fadeOut 0.3s ease forwards;
-        }
-
-        /* Mejoras para formularios */
-        .form-control:disabled {
-            background-color: #f3f4f6;
-            cursor: not-allowed;
-        }
-
-        /* Mejoras para tarjetas de productos */
-        .product-card {
-            position: relative;
-        }
-
-        .product-badge {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            background: var(--magenta);
-            color: white;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
         
         /* Responsive Styles */
         @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2.5rem;
-            }
-            
-            .hero p {
-                font-size: 1.1rem;
-            }
-            
-            .btn {
-                padding: 1rem 2rem;
-                font-size: 1rem;
-            }
-            
-            .nav-container {
-                gap: 0.5rem;
-            }
-            
-            .nav-link span {
-                display: none;
-            }
+            .hero h1 { font-size: 2.5rem; }
+            .hero p { font-size: 1.1rem; }
+            .btn { padding: 1rem 2rem; font-size: 1rem; }
+            .nav-container { gap: 0.5rem; }
+            .nav-link span { display: none; }
         }
         
         @media (max-width: 480px) {
-            .header {
-                padding: 1rem;
-            }
-            
-            .logo {
-                font-size: 1.5rem;
-            }
-            
-            .hero {
-                padding: 2rem 1rem;
-            }
-            
-            .hero h1 {
-                font-size: 2rem;
-            }
-            
-            .buttons {
-                flex-direction: column;
-                gap: 1rem;
-                width: 100%;
-            }
-            
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
-            
-            .profile-container {
-                flex-direction: column;
-            }
-            
-            .products-header {
-                flex-direction: column;
-                gap: 1rem;
-                align-items: flex-start;
-            }
+            .header { padding: 1rem; }
+            .logo { font-size: 1.5rem; }
+            .hero { padding: 2rem 1rem; }
+            .hero h1 { font-size: 2rem; }
+            .buttons { flex-direction: column; gap: 1rem; width: 100%; }
+            .btn { width: 100%; justify-content: center; }
+            .profile-container { flex-direction: column; }
+            .products-header { flex-direction: column; gap: 1rem; align-items: flex-start; }
         }
     </style>
 
 <style>
+/* --- STYLES GENERALES Y NUEVOS --- */
 nav a.active {
     background: linear-gradient(135deg, #06b6d4, #c026d3);
     color: white !important;
     border-radius: 0.5rem;
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    transition: all 0.3s ease;
 }
 nav a {
     transition: all 0.3s ease;
@@ -920,118 +836,75 @@ body[data-theme="dark"] .product-image { background: linear-gradient(135deg, #37
 body[data-theme="dark"] .dropdown-menu a:hover { background: #4b5563; }
 
 .theme-toggle {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 3001;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background: var(--light);
-    color: var(--black);
-    border: 2px solid var(--gray);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.2rem;
-    transition: all 0.3s ease;
-    overflow: hidden;
+    position: fixed; bottom: 20px; right: 20px; z-index: 3001;
+    width: 50px; height: 50px; border-radius: 50%;
+    background: var(--light); color: var(--black); border: 2px solid var(--gray);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 1.2rem; transition: all 0.3s ease; overflow: hidden;
 }
-.theme-toggle:hover {
-    transform: scale(1.1) rotate(15deg);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.25);
-}
+.theme-toggle:hover { transform: scale(1.1) rotate(15deg); }
 .theme-toggle .fa-sun { display: none; }
 .theme-toggle .fa-moon { display: block; }
 body[data-theme="dark"] .theme-toggle .fa-sun { display: block; }
 body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
 
 /* --- CHATBOT STYLES --- */
-.chatbot-floating {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    right: auto;
-    z-index: 3000;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-}
+.chatbot-floating { position: fixed; bottom: 20px; left: 20px; z-index: 3000; }
 .chatbot-toggle {
     background: linear-gradient(135deg, var(--cyan, #06b6d4), var(--magenta, #c026d3));
-    border: none;
-    color: white;
-    padding: 1rem;
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    font-size: 1.5rem;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-    cursor: pointer;
-    transition: transform 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 3001;
-    will-change: transform;
+    border: none; color: white; padding: 1rem; border-radius: 50%;
+    width: 60px; height: 60px; font-size: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    cursor: pointer; transition: transform 0.3s ease; display: flex;
+    align-items: center; justify-content: center; z-index: 3001;
 }
-.chatbot-toggle:hover { transform: scale(1.08); }
-.chatbot-toggle:active { transform: scale(0.96); }
 .chatbot-container-floating {
-    width: 360px;
-    height: 520px;
-    background: white;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-    transform-origin: bottom left;
-    transform: scale(0.9);
-    opacity: 0;
-    transition: opacity 0.25s ease;
-    display: none;
-    visibility: hidden;
-    pointer-events: none;
-    will-change: transform, opacity;
+    width: 360px; height: 520px; background: white; border-radius: 16px;
+    overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    transform-origin: bottom left; transform: scale(0.9); opacity: 0;
+    transition: opacity 0.25s ease; display: none; visibility: hidden; pointer-events: none;
 }
-.chatbot-container-floating.visible {
-    display: block;
-    visibility: visible;
-    pointer-events: auto;
-    opacity: 1;
-}
-.chatbot-iframe-floating {
-    width: 100%;
-    height: calc(100% - 54px);
-    border: none;
-    display: block;
-}
+.chatbot-container-floating.visible { display: block; visibility: visible; pointer-events: auto; opacity: 1; }
+.chatbot-iframe-floating { width: 100%; height: calc(100% - 54px); border: none; display: block; }
 .chatbot-header-floating {
     background: linear-gradient(135deg, var(--cyan, #06b6d4), var(--magenta, #c026d3));
-    color: white;
-    padding: 12px 14px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    color: white; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;
 }
-.chatbot-header-floating h3 {
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: .2px;
-}
-.close-chatbot-btn {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 1.15rem;
-    cursor: pointer;
-}
+.chatbot-header-floating h3 { font-size: 1rem; font-weight: 700; }
+.close-chatbot-btn { background: none; border: none; color: white; font-size: 1.15rem; cursor: pointer; }
 @media (max-width: 480px) {
     .chatbot-container-floating { width: 92vw; height: 70vh; }
     .chatbot-floating { bottom: 12px; left: 12px; }
 }
+
+/* INICIO: ESTILOS PARA EL VISOR DE IMAGEN (LIGHTBOX) */
+.image-lightbox {
+    display: none;
+    position: fixed;
+    z-index: 4000;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.85);
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.3s ease;
+}
+.lightbox-content {
+    max-width: 90vw;
+    max-height: 85vh;
+}
+.lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 35px;
+    color: #fff;
+    font-size: 40px;
+    font-weight: bold;
+    transition: 0.3s;
+    cursor: pointer;
+}
+.lightbox-close:hover { color: #bbb; }
+/* FIN: ESTILOS LIGHTBOX */
 </style>
 </head>
 <body>
@@ -1102,23 +975,20 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
                 <div class="profile-details">
                     <div class="detail-item">
                         <h3>Información de contacto</h3>
-                        <p><i class="fas fa-phone"></i> <span id="userPhone">+54 9 11 1234 5678</span></p>
-                        <p><i class="fas fa-map-marker-alt"></i> <span id="userLocation">Buenos Aires, Argentina</span></p>
+                        <p><i class="fas fa-phone"></i> <span id="userPhone"></span></p>
+                        <p><i class="fas fa-map-marker-alt"></i> <span id="userLocation">Argentina</span></p>
                     </div>
                     <div class="detail-item">
                         <h3>Mi negocio</h3>
-                        <p><i class="fas fa-store"></i> <span id="userBusiness">Artesanías El Sol</span></p>
-                        <p><i class="fas fa-star"></i> <span id="userRating">4.8 (125 reseñas)</span></p>
+                        <p><i class="fas fa-store"></i> <span id="userBusiness"></span></p>
                     </div>
                     <div class="detail-item">
                         <h3>Estadísticas</h3>
                         <p><i class="fas fa-box"></i> <span id="userProducts">0</span> productos publicados</p>
-                        <p><i class="fas fa-shopping-cart"></i> <span id="userSales">0</span> ventas realizadas</p>
                     </div>
                     <div class="detail-item">
                         <h3>Miembro desde</h3>
-                        <p><i class="fas fa-calendar"></i> <span id="userSince">12 de Agosto, 2025</span></p>
-                        <p><i class="fas fa-badge-check"></i> <span id="userStatus">Comerciante verificado</span></p>
+                        <p><i class="fas fa-calendar"></i> <span id="userSince"></span></p>
                     </div>
                 </div>
             </div>
@@ -1136,16 +1006,6 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
             <div class="form-group">
                 <label for="storeDescription">Descripción</label>
                 <textarea id="storeDescription" class="form-control" rows="3" placeholder="Describe tu negocio"></textarea>
-            </div>
-            <div class="form-group">
-                <label for="storeCategory">Categoría</label>
-                <select id="storeCategory" class="form-control">
-                    <option>Artesanías</option>
-                    <option>Alimentos</option>
-                    <option>Ropa y Accesorios</option>
-                    <option>Decoración</option>
-                    <option>Otros</option>
-                </select>
             </div>
             <div class="form-group">
                 <label for="storeContact">Contacto (WhatsApp)</label>
@@ -1238,16 +1098,6 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
                 <input type="number" id="productPrice" class="form-control" placeholder="1500">
             </div>
             <div class="form-group">
-                <label for="productCategory">Categoría</label>
-                <select id="productCategory" class="form-control">
-                    <option>Artesanías</option>
-                    <option>Alimentos</option>
-                    <option>Ropa y Accesorios</option>
-                    <option>Decoración</option>
-                    <option>Otros</option>
-                </select>
-            </div>
-            <div class="form-group">
                 <label for="productDescription">Descripción</label>
                 <textarea id="productDescription" class="form-control" rows="3" placeholder="Describe tu producto"></textarea>
             </div>
@@ -1300,9 +1150,16 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
         </button>
     </div>
 
+    <!-- INICIO: HTML PARA EL VISOR DE IMAGEN (LIGHTBOX) -->
+    <div id="imageLightbox" class="image-lightbox" onclick="hideImageLightbox()">
+        <span class="lightbox-close" onclick="hideImageLightbox()">&times;</span>
+        <img class="lightbox-content" id="lightboxImg">
+    </div>
+    <!-- FIN: HTML LIGHTBOX -->
+
 <script>
     // ***************************************************************
-    // ***** PEGA AQUÍ TU `firebaseConfig` DEL PROYECTO NUEVO      *****
+    // ***** REEMPLAZA ESTO CON TU `firebaseConfig` DEL PROYECTO NUEVO *****
     // ***************************************************************
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
@@ -1316,7 +1173,8 @@ const firebaseConfig = {
 };
     // ***************************************************************
 
-    // Initialize Firebase
+    // --- El resto del código funciona solo ---
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
@@ -1330,14 +1188,9 @@ const firebaseConfig = {
     const authContainer = document.getElementById('authContainer');
     
     function showSection(sectionId) {
-        document.querySelectorAll('.section').forEach(section => {
-            section.classList.remove('active-section');
-        });
+        document.querySelectorAll('.section').forEach(section => section.classList.remove('active-section'));
         const targetSection = document.getElementById(sectionId);
-        if (targetSection) {
-            targetSection.classList.add('active-section');
-        }
-
+        if (targetSection) targetSection.classList.add('active-section');
         if (sectionId === 'products') loadProducts();
         if (sectionId === 'my-store' && isMerchant) loadMyProducts();
     }
@@ -1423,7 +1276,6 @@ const firebaseConfig = {
             showMessage(msgEl, '¡Registro exitoso! Redirigiendo...', 'success');
             setTimeout(() => {
                 showSection('profile');
-                hideModal('register'); 
             }, 1500);
         } catch (error) {
             showMessage(msgEl, error.code === 'auth/email-already-in-use' ? 'Este correo ya está registrado.' : 'Error en el registro.', 'error');
@@ -1452,12 +1304,15 @@ const firebaseConfig = {
     async function updateUserProfile(userId) {
         try {
             const doc = await db.collection('merchants').doc(userId).get();
+            const productsSnapshot = await db.collection('products').where('vendorId', '==', userId).get();
+            
             if (doc.exists) {
                 const data = doc.data();
                 document.getElementById('userName').textContent = data.name;
                 document.getElementById('userEmail').textContent = data.email;
                 document.getElementById('userPhone').textContent = data.phone || 'No especificado';
                 document.getElementById('userBusiness').textContent = data.business;
+                document.getElementById('userProducts').textContent = `${productsSnapshot.size} productos publicados`;
                 const createdAt = data.createdAt?.toDate();
                 document.getElementById('userSince').textContent = createdAt ? new Date(createdAt).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
             }
@@ -1482,7 +1337,7 @@ const firebaseConfig = {
     }
 
     function removeUploadedImage(event) {
-        event.stopPropagation();
+        if(event) event.stopPropagation();
         const uploadArea = document.getElementById('productImageUploadArea');
         uploadArea.innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic o arrastra una imagen aquí</p>';
         document.getElementById('productImageInput').value = '';
@@ -1498,7 +1353,6 @@ const firebaseConfig = {
                 const product = doc.data();
                 document.getElementById('productName').value = product.name;
                 document.getElementById('productPrice').value = product.price;
-                document.getElementById('productCategory').value = product.category;
                 document.getElementById('productDescription').value = product.description;
                 const uploadArea = document.getElementById('productImageUploadArea');
                 if (product.imageBase64) {
@@ -1519,10 +1373,9 @@ const firebaseConfig = {
         const productData = {
             name: document.getElementById('productName').value.trim(),
             price: parseFloat(document.getElementById('productPrice').value),
-            category: document.getElementById('productCategory').value,
             description: document.getElementById('productDescription').value.trim(),
             vendorId: currentUser.uid,
-            vendorName: document.getElementById('userName').textContent,
+            vendorName: document.getElementById('userBusiness').textContent, // CAMBIO: Usar nombre del puesto
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
@@ -1566,23 +1419,25 @@ const firebaseConfig = {
         document.getElementById('productName').value = '';
         document.getElementById('productPrice').value = '';
         document.getElementById('productDescription').value = '';
-        document.getElementById('productCategory').value = 'Artesanías';
-        removeUploadedImage({ stopPropagation: () => {} });
+        removeUploadedImage();
     }
 
     function renderProductCard(container, product) {
         const card = document.createElement('div');
         card.className = 'product-card';
+        if (product.imageBase64) {
+            card.classList.add('clickable');
+            card.onclick = () => showImageLightbox(product.imageBase64);
+        }
         card.innerHTML = `
             <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}">
                 ${!product.imageBase64 ? '<i class="fas fa-shopping-bag"></i>' : ''}
             </div>
             <div class="product-info">
                 <h3 class="product-title">${product.name}</h3>
-                <div class="product-price">$${product.price.toFixed(2)}</div>
+                <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
                 <p class="product-description">${product.description}</p>
                 <div class="product-vendor"><i class="fas fa-store"></i><span>${product.vendorName || ''}</span></div>
-                <div class="product-category"><span class="category-badge">${product.category || ''}</span></div>
             </div>`;
         container.appendChild(card);
     }
@@ -1590,13 +1445,14 @@ const firebaseConfig = {
     function renderMyProductCard(container, product) {
         const card = document.createElement('div');
         card.className = 'product-card';
+        // El onclick para el lightbox también podría ir aquí si quisieras
         card.innerHTML = `
-            <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}">
+            <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}')"` : ''}>
                 ${!product.imageBase64 ? '<i class="fas fa-shopping-bag"></i>' : ''}
             </div>
             <div class="product-info">
                 <h3 class="product-title">${product.name}</h3>
-                <div class="product-price">$${product.price.toFixed(2)}</div>
+                <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
                 <div class="product-actions">
                     <button class="action-btn edit-btn" onclick="showProductModal('${product.id}')"><i class="fas fa-edit"></i></button>
                     <button class="action-btn delete-btn" onclick="confirmDeleteProduct('${product.id}')"><i class="fas fa-trash"></i></button>
@@ -1629,9 +1485,7 @@ const firebaseConfig = {
         } catch (error) { console.error("Error toggling status:", error); }
     }
 
-    function logout() {
-        auth.signOut();
-    }
+    function logout() { auth.signOut(); }
 
     function updateAuthUI() {
         if (isMerchant && currentUser) {
@@ -1685,6 +1539,17 @@ const firebaseConfig = {
     }
     const showSuccessMessage = (msg) => showToast(msg, 'success');
     const showErrorMessage = (msg) => showToast(msg, 'error');
+
+    function showImageLightbox(imageBase64) {
+        const lightbox = document.getElementById('imageLightbox');
+        const img = document.getElementById('lightboxImg');
+        img.src = imageBase64;
+        lightbox.style.display = 'flex';
+    }
+
+    function hideImageLightbox() {
+        document.getElementById('imageLightbox').style.display = 'none';
+    }
 
     function initializeApp() {
         auth.onAuthStateChanged(async (user) => {
