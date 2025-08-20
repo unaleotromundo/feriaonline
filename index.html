@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -21,6 +20,7 @@
             --gray: #e5e7eb;
             --error: #ef4444;
             --success: #10b981;
+            --whatsapp: #25D366;
         }
         
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -88,12 +88,14 @@
         }
         .btn-primary { background-color: var(--magenta); color: white; }
         .btn-secondary { background-color: var(--cyan); color: white; }
+        .btn-whatsapp { background-color: var(--whatsapp); color: white; }
         .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 12px rgba(0,0,0,0.15); }
         
         .profile-container { display: flex; flex-wrap: wrap; gap: 2rem; }
         .profile-card {
             background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.05);
             padding: 2rem; flex: 1; min-width: 300px; border-top: 5px solid var(--cyan);
+            position: relative;
         }
         .profile-header {
             display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem;
@@ -103,8 +105,15 @@
             width: 100px; height: 100px; border-radius: 50%;
             background: linear-gradient(135deg, var(--cyan) 0%, var(--magenta) 100%);
             display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 2.5rem;
+            color: white; font-size: 2.5rem; overflow: hidden; position: relative;
         }
+        .profile-pic img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-pic-edit-overlay {
+            position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+            color: white; display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; cursor: pointer; opacity: 0; transition: opacity 0.3s ease;
+        }
+        .profile-card.edit-mode .profile-pic-edit-overlay { opacity: 1; }
         .profile-info h2 { font-size: 1.8rem; margin-bottom: 0.5rem; }
         .profile-info p { color: #4b5563; }
         .profile-details { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
@@ -148,7 +157,7 @@
         .form-container {
             background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.05);
             padding: 2rem; max-width: 600px; margin: 0 auto; border-top: 5px solid var(--magenta);
-            position: relative; /* Para el botón de editar */
+            position: relative;
         }
         .form-title { font-size: 1.8rem; margin-bottom: 1.5rem; color: var(--magenta); text-align: center; }
         .form-group { margin-bottom: 1.5rem; }
@@ -166,7 +175,6 @@
             text-align: center; padding: 2rem; margin-top: auto;
         }
         
-        /* Modal y Overlays */
         .login-modal, .global-loading {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.7); z-index: 2000;
@@ -175,7 +183,7 @@
         .login-modal { display: none; }
         .login-box {
             background: white; border-radius: 1.5rem; padding: 2rem;
-            width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 90%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             animation: modalAppear 0.4s ease; position: relative;
         }
         .close-modal-btn {
@@ -194,7 +202,6 @@
         .login-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
         .login-error { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
         
-        /* Product Image Upload */
         .product-image-upload {
             border: 2px dashed var(--gray); border-radius: 0.5rem; padding: 2rem; text-align: center;
             cursor: pointer; transition: all 0.3s; position: relative; min-height: 150px;
@@ -202,7 +209,6 @@
         }
         .preview-image { max-width: 100%; max-height: 200px; border-radius: 0.5rem; }
         
-        /* Toast Notifications */
         .toast {
             position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
             padding: 1rem 2rem; border-radius: 0.5rem; color: white; font-weight: 500;
@@ -214,99 +220,121 @@
         .fade-out { animation: fadeOut 0.5s ease-out forwards; }
         @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
         
-        /* --- STYLES NUEVOS Y MODIFICADOS --- */
-        .edit-store-btn {
+        .edit-btn-container {
             position: absolute; top: 1.5rem; right: 1.5rem;
             background: var(--light); border: 1px solid var(--gray); color: var(--black);
             width: 40px; height: 40px; border-radius: 50%;
             font-size: 1rem; cursor: pointer; transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: center;
         }
-        .edit-store-btn:hover { background: var(--cyan); color: white; transform: scale(1.1); }
-        body[data-theme="dark"] .edit-store-btn { background: #4b5563; border-color: #6b7280; }
+        .edit-btn-container:hover { background: var(--cyan); color: white; transform: scale(1.1); }
+        body[data-theme="dark"] .edit-btn-container { background: #4b5563; border-color: #6b7280; }
         
         .vendor-page-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 2rem; border-bottom: 2px solid var(--cyan); padding-bottom: 1rem;
+            display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+            gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid var(--cyan); padding-bottom: 1rem;
         }
+        .vendor-page-header .btn { padding: 0.75rem 1.5rem; font-size: 1rem; }
     </style>
 
 <style>
-/* --- OTROS ESTILOS GLOBALES --- */
-nav a.active {
-    background: linear-gradient(135deg, #06b6d4, #c026d3); color: white !important;
-    border-radius: 0.5rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-}
-nav a { transition: all 0.3s ease; padding: 0.5rem 1rem; display: inline-block; }
+    /* --- OTROS ESTILOS GLOBALES --- */
+    nav a.active {
+        background: linear-gradient(135deg, #06b6d4, #c026d3); color: white !important;
+        border-radius: 0.5rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    nav a { transition: all 0.3s ease; padding: 0.5rem 1rem; display: inline-block; }
 
-/* --- THEME STYLES --- */
-body[data-theme="dark"] {
-    --black: #f9fafb; --light: #1f2937; --gray: #374151;
-    background: linear-gradient(135deg, #1e293b, #111827); color: #e5e7eb;
-}
-body[data-theme="dark"] .profile-card, body[data-theme="dark"] .form-container,
-body[data-theme="dark"] .product-card, body[data-theme="dark"] .login-box,
-body[data-theme="dark"] .dropdown-menu { background-color: #374151; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-body[data-theme="dark"] .hero p, body[data-theme="dark"] .profile-info p,
-body[data-theme="dark"] .product-description, body[data-theme="dark"] .product-vendor { color: #9ca3af; }
-body[data-theme="dark"] .form-control { background-color: #4b5563; border-color: #6b7280; color: white; }
-body[data-theme="dark"] .form-control::placeholder { color: #9ca3af; }
-body[data-theme="dark"] .form-control[readonly] { background-color: #374151; }
-body[data-theme="dark"] .dropdown-menu a:hover { background: #4b5563; }
+    /* --- THEME STYLES --- */
+    body[data-theme="dark"] {
+        --black: #f9fafb; --light: #1f2937; --gray: #374151;
+        background: linear-gradient(135deg, #1e293b, #111827); color: #e5e7eb;
+    }
+    body[data-theme="dark"] .profile-card, body[data-theme="dark"] .form-container,
+    body[data-theme="dark"] .product-card, body[data-theme="dark"] .login-box,
+    body[data-theme="dark"] .dropdown-menu { background-color: #374151; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    body[data-theme="dark"] .hero p, body[data-theme="dark"] .profile-info p,
+    body[data-theme="dark"] .product-description, body[data-theme="dark"] .product-vendor { color: #9ca3af; }
+    body[data-theme="dark"] .form-control { background-color: #4b5563; border-color: #6b7280; color: white; }
+    body[data-theme="dark"] .form-control::placeholder { color: #9ca3af; }
+    body[data-theme="dark"] .form-control[readonly] { background-color: #374151; }
+    body[data-theme="dark"] .dropdown-menu a:hover { background: #4b5563; }
 
-.theme-toggle {
-    position: fixed; bottom: 20px; right: 20px; z-index: 3001;
-    width: 50px; height: 50px; border-radius: 50%;
-    background: var(--light); color: var(--black); border: 2px solid var(--gray);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer;
-    display: flex; justify-content: center; align-items: center;
-    font-size: 1.2rem; transition: all 0.3s ease; overflow: hidden;
-}
-.theme-toggle:hover { transform: scale(1.1) rotate(15deg); }
-.theme-toggle .fa-sun { display: none; }
-.theme-toggle .fa-moon { display: block; }
-body[data-theme="dark"] .theme-toggle .fa-sun { display: block; }
-body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
+    .theme-toggle {
+        position: fixed; bottom: 20px; right: 20px; z-index: 3001;
+        width: 50px; height: 50px; border-radius: 50%;
+        background: var(--light); color: var(--black); border: 2px solid var(--gray);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer;
+        display: flex; justify-content: center; align-items: center;
+        font-size: 1.2rem; transition: all 0.3s ease; overflow: hidden;
+    }
+    .theme-toggle:hover { transform: scale(1.1) rotate(15deg); }
+    .theme-toggle .fa-sun { display: none; }
+    .theme-toggle .fa-moon { display: block; }
+    body[data-theme="dark"] .theme-toggle .fa-sun { display: block; }
+    body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
 
-/* --- CHATBOT STYLES --- */
-.chatbot-floating { position: fixed; bottom: 20px; left: 20px; z-index: 3000; }
-.chatbot-toggle {
-    background: linear-gradient(135deg, var(--cyan, #06b6d4), var(--magenta, #c026d3));
-    border: none; color: white; padding: 1rem; border-radius: 50%;
-    width: 60px; height: 60px; font-size: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-    cursor: pointer; transition: transform 0.3s ease; display: flex;
-    align-items: center; justify-content: center; z-index: 3001;
-}
-.chatbot-container-floating {
-    width: 360px; height: 520px; background: white; border-radius: 16px;
-    overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-    transform-origin: bottom left; transform: scale(0.9); opacity: 0;
-    transition: opacity 0.25s ease; display: none; visibility: hidden; pointer-events: none;
-}
-.chatbot-container-floating.visible { display: block; visibility: visible; pointer-events: auto; opacity: 1; }
-.chatbot-iframe-floating { width: 100%; height: calc(100% - 54px); border: none; display: block; }
-.chatbot-header-floating {
-    background: linear-gradient(135deg, var(--cyan, #06b6d4), var(--magenta, #c026d3));
-    color: white; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;
-}
-.chatbot-header-floating h3 { font-size: 1rem; font-weight: 700; }
-.close-chatbot-btn { background: none; border: none; color: white; font-size: 1.15rem; cursor: pointer; }
-@media (max-width: 480px) {
-    .chatbot-container-floating { width: 92vw; height: 70vh; }
-    .chatbot-floating { bottom: 12px; left: 12px; }
-}
+    /* --- CHATBOT STYLES --- */
+    .chatbot-floating { position: fixed; bottom: 20px; left: 20px; z-index: 3000; }
+    .chatbot-toggle {
+        background: linear-gradient(135deg, var(--cyan, #06b6d4), var(--magenta, #c026d3));
+        border: none; color: white; padding: 1rem; border-radius: 50%;
+        width: 60px; height: 60px; font-size: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        cursor: pointer; transition: transform 0.3s ease; display: flex;
+        align-items: center; justify-content: center; z-index: 3001;
+    }
+    .chatbot-container-floating {
+        width: 360px; height: 520px; background: white; border-radius: 16px;
+        overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        transform-origin: bottom left; transform: scale(0.9); opacity: 0;
+        transition: opacity 0.25s ease; display: none; visibility: hidden; pointer-events: none;
+    }
+    .chatbot-container-floating.visible { display: block; visibility: visible; pointer-events: auto; opacity: 1; }
+    .chatbot-iframe-floating { width: 100%; height: calc(100% - 54px); border: none; display: block; }
+    .chatbot-header-floating {
+        background: linear-gradient(135deg, var(--cyan, #06b6d4), var(--magenta, #c026d3));
+        color: white; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .chatbot-header-floating h3 { font-size: 1rem; font-weight: 700; }
+    .close-chatbot-btn { background: none; border: none; color: white; font-size: 1.15rem; cursor: pointer; }
+    @media (max-width: 480px) {
+        .chatbot-container-floating { width: 92vw; height: 70vh; }
+        .chatbot-floating { bottom: 12px; left: 12px; }
+    }
 
-/* LIGHTBOX STYLES */
-.image-lightbox {
-    display: none; position: fixed; z-index: 4000; left: 0; top: 0;
-    width: 100%; height: 100%; background-color: rgba(0,0,0,0.85);
-    justify-content: center; align-items: center; animation: fadeIn 0.3s ease;
-}
-.lightbox-content { max-width: 90vw; max-height: 85vh; }
-.lightbox-close {
-    position: absolute; top: 20px; right: 35px; color: #fff;
-    font-size: 40px; font-weight: bold; transition: 0.3s; cursor: pointer;
-}
-.lightbox-close:hover { color: #bbb; }
+    /* LIGHTBOX STYLES */
+    .image-lightbox {
+        display: none; position: fixed; z-index: 4000; left: 0; top: 0;
+        width: 100%; height: 100%; background-color: rgba(0,0,0,0.85);
+        justify-content: center; align-items: center; animation: fadeIn 0.3s ease;
+    }
+    .lightbox-content { max-width: 90vw; max-height: 85vh; }
+    .lightbox-close {
+        position: absolute; top: 20px; right: 35px; color: #fff;
+        font-size: 40px; font-weight: bold; transition: 0.3s; cursor: pointer;
+    }
+    .lightbox-close:hover { color: #bbb; }
+
+    /* INICIO: ESTILOS PARA EDICIÓN DE PERFIL */
+    .profile-card.edit-mode .detail-item p,
+    .profile-card.edit-mode .profile-info h2 { display: none; }
+    .profile-card.edit-mode .detail-item .editable,
+    .profile-card.edit-mode .profile-info .editable { display: block; }
+    .editable { display: none; width: 100%; }
+
+    #profilePicModal .login-box { max-width: 600px; }
+    .avatar-selection {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 1rem; margin-top: 1.5rem;
+    }
+    .avatar-item {
+        width: 80px; height: 80px; border-radius: 50%;
+        cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 3px solid transparent;
+    }
+    .avatar-item:hover { transform: scale(1.1); box-shadow: 0 0 10px var(--cyan); }
+    .avatar-item img { width: 100%; height: 100%; border-radius: 50%; }
+    /* FIN: ESTILOS PARA EDICIÓN DE PERFIL */
 </style>
 </head>
 <body>
@@ -363,26 +391,41 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
         <div class="products-grid" id="productsGrid"></div>
     </section>
 
-    <!-- INICIO: NUEVA SECCIÓN PARA LA PÁGINA DEL PUESTO -->
     <section id="vendor-page" class="section">
+        <!-- INICIO: MODIFICACIÓN EN CABECERA DE PÁGINA DE PUESTO -->
         <div class="vendor-page-header">
             <h2 class="section-title">Puesto: <span id="vendorPageTitle"></span></h2>
-            <button class="btn btn-secondary" onclick="showSection('products')">
-                <i class="fas fa-arrow-left"></i> Volver a Productos
-            </button>
+            <div class="vendor-actions" style="display: flex; gap: 1rem;">
+                <a href="#" id="vendorWhatsappBtn" class="btn btn-whatsapp" style="display: none;">
+                    <i class="fab fa-whatsapp"></i> Chatear
+                </a>
+                <button class="btn btn-secondary" onclick="showSection('products')">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+            </div>
         </div>
+        <!-- FIN: MODIFICACIÓN EN CABECERA DE PÁGINA DE PUESTO -->
         <div class="products-grid" id="vendorProductsGrid"></div>
     </section>
-    <!-- FIN: NUEVA SECCIÓN -->
 
     <section id="profile" class="section">
         <h2 class="section-title">Mi Perfil</h2>
         <div class="profile-container">
-            <div class="profile-card">
+            <!-- INICIO: MODIFICACIÓN EN TARJETA DE PERFIL -->
+            <div class="profile-card" id="profileCard">
+                <button id="editProfileBtn" class="edit-btn-container" onclick="toggleProfileEditMode(true)">
+                    <i class="fas fa-pencil-alt"></i>
+                </button>
                 <div class="profile-header">
-                    <div class="profile-pic"><i class="fas fa-user"></i></div>
+                    <div class="profile-pic" id="profilePicContainer">
+                        <i class="fas fa-user"></i>
+                        <div class="profile-pic-edit-overlay" onclick="showProfilePicModal()">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                    </div>
                     <div class="profile-info">
                         <h2 id="userName">Nombre del Comerciante</h2>
+                        <input type="text" id="userNameInput" class="form-control editable">
                         <p id="userEmail">correo@ejemplo.com</p>
                     </div>
                 </div>
@@ -390,7 +433,7 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
                     <div class="detail-item">
                         <h3>Información de contacto</h3>
                         <p><i class="fas fa-phone"></i> <span id="userPhone"></span></p>
-                        <p><i class="fas fa-map-marker-alt"></i> <span id="userLocation">Argentina</span></p>
+                        <input type="text" id="userPhoneInput" class="form-control editable">
                     </div>
                     <div class="detail-item">
                         <h3>Mi negocio</h3>
@@ -405,15 +448,19 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
                         <p><i class="fas fa-calendar"></i> <span id="userSince"></span></p>
                     </div>
                 </div>
+                <div id="profileFormFooter" class="form-footer" style="display: none;">
+                    <button class="btn btn-secondary" onclick="toggleProfileEditMode(false)">Cancelar</button>
+                    <button class="btn btn-primary" onclick="saveProfileInfo()">Guardar Cambios</button>
+                </div>
             </div>
+            <!-- FIN: MODIFICACIÓN EN TARJETA DE PERFIL -->
         </div>
     </section>
 
     <section id="my-store" class="section">
         <h2 class="section-title">Gestión de mi Puesto</h2>
-        <!-- INICIO: CAMBIOS EN EL FORMULARIO "MI PUESTO" -->
         <div class="form-container" id="storeFormContainer">
-            <button id="editStoreBtn" class="edit-store-btn" onclick="toggleStoreEditMode(true)">
+            <button id="editStoreBtn" class="edit-btn-container" onclick="toggleStoreEditMode(true)">
                 <i class="fas fa-pencil-alt"></i>
             </button>
             <h3 class="form-title">Información del Puesto</h3>
@@ -425,16 +472,11 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
                 <label for="storeDescription">Descripción</label>
                 <textarea id="storeDescription" class="form-control" rows="3" readonly></textarea>
             </div>
-            <div class="form-group">
-                <label for="storeContact">Contacto (WhatsApp)</label>
-                <input type="text" id="storeContact" class="form-control" readonly>
-            </div>
             <div id="storeFormFooter" class="form-footer" style="display: none;">
                 <button class="btn btn-secondary" onclick="toggleStoreEditMode(false)">Cancelar</button>
                 <button class="btn btn-primary" onclick="saveStoreInfo()">Guardar Cambios</button>
             </div>
         </div>
-        <!-- FIN: CAMBIOS EN EL FORMULARIO -->
         <div class="products-header" style="margin-top: 3rem;">
             <h2 class="section-title">Mis Productos</h2>
             <button class="btn btn-primary" onclick="showProductModal()"><i class="fas fa-plus"></i> Nuevo Producto</button>
@@ -464,8 +506,8 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
                 <input type="text" id="regBusiness" class="form-control" placeholder="Ej: Artesanías El Sol">
             </div>
             <div class="form-group">
-                <label for="regPhone">Teléfono de contacto</label>
-                <input type="text" id="regPhone" class="form-control" placeholder="+54 9 11 1234 5678">
+                <label for="regPhone">Teléfono de contacto (con cód. de país)</label>
+                <input type="text" id="regPhone" class="form-control" placeholder="Ej: 5491112345678">
             </div>
             <div class="form-group">
                 <label for="regDescription">Descripción del negocio</label>
@@ -495,11 +537,35 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
                 <input type="password" id="loginPassword" class="form-control" placeholder="Tu contraseña">
             </div>
             <button class="btn btn-primary" style="width: 100%;" onclick="login()"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</button>
-            <div class="login-footer">
-                <p>¿No tienes cuenta? <a href="#" onclick="showSection('register'); hideLogin()">Regístrate aquí</a></p>
+        </div>
+    </div>
+
+    <!-- INICIO: MODAL PARA EDICIÓN DE FOTO DE PERFIL -->
+    <div class="login-modal" id="profilePicModal">
+        <div class="login-box">
+            <button type="button" class="close-modal-btn" onclick="hideModal('profilePicModal')"><i class="fas fa-times"></i></button>
+            <div class="login-header">
+                <h2>Actualizar foto de perfil</h2>
+            </div>
+            <div class="form-group">
+                <label>Subir una foto</label>
+                <div class="product-image-upload" id="profilePicUploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Haz clic o arrastra una imagen aquí</p>
+                </div>
+                <input type="file" id="profilePicInput" accept="image/*" style="display: none;">
+            </div>
+            <div class="form-group">
+                <label>O elige un avatar</label>
+                <div class="avatar-selection" id="avatarSelection"></div>
+            </div>
+            <div class="form-footer">
+                <button class="btn btn-secondary" onclick="hideModal('profilePicModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveProfilePic()">Guardar Foto</button>
             </div>
         </div>
     </div>
+    <!-- FIN: MODAL PARA EDICIÓN DE FOTO DE PERFIL -->
 
     <div class="login-modal" id="productModal">
         <div class="login-box">
@@ -537,12 +603,6 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
 
     <footer class="footer">
         <p>Únete a la comunidad de pequeños comerciantes que ya están creciendo con Feria Virtual</p>
-        <div class="social-icons">
-            <a href="#"><i class="fab fa-facebook-f"></i></a>
-            <a href="#"><i class="fab fa-instagram"></i></a>
-            <a href="#"><i class="fab fa-twitter"></i></a>
-            <a href="#"><i class="fab fa-whatsapp"></i></a>
-        </div>
         <p class="copyright">&copy; 2025 Feria Virtual. Todos los derechos reservados.</p>
     </footer>
 
@@ -572,21 +632,16 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
     </div>
 
 <script>
-    // ***************************************************************
-    // ***** REEMPLAZA ESTO CON TU `firebaseConfig` DEL PROYECTO NUEVO *****
-    // ***************************************************************
- // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyAlqGoYrHkASbhmE2aBKIOXqkkNBBEEiGU",
-  authDomain: "feria-online-ec7c6.firebaseapp.com",
-  projectId: "feria-online-ec7c6",
-  storageBucket: "feria-online-ec7c6.firebasestorage.app",
-  messagingSenderId: "1001881267179",
-  appId: "1:1001881267179:web:fc5ac0fd940964537887ae",
-  measurementId: "G-GQZZQMNVPH"
-};
-
-    // ***************************************************************
+    // Configuración de Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAlqGoYrHkASbhmE2aBKIOXqkkNBBEEiGU",
+      authDomain: "feria-online-ec7c6.firebaseapp.com",
+      projectId: "feria-online-ec7c6",
+      storageBucket: "feria-online-ec7c6.firebasestorage.app",
+      messagingSenderId: "1001881267179",
+      appId: "1:1001881267179:web:fc5ac0fd940964537887ae",
+      measurementId: "G-GQZZQMNVPH"
+    };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -595,6 +650,10 @@ const firebaseConfig = {
     let currentUser = null;
     let isMerchant = false;
     let selectedProductFile = null;
+    // INICIO: NUEVAS VARIABLES GLOBALES
+    let selectedProfilePicFile = null;
+    let selectedAvatarUrl = null;
+    // FIN: NUEVAS VARIABLES GLOBALES
 
     const profileLink = document.getElementById('profileLink');
     const storeLink = document.getElementById('storeLink');
@@ -634,7 +693,7 @@ const firebaseConfig = {
 
     async function loadProducts(containerId = 'productsGrid', filter = {}) {
         const productsGrid = document.getElementById(containerId);
-        productsGrid.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>';
+        productsGrid.innerHTML = `<div>Cargando productos...</div>`;
         try {
             let query = db.collection('products').where('published', '==', true);
             if (filter.vendorId) {
@@ -643,32 +702,29 @@ const firebaseConfig = {
             const snapshot = await query.orderBy('createdAt', 'desc').get();
             productsGrid.innerHTML = '';
             if (snapshot.empty) {
-                productsGrid.innerHTML = `<div class="no-products"><i class="fas fa-box-open"></i> No hay productos para mostrar.</div>`;
+                productsGrid.innerHTML = `<div>No hay productos para mostrar.</div>`;
                 return;
             }
             snapshot.forEach(doc => renderProductCard(productsGrid, { id: doc.id, ...doc.data() }));
         } catch (error) {
             console.error("Error loading products:", error);
-            productsGrid.innerHTML = `<div class="error-message">Error al cargar productos.</div>`;
+            productsGrid.innerHTML = `<div>Error al cargar productos.</div>`;
         }
     }
 
     async function loadMyProducts() {
         if (!currentUser) return;
         const productsGrid = document.getElementById('myProductsGrid');
-        productsGrid.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Cargando tus productos...</div>';
+        productsGrid.innerHTML = `<div>Cargando tus productos...</div>`;
         try {
             const snapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).orderBy('createdAt', 'desc').get();
             productsGrid.innerHTML = '';
             if (snapshot.empty) {
-                productsGrid.innerHTML = '<div class="no-products"><i class="fas fa-box-open"></i> Aún no has agregado productos.</div>';
+                productsGrid.innerHTML = '<div>Aún no has agregado productos.</div>';
                 return;
             }
             snapshot.forEach(doc => renderMyProductCard(productsGrid, { id: doc.id, ...doc.data() }));
-        } catch (error) {
-            console.error("Error loading user products:", error);
-            productsGrid.innerHTML = `<div class="error-message">Error al cargar tus productos.</div>`;
-        }
+        } catch (error) { console.error("Error loading user products:", error); }
     }
 
     async function registerMerchant() {
@@ -684,7 +740,6 @@ const firebaseConfig = {
         if (password.length < 6) return showMessage(msgEl, 'La contraseña debe tener al menos 6 caracteres.', 'error');
 
         try {
-            showMessage(msgEl, 'Registrando tu cuenta...', 'success');
             const userCredential = await auth.createUserWithEmailAndPassword(email, password);
             const user = userCredential.user;
             await db.collection('merchants').doc(user.uid).set({
@@ -692,10 +747,7 @@ const firebaseConfig = {
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             showMessage(msgEl, '¡Registro exitoso! Redirigiendo...', 'success');
-            setTimeout(() => { showSection('profile'); }, 1500);
-        } catch (error) {
-            showMessage(msgEl, error.code === 'auth/email-already-in-use' ? 'Este correo ya está registrado.' : 'Error en el registro.', 'error');
-        }
+        } catch (error) { showMessage(msgEl, 'Error en el registro.', 'error'); }
     }
 
     async function login() {
@@ -705,7 +757,6 @@ const firebaseConfig = {
         if (!email || !password) return showMessage(msgEl, 'Por favor completa todos los campos.', 'error');
 
         try {
-            showMessage(msgEl, 'Iniciando sesión...', 'success');
             await auth.signInWithEmailAndPassword(email, password);
             showMessage(msgEl, '¡Bienvenido!', 'success');
             setTimeout(() => {
@@ -722,51 +773,60 @@ const firebaseConfig = {
             
             if (doc.exists) {
                 const data = doc.data();
+                // Poblar campos de texto
                 document.getElementById('userName').textContent = data.name;
                 document.getElementById('userEmail').textContent = data.email;
                 document.getElementById('userPhone').textContent = data.phone || 'No especificado';
                 document.getElementById('userBusiness').textContent = data.business;
                 document.getElementById('userProducts').textContent = `${productsSnapshot.size} productos publicados`;
                 const createdAt = data.createdAt?.toDate();
-                document.getElementById('userSince').textContent = createdAt ? new Date(createdAt).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
+                document.getElementById('userSince').textContent = createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A';
                 
-                // CAMBIO: Poblar el formulario de "Mi Puesto"
+                // INICIO: NUEVA LÓGICA PARA FOTO DE PERFIL
+                const profilePicContainer = document.getElementById('profilePicContainer');
+                if (data.profilePic) {
+                    profilePicContainer.innerHTML = `
+                        <img src="${data.profilePic}" alt="Foto de perfil">
+                        <div class="profile-pic-edit-overlay" onclick="showProfilePicModal()">
+                            <i class="fas fa-camera"></i>
+                        </div>`;
+                } else {
+                     profilePicContainer.innerHTML = `
+                        <i class="fas fa-user"></i>
+                        <div class="profile-pic-edit-overlay" onclick="showProfilePicModal()">
+                            <i class="fas fa-camera"></i>
+                        </div>`;
+                }
+                // FIN: NUEVA LÓGICA PARA FOTO DE PERFIL
+
+                // Poblar formulario "Mi Puesto"
                 document.getElementById('storeName').value = data.business;
                 document.getElementById('storeDescription').value = data.description;
-                document.getElementById('storeContact').value = data.phone;
-                toggleStoreEditMode(false); // Asegurarse que esté en modo no-edición al cargar
+                
+                toggleStoreEditMode(false);
+                toggleProfileEditMode(false);
             }
         } catch (error) { console.error("Error loading profile:", error); }
     }
 
-    function setupImageUpload() {
-        const uploadArea = document.getElementById('productImageUploadArea');
-        const fileInput = document.getElementById('productImageInput');
+    function setupImageUpload(areaId, inputId, fileVariableSetter) {
+        const uploadArea = document.getElementById(areaId);
+        const fileInput = document.getElementById(inputId);
         uploadArea.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
-                selectedProductFile = file;
+                fileVariableSetter(file);
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    uploadArea.innerHTML = `<img src="${event.target.result}" class="preview-image"><button type="button" class="remove-image-btn" onclick="removeUploadedImage(event)"><i class="fas fa-times"></i></button>`;
+                    uploadArea.innerHTML = `<img src="${event.target.result}" class="preview-image">`;
                 };
                 reader.readAsDataURL(file);
             }
         });
     }
 
-    function removeUploadedImage(event) {
-        if(event) event.stopPropagation();
-        const uploadArea = document.getElementById('productImageUploadArea');
-        uploadArea.innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic o arrastra una imagen aquí</p>';
-        document.getElementById('productImageInput').value = '';
-        selectedProductFile = null;
-        delete uploadArea.dataset.existingImage;
-    }
-
     async function loadProductForEdit(productId) {
-        showLoading('Cargando producto...');
         try {
             const doc = await db.collection('products').doc(productId).get();
             if (doc.exists) {
@@ -774,72 +834,46 @@ const firebaseConfig = {
                 document.getElementById('productName').value = product.name;
                 document.getElementById('productPrice').value = product.price;
                 document.getElementById('productDescription').value = product.description;
-                const uploadArea = document.getElementById('productImageUploadArea');
                 if (product.imageBase64) {
-                    uploadArea.innerHTML = `<img src="${product.imageBase64}" class="preview-image"><button type="button" class="remove-image-btn" onclick="removeUploadedImage(event)"><i class="fas fa-times"></i></button>`;
-                    uploadArea.dataset.existingImage = product.imageBase64;
+                    document.getElementById('productImageUploadArea').innerHTML = `<img src="${product.imageBase64}" class="preview-image">`;
+                    document.getElementById('productImageUploadArea').dataset.existingImage = product.imageBase64;
                 }
             }
         } catch (error) { console.error("Error loading product for edit:", error); } 
-        finally { hideLoading(); }
     }
 
     async function saveProduct() {
-        const modal = document.getElementById('productModal');
-        const productId = modal.dataset.productId;
-        const isEditing = !!productId;
-        const msgEl = document.getElementById('productModalMessage');
-
-        const productData = {
-            name: document.getElementById('productName').value.trim(),
-            price: parseFloat(document.getElementById('productPrice').value),
-            description: document.getElementById('productDescription').value.trim(),
-            vendorId: currentUser.uid,
-            vendorName: document.getElementById('userBusiness').textContent,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        if (!productData.name || isNaN(productData.price)) return showMessage(msgEl, 'Nombre y precio son requeridos.', 'error');
+        const isEditing = !!document.getElementById('productModal').dataset.productId;
+        const productData = { name: document.getElementById('productName').value, price: parseFloat(document.getElementById('productPrice').value), description: document.getElementById('productDescription').value, vendorId: currentUser.uid, vendorName: document.getElementById('userBusiness').textContent };
         
-        showLoading(isEditing ? 'Actualizando producto...' : 'Guardando producto...');
-
-        try {
-            let imageBase64 = document.getElementById('productImageUploadArea').dataset.existingImage || null;
-            if (selectedProductFile) {
-                showLoading('Procesando imagen...');
-                const compressedFile = await imageCompression(selectedProductFile, { maxSizeMB: 0.5, maxWidthOrHeight: 800 });
-                imageBase64 = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = error => reject(error);
-                    reader.readAsDataURL(compressedFile);
-                });
-            }
-            productData.imageBase64 = imageBase64;
-
-            const docRef = isEditing ? db.collection('products').doc(productId) : db.collection('products').doc();
-            if (!isEditing) {
-                productData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                productData.published = true;
-            }
-            await docRef.set(productData, { merge: true });
-
-            showSuccessMessage('¡Producto guardado correctamente!');
-            hideModal('productModal');
-            loadMyProducts();
-        } catch (error) {
-            console.error("Error saving product:", error);
-            showErrorMessage('Error al guardar. La imagen puede ser muy grande.');
-        } finally {
-            hideLoading();
+        let imageBase64 = document.getElementById('productImageUploadArea').dataset.existingImage || null;
+        if (selectedProductFile) {
+            const compressedFile = await imageCompression(selectedProductFile, { maxSizeMB: 0.5, maxWidthOrHeight: 800 });
+            imageBase64 = await new Promise(resolve => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.readAsDataURL(compressedFile);
+            });
         }
+        productData.imageBase64 = imageBase64;
+
+        const docRef = isEditing ? db.collection('products').doc(document.getElementById('productModal').dataset.productId) : db.collection('products').doc();
+        if (!isEditing) productData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        productData.published = true;
+        await docRef.set(productData, { merge: true });
+        
+        showToast('Producto guardado.', 'success');
+        hideModal('productModal');
+        loadMyProducts();
     }
 
     function resetProductForm() {
         document.getElementById('productName').value = '';
         document.getElementById('productPrice').value = '';
         document.getElementById('productDescription').value = '';
-        removeUploadedImage();
+        document.getElementById('productImageUploadArea').innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic o arrastra una imagen aquí</p>';
+        document.getElementById('productImageInput').value = '';
+        selectedProductFile = null;
     }
 
     function renderProductCard(container, product) {
@@ -865,83 +899,130 @@ const firebaseConfig = {
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
-            <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}')"` : ''}>
-                ${!product.imageBase64 ? '<i class="fas fa-shopping-bag"></i>' : ''}
-            </div>
+            <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}')"` : ''}></div>
             <div class="product-info">
                 <h3 class="product-title">${product.name}</h3>
                 <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
                 <div class="product-actions">
-                    <button class="action-btn edit-btn" onclick="showProductModal('${product.id}')"><i class="fas fa-edit"></i></button>
-                    <button class="action-btn delete-btn" onclick="confirmDeleteProduct('${product.id}')"><i class="fas fa-trash"></i></button>
-                    <button class="action-btn status-btn" onclick="toggleProductStatus('${product.id}', ${!product.published})"><i class="fas fa-eye${product.published ? '' : '-slash'}"></i></button>
+                    <button class="action-btn" onclick="showProductModal('${product.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="action-btn" onclick="deleteProduct('${product.id}')"><i class="fas fa-trash"></i></button>
+                    <button class="action-btn" onclick="toggleProductStatus('${product.id}', ${!product.published})"><i class="fas fa-eye${product.published ? '' : '-slash'}"></i></button>
                 </div>
             </div>`;
         container.appendChild(card);
     }
     
-    function confirmDeleteProduct(productId) {
-        if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
-            deleteProduct(productId);
-        }
-    }
-
-    async function deleteProduct(productId) {
-        showLoading('Eliminando producto...');
-        try {
-            await db.collection('products').doc(productId).delete();
-            await loadMyProducts();
-            showSuccessMessage('Producto eliminado correctamente.');
-        } catch (error) { console.error("Error deleting product:", error); } 
-        finally { hideLoading(); }
-    }
-
-    async function toggleProductStatus(productId, newStatus) {
-        try {
-            await db.collection('products').doc(productId).update({ published: newStatus });
-            await loadMyProducts();
-        } catch (error) { console.error("Error toggling status:", error); }
-    }
+    async function deleteProduct(id) { if (confirm('¿Eliminar producto?')) { await db.collection('products').doc(id).delete(); loadMyProducts(); } }
+    async function toggleProductStatus(id, status) { await db.collection('products').doc(id).update({ published: status }); loadMyProducts(); }
     
-    // --- NUEVAS FUNCIONES PARA PÁGINA DE PUESTO Y EDICIÓN ---
-    function showVendorPage(vendorId, vendorName) {
+    // INICIO: NUEVAS FUNCIONES Y MODIFICACIONES
+    async function showVendorPage(vendorId, vendorName) {
         showSection('vendor-page');
         document.getElementById('vendorPageTitle').textContent = vendorName;
+        const whatsappBtn = document.getElementById('vendorWhatsappBtn');
+        whatsappBtn.style.display = 'none';
+
+        try {
+            const doc = await db.collection('merchants').doc(vendorId).get();
+            if (doc.exists && doc.data().phone) {
+                const phone = doc.data().phone.replace(/[^0-9]/g, '');
+                whatsappBtn.href = `https://wa.me/${phone}`;
+                whatsappBtn.style.display = 'inline-flex';
+            }
+        } catch (error) { console.error("Error fetching vendor phone:", error); }
+        
         loadProducts('vendorProductsGrid', { vendorId: vendorId });
     }
 
     function toggleStoreEditMode(isEditing) {
         document.getElementById('storeName').readOnly = !isEditing;
         document.getElementById('storeDescription').readOnly = !isEditing;
-        document.getElementById('storeContact').readOnly = !isEditing;
         document.getElementById('editStoreBtn').style.display = isEditing ? 'none' : 'block';
         document.getElementById('storeFormFooter').style.display = isEditing ? 'flex' : 'none';
-        if (!isEditing) {
-            // Si cancelamos, volvemos a cargar los datos originales
-            updateUserProfile(currentUser.uid);
-        }
+        if (!isEditing) updateUserProfile(currentUser.uid);
     }
 
     async function saveStoreInfo() {
-        showLoading('Guardando información...');
-        const newData = {
-            business: document.getElementById('storeName').value.trim(),
-            description: document.getElementById('storeDescription').value.trim(),
-            phone: document.getElementById('storeContact').value.trim()
-        };
-        try {
-            await db.collection('merchants').doc(currentUser.uid).update(newData);
-            await updateUserProfile(currentUser.uid); // Recargar toda la info actualizada
-            toggleStoreEditMode(false);
-            showSuccessMessage('Información del puesto actualizada.');
-        } catch (error) {
-            console.error('Error updating store info:', error);
-            showErrorMessage('No se pudo actualizar la información.');
-        } finally {
-            hideLoading();
+        const newData = { business: document.getElementById('storeName').value, description: document.getElementById('storeDescription').value };
+        await db.collection('merchants').doc(currentUser.uid).update(newData);
+        toggleStoreEditMode(false);
+        showToast('Información del puesto actualizada.', 'success');
+    }
+
+    function toggleProfileEditMode(isEditing) {
+        const card = document.getElementById('profileCard');
+        card.classList.toggle('edit-mode', isEditing);
+        document.getElementById('editProfileBtn').style.display = isEditing ? 'none' : 'block';
+        document.getElementById('profileFormFooter').style.display = isEditing ? 'flex' : 'none';
+
+        if(isEditing) {
+            document.getElementById('userNameInput').value = document.getElementById('userName').textContent;
+            document.getElementById('userPhoneInput').value = document.getElementById('userPhone').textContent;
+        } else {
+            updateUserProfile(currentUser.uid);
         }
     }
-    // --- FIN DE NUEVAS FUNCIONES ---
+    
+    async function saveProfileInfo() {
+        const newData = {
+            name: document.getElementById('userNameInput').value.trim(),
+            phone: document.getElementById('userPhoneInput').value.trim()
+        };
+        await db.collection('merchants').doc(currentUser.uid).update(newData);
+        toggleProfileEditMode(false);
+        showToast('Perfil actualizado.', 'success');
+    }
+
+    function showProfilePicModal() {
+        document.getElementById('profilePicModal').style.display = 'flex';
+        selectedProfilePicFile = null;
+        selectedAvatarUrl = null;
+        document.getElementById('profilePicUploadArea').innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic para subir</p>';
+    }
+
+    async function saveProfilePic() {
+        let picUrl = null;
+        if (selectedProfilePicFile) {
+            const compressedFile = await imageCompression(selectedProfilePicFile, { maxSizeMB: 0.2, maxWidthOrHeight: 400 });
+            picUrl = await new Promise(resolve => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.readAsDataURL(compressedFile);
+            });
+        } else if (selectedAvatarUrl) {
+            picUrl = selectedAvatarUrl;
+        }
+        
+        if(picUrl) {
+            await db.collection('merchants').doc(currentUser.uid).update({ profilePic: picUrl });
+            await updateUserProfile(currentUser.uid);
+            hideModal('profilePicModal');
+            showToast('Foto de perfil actualizada.', 'success');
+        } else {
+            showToast('No seleccionaste ninguna imagen.', 'error');
+        }
+    }
+
+    function populateAvatars() {
+        const container = document.getElementById('avatarSelection');
+        container.innerHTML = '';
+        const avatarCount = 8;
+        for(let i=1; i <= avatarCount; i++) {
+            const avatarUrl = `https://api.dicebear.com/8.x/pixel-art/svg?seed=${i}&radius=50`;
+            const avatarItem = document.createElement('div');
+            avatarItem.className = 'avatar-item';
+            avatarItem.innerHTML = `<img src="${avatarUrl}" alt="Avatar ${i}">`;
+            avatarItem.onclick = () => {
+                selectedAvatarUrl = avatarUrl;
+                selectedProfilePicFile = null; // deseleccionar archivo si lo habia
+                document.getElementById('profilePicUploadArea').innerHTML = `<img src="${avatarUrl}" class="preview-image">`;
+                document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
+                avatarItem.style.borderColor = 'var(--cyan)';
+            };
+            container.appendChild(avatarItem);
+        }
+    }
+    // FIN: NUEVAS FUNCIONES Y MODIFICACIONES
 
     function logout() { auth.signOut(); }
 
@@ -968,43 +1049,19 @@ const firebaseConfig = {
         }
     }
     
-    function showMessage(element, message, type) {
-        element.textContent = message;
-        element.className = `login-message login-${type}`;
-        element.style.display = 'block';
-    }
-
-    function showLoading(message = 'Cargando...') {
-        let el = document.querySelector('.global-loading');
-        if (!el) {
-            el = document.createElement('div');
-            el.className = 'global-loading';
-            document.body.appendChild(el);
-        }
-        el.innerHTML = `<div class="loading-overlay"><div class="loading-content"><i class="fas fa-spinner fa-spin"></i><p>${message}</p></div></div>`;
-    }
-    function hideLoading() { document.querySelector('.global-loading')?.remove(); }
-
+    function showMessage(element, message, type) { element.textContent = message; element.className = `login-message login-${type}`; element.style.display = 'block'; }
     function showToast(message, type = 'success') {
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
         toast.textContent = message;
         document.body.appendChild(toast);
-        setTimeout(() => {
-            toast.classList.add('fade-out');
-            setTimeout(() => toast.remove(), 500);
-        }, 3000);
+        setTimeout(() => toast.remove(), 3000);
     }
-    const showSuccessMessage = (msg) => showToast(msg, 'success');
-    const showErrorMessage = (msg) => showToast(msg, 'error');
 
     function showImageLightbox(imageBase64) {
-        const lightbox = document.getElementById('imageLightbox');
-        const img = document.getElementById('lightboxImg');
-        img.src = imageBase64;
-        lightbox.style.display = 'flex';
+        document.getElementById('lightboxImg').src = imageBase64;
+        document.getElementById('imageLightbox').style.display = 'flex';
     }
-
     function hideImageLightbox() { document.getElementById('imageLightbox').style.display = 'none'; }
 
     function initializeApp() {
@@ -1012,33 +1069,31 @@ const firebaseConfig = {
             if (user) {
                 const merchantDoc = await db.collection('merchants').doc(user.uid).get();
                 if (merchantDoc.exists) {
-                    currentUser = user;
-                    isMerchant = true;
+                    currentUser = user; isMerchant = true;
                     await updateUserProfile(user.uid);
                     showSection('profile');
-                } else {
-                    isMerchant = false;
-                    currentUser = null;
-                }
+                } else { isMerchant = false; currentUser = null; }
             } else {
-                currentUser = null;
-                isMerchant = false;
+                currentUser = null; isMerchant = false;
                 showSection('home');
             }
             updateAuthUI();
         });
-        setupImageUpload();
+
+        // Setup de subida de imágenes
+        setupImageUpload('productImageUploadArea', 'productImageInput', (file) => selectedProductFile = file);
+        setupImageUpload('profilePicUploadArea', 'profilePicInput', (file) => {
+            selectedProfilePicFile = file;
+            selectedAvatarUrl = null; // deseleccionar avatar
+            document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
+        });
+
         loadProducts();
+        populateAvatars();
 
         const themeToggle = document.getElementById('themeToggle');
-        const applyTheme = (theme) => {
-            document.body.dataset.theme = theme;
-            localStorage.setItem('theme', theme);
-        };
-        themeToggle.addEventListener('click', () => {
-            const newTheme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
-            applyTheme(newTheme);
-        });
+        const applyTheme = (theme) => { document.body.dataset.theme = theme; localStorage.setItem('theme', theme); };
+        themeToggle.addEventListener('click', () => applyTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
         applyTheme(localStorage.getItem('theme') || 'light');
     }
 
@@ -1046,23 +1101,8 @@ const firebaseConfig = {
 
     window.toggleChatbot = function toggleChatbot() {
         const ctn = document.getElementById('chatbotContainer');
-        const btn = document.getElementById('chatbotToggleBtn');
-        const isOpen = ctn.classList.contains('visible');
-        if (isOpen) {
-            gsap.to(ctn, {
-                duration: 0.25, scale: 0.9, opacity: 0, ease: 'power2.out',
-                onComplete: () => {
-                    ctn.classList.remove('visible');
-                    ctn.setAttribute('aria-hidden', 'true');
-                    btn.setAttribute('aria-expanded', 'false');
-                }
-            });
-        } else {
-            ctn.classList.add('visible');
-            ctn.setAttribute('aria-hidden', 'false');
-            btn.setAttribute('aria-expanded', 'true');
-            gsap.fromTo(ctn, { scale: 0.9, opacity: 0 }, { duration: 0.35, scale: 1, opacity: 1, ease: 'back.out(1.6)' });
-        }
+        const isOpen = ctn.classList.toggle('visible');
+        gsap.to(ctn, { scale: isOpen ? 1 : 0.9, opacity: isOpen ? 1 : 0, duration: 0.3 });
     };
 </script>
 </body>
