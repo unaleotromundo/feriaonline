@@ -359,11 +359,9 @@
             justify-content: center;
             color: #9ca3af;
             font-size: 3rem;
-            /* INICIO CAMBIO: Ajuste de imagen */
             background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
-            /* FIN CAMBIO */
         }
         
         .product-info {
@@ -832,8 +830,8 @@ body[data-theme="dark"] .form-control {
     color: white;
 }
 body[data-theme="dark"] .form-control::placeholder { color: #9ca3af; }
-body[data-theme="dark"] .product-image { background: linear-gradient(135deg, #374151, #1f2937); }
 body[data-theme="dark"] .dropdown-menu a:hover { background: #4b5563; }
+/* La regla para .product-image en modo oscuro fue eliminada para mantener el fondo claro */
 
 .theme-toggle {
     position: fixed; bottom: 20px; right: 20px; z-index: 3001;
@@ -877,7 +875,7 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
     .chatbot-floating { bottom: 12px; left: 12px; }
 }
 
-/* INICIO: ESTILOS PARA EL VISOR DE IMAGEN (LIGHTBOX) */
+/* ESTILOS PARA EL VISOR DE IMAGEN (LIGHTBOX) */
 .image-lightbox {
     display: none;
     position: fixed;
@@ -904,7 +902,6 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
     cursor: pointer;
 }
 .lightbox-close:hover { color: #bbb; }
-/* FIN: ESTILOS LIGHTBOX */
 </style>
 </head>
 <body>
@@ -1150,12 +1147,10 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
         </button>
     </div>
 
-    <!-- INICIO: HTML PARA EL VISOR DE IMAGEN (LIGHTBOX) -->
     <div id="imageLightbox" class="image-lightbox" onclick="hideImageLightbox()">
         <span class="lightbox-close" onclick="hideImageLightbox()">&times;</span>
         <img class="lightbox-content" id="lightboxImg">
     </div>
-    <!-- FIN: HTML LIGHTBOX -->
 
 <script>
     // ***************************************************************
@@ -1171,9 +1166,8 @@ const firebaseConfig = {
   appId: "1:1001881267179:web:fc5ac0fd940964537887ae",
   measurementId: "G-GQZZQMNVPH"
 };
-    // ***************************************************************
 
-    // --- El resto del código funciona solo ---
+    // ***************************************************************
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -1375,7 +1369,7 @@ const firebaseConfig = {
             price: parseFloat(document.getElementById('productPrice').value),
             description: document.getElementById('productDescription').value.trim(),
             vendorId: currentUser.uid,
-            vendorName: document.getElementById('userBusiness').textContent, // CAMBIO: Usar nombre del puesto
+            vendorName: document.getElementById('userBusiness').textContent,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
@@ -1427,7 +1421,10 @@ const firebaseConfig = {
         card.className = 'product-card';
         if (product.imageBase64) {
             card.classList.add('clickable');
-            card.onclick = () => showImageLightbox(product.imageBase64);
+            card.onclick = (e) => {
+                if (e.target.closest('.product-info')) return;
+                showImageLightbox(product.imageBase64);
+            };
         }
         card.innerHTML = `
             <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}">
@@ -1436,7 +1433,7 @@ const firebaseConfig = {
             <div class="product-info">
                 <h3 class="product-title">${product.name}</h3>
                 <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
-                <p class="product-description">${product.description}</p>
+                <p class="product-description">${product.description || ''}</p>
                 <div class="product-vendor"><i class="fas fa-store"></i><span>${product.vendorName || ''}</span></div>
             </div>`;
         container.appendChild(card);
@@ -1445,9 +1442,8 @@ const firebaseConfig = {
     function renderMyProductCard(container, product) {
         const card = document.createElement('div');
         card.className = 'product-card';
-        // El onclick para el lightbox también podría ir aquí si quisieras
         card.innerHTML = `
-            <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}')"` : ''}>
+            <div class="product-image clickable" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}')"` : ''}>
                 ${!product.imageBase64 ? '<i class="fas fa-shopping-bag"></i>' : ''}
             </div>
             <div class="product-info">
@@ -1562,6 +1558,7 @@ const firebaseConfig = {
                     showSection('profile');
                 } else {
                     isMerchant = false;
+                    currentUser = null;
                 }
             } else {
                 currentUser = null;
@@ -1587,7 +1584,6 @@ const firebaseConfig = {
 
     document.addEventListener('DOMContentLoaded', initializeApp);
 
-    // CHATBOT SCRIPT
     window.toggleChatbot = function toggleChatbot() {
         const ctn = document.getElementById('chatbotContainer');
         const btn = document.getElementById('chatbotToggleBtn');
