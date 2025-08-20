@@ -9,6 +9,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.1/dist/browser-image-compression.js"></script>
+    <!-- LIBRERÍA NUEVA PARA GENERAR PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -334,6 +336,76 @@
     }
     .avatar-item:hover { transform: scale(1.1); box-shadow: 0 0 10px var(--cyan); }
     .avatar-item img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover;}
+
+    /* --- ESTILOS PARA EL CATÁLOGO PDF --- */
+    .pdf-catalog {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #333;
+        width: 8.5in; /* Ancho de página carta */
+        padding: 0.5in;
+    }
+
+    .pdf-cover {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 11in; /* Altura de página carta */
+        text-align: center;
+        border: 5px solid var(--cyan);
+        page-break-after: always; /* Importante para que el contenido empiece en la siguiente página */
+    }
+
+    .pdf-cover h1 {
+        font-size: 48px;
+        color: var(--cyan);
+        margin-bottom: 1rem;
+    }
+
+    .pdf-cover h2 {
+        font-size: 24px;
+        color: #555;
+    }
+
+    .pdf-product-item {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+        padding: 20px 0;
+        border-bottom: 1px solid #eee;
+        page-break-inside: avoid; /* Evita que un producto se corte entre dos páginas */
+    }
+
+    .pdf-product-item img {
+        max-width: 200px;
+        max-height: 200px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+    }
+
+    .pdf-product-details {
+        flex: 1;
+    }
+
+    .pdf-product-details h3 {
+        font-size: 22px;
+        margin: 0 0 10px 0;
+        color: var(--magenta);
+    }
+
+    .pdf-product-details .price {
+        font-size: 24px;
+        font-weight: bold;
+        color: var(--success);
+        margin-bottom: 15px;
+    }
+
+    .pdf-product-details .description {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #4b5563;
+    }
 </style>
 </head>
 <body>
@@ -474,7 +546,12 @@
         </div>
         <div class="products-header" style="margin-top: 3rem;">
             <h2 class="section-title">Mis Productos</h2>
-            <button class="btn btn-primary" onclick="showProductModal()"><i class="fas fa-plus"></i> Nuevo Producto</button>
+            <div>
+                <button id="exportPdfBtn" class="btn btn-secondary" onclick="exportCatalogToPDF()">
+                    <i class="fas fa-file-pdf"></i> Exportar Catálogo
+                </button>
+                <button class="btn btn-primary" onclick="showProductModal()"><i class="fas fa-plus"></i> Nuevo Producto</button>
+            </div>
         </div>
         <div class="products-grid" id="myProductsGrid"></div>
     </section>
@@ -927,13 +1004,12 @@
         loadProducts('vendorProductsGrid', { vendorId: vendorId });
     }
 
-function toggleStoreEditMode(isEditing) {
-    document.getElementById('storeName').readOnly = !isEditing;
-    document.getElementById('storeDescription').readOnly = !isEditing;
-    document.getElementById('editStoreBtn').style.display = isEditing ? 'none' : 'block';
-    document.getElementById('storeFormFooter').style.display = isEditing ? 'flex' : 'none';
+    function toggleStoreEditMode(isEditing) {
+        document.getElementById('storeName').readOnly = !isEditing;
+        document.getElementById('storeDescription').readOnly = !isEditing;
+        document.getElementById('editStoreBtn').style.display = isEditing ? 'none' : 'block';
+        document.getElementById('storeFormFooter').style.display = isEditing ? 'flex' : 'none';
         
-        // Si se cancela, se restauran los valores desde la variable global
         if (!isEditing && currentMerchantData) {
             document.getElementById('storeName').value = currentMerchantData.business;
             document.getElementById('storeDescription').value = currentMerchantData.description;
@@ -943,7 +1019,7 @@ function toggleStoreEditMode(isEditing) {
     async function saveStoreInfo() {
         const newData = { business: document.getElementById('storeName').value, description: document.getElementById('storeDescription').value };
         await db.collection('merchants').doc(currentUser.uid).update(newData);
-        await updateUserProfile(currentUser.uid); // Actualizar datos después de guardar
+        await updateUserProfile(currentUser.uid); 
         toggleStoreEditMode(false);
         showToast('Información del puesto actualizada.', 'success');
     }
@@ -955,7 +1031,6 @@ function toggleStoreEditMode(isEditing) {
         document.getElementById('profileFormFooter').style.display = isEditing ? 'flex' : 'none';
 
         if (isEditing) {
-            // Poblar los inputs con los datos actuales al entrar en modo edición
             document.getElementById('userNameInput').value = document.getElementById('userName').textContent;
             const currentPhone = document.getElementById('userPhone').textContent;
             document.getElementById('userPhoneInput').value = currentPhone === 'No especificado' ? '' : currentPhone;
@@ -968,7 +1043,7 @@ function toggleStoreEditMode(isEditing) {
             phone: document.getElementById('userPhoneInput').value.trim()
         };
         await db.collection('merchants').doc(currentUser.uid).update(newData);
-        await updateUserProfile(currentUser.uid); // Actualizar datos después de guardar
+        await updateUserProfile(currentUser.uid);
         toggleProfileEditMode(false);
         showToast('Perfil actualizado.', 'success');
     }
@@ -1022,12 +1097,92 @@ function toggleStoreEditMode(isEditing) {
             container.appendChild(avatarItem);
         });
     }
-    // --- FIN: FUNCIONES DE EDICIÓN REFACTORIZADAS ---
+
+    // --- NUEVA FUNCIÓN PARA EXPORTAR PDF ---
+    async function exportCatalogToPDF() {
+        if (!currentUser || !currentMerchantData) {
+            showToast('Debes iniciar sesión como comerciante.', 'error');
+            return;
+        }
+
+        const exportBtn = document.getElementById('exportPdfBtn');
+        exportBtn.disabled = true;
+        exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+
+        try {
+            const snapshot = await db.collection('products')
+                .where('vendorId', '==', currentUser.uid)
+                .where('published', '==', true)
+                .orderBy('createdAt', 'desc')
+                .get();
+
+            if (snapshot.empty) {
+                showToast('No tienes productos publicados para incluir en el catálogo.', 'error');
+                return;
+            }
+
+            const products = snapshot.docs.map(doc => doc.data());
+
+            const catalogElement = document.createElement('div');
+            catalogElement.id = 'pdf-render-area';
+            catalogElement.style.position = 'absolute';
+            catalogElement.style.left = '-9999px';
+            
+            let contentHTML = `<div class="pdf-catalog">`;
+            contentHTML += `
+                <div class="pdf-cover">
+                    <h1>Catálogo de Productos</h1>
+                    <h2>${currentMerchantData.business}</h2>
+                    <p>Generado el ${new Date().toLocaleDateString()}</p>
+                </div>
+            `;
+
+            products.forEach(product => {
+                contentHTML += `
+                    <div class="pdf-product-item">
+                        ${product.imageBase64 ? `<img src="${product.imageBase64}" alt="${product.name}">` : ''}
+                        <div class="pdf-product-details">
+                            <h3>${product.name}</h3>
+                            <div class="price">$${(product.price || 0).toFixed(2)}</div>
+                            <p class="description">${product.description || 'Sin descripción.'}</p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            contentHTML += `</div>`;
+            catalogElement.innerHTML = contentHTML;
+            document.body.appendChild(catalogElement);
+
+            const options = {
+                margin:       0.5,
+                filename:     `catalogo-${currentMerchantData.business.replace(/\s+/g, '-')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            await html2pdf().from(catalogElement).set(options).save();
+            
+            showToast('Catálogo PDF generado exitosamente.', 'success');
+
+        } catch (error) {
+            console.error("Error generando el PDF:", error);
+            showToast('Hubo un error al generar el catálogo.', 'error');
+        } finally {
+            exportBtn.disabled = false;
+            exportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Exportar Catálogo';
+            const renderedElement = document.getElementById('pdf-render-area');
+            if (renderedElement) {
+                document.body.removeChild(renderedElement);
+            }
+        }
+    }
+    // --- FIN DE LA NUEVA FUNCIÓN ---
 
     function logout() { auth.signOut(); }
 
     function updateAuthUI() {
-        // ... (sin cambios en esta función)
         if (isMerchant && currentUser) {
             authContainer.innerHTML = `
                 <div class="user-dropdown">
