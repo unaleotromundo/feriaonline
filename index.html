@@ -105,7 +105,7 @@
             width: 100px; height: 100px; border-radius: 50%;
             background: linear-gradient(135deg, var(--cyan) 0%, var(--magenta) 100%);
             display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 2.5rem; overflow: hidden; position: relative;
+            color: white; font-size: 2.5rem; overflow: hidden; position: relative; flex-shrink: 0;
         }
         .profile-pic img { width: 100%; height: 100%; object-fit: cover; }
         .profile-pic-edit-overlay {
@@ -113,7 +113,7 @@
             color: white; display: flex; align-items: center; justify-content: center;
             font-size: 1.5rem; cursor: pointer; opacity: 0; transition: opacity 0.3s ease;
         }
-        .profile-card.edit-mode .profile-pic-edit-overlay { opacity: 1; }
+        .profile-card.edit-mode .profile-pic:hover .profile-pic-edit-overlay { opacity: 1; }
         .profile-info h2 { font-size: 1.8rem; margin-bottom: 0.5rem; }
         .profile-info p { color: #4b5563; }
         .profile-details { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
@@ -315,7 +315,7 @@
     }
     .lightbox-close:hover { color: #bbb; }
 
-    /* INICIO: ESTILOS PARA EDICIÓN DE PERFIL */
+    /* ESTILOS PARA EDICIÓN DE PERFIL */
     .profile-card.edit-mode .detail-item p,
     .profile-card.edit-mode .profile-info h2 { display: none; }
     .profile-card.edit-mode .detail-item .editable,
@@ -333,8 +333,7 @@
         border: 3px solid transparent;
     }
     .avatar-item:hover { transform: scale(1.1); box-shadow: 0 0 10px var(--cyan); }
-    .avatar-item img { width: 100%; height: 100%; border-radius: 50%; }
-    /* FIN: ESTILOS PARA EDICIÓN DE PERFIL */
+    .avatar-item img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover;}
 </style>
 </head>
 <body>
@@ -392,11 +391,10 @@
     </section>
 
     <section id="vendor-page" class="section">
-        <!-- INICIO: MODIFICACIÓN EN CABECERA DE PÁGINA DE PUESTO -->
         <div class="vendor-page-header">
             <h2 class="section-title">Puesto: <span id="vendorPageTitle"></span></h2>
             <div class="vendor-actions" style="display: flex; gap: 1rem;">
-                <a href="#" id="vendorWhatsappBtn" class="btn btn-whatsapp" style="display: none;">
+                <a href="#" id="vendorWhatsappBtn" class="btn btn-whatsapp" style="display: none;" target="_blank" rel="noopener noreferrer">
                     <i class="fab fa-whatsapp"></i> Chatear
                 </a>
                 <button class="btn btn-secondary" onclick="showSection('products')">
@@ -404,22 +402,20 @@
                 </button>
             </div>
         </div>
-        <!-- FIN: MODIFICACIÓN EN CABECERA DE PÁGINA DE PUESTO -->
         <div class="products-grid" id="vendorProductsGrid"></div>
     </section>
 
     <section id="profile" class="section">
         <h2 class="section-title">Mi Perfil</h2>
         <div class="profile-container">
-            <!-- INICIO: MODIFICACIÓN EN TARJETA DE PERFIL -->
             <div class="profile-card" id="profileCard">
                 <button id="editProfileBtn" class="edit-btn-container" onclick="toggleProfileEditMode(true)">
                     <i class="fas fa-pencil-alt"></i>
                 </button>
                 <div class="profile-header">
-                    <div class="profile-pic" id="profilePicContainer">
+                    <div class="profile-pic" id="profilePicContainer" onclick="if(document.getElementById('profileCard').classList.contains('edit-mode')) showProfilePicModal();">
                         <i class="fas fa-user"></i>
-                        <div class="profile-pic-edit-overlay" onclick="showProfilePicModal()">
+                        <div class="profile-pic-edit-overlay">
                             <i class="fas fa-camera"></i>
                         </div>
                     </div>
@@ -433,7 +429,7 @@
                     <div class="detail-item">
                         <h3>Información de contacto</h3>
                         <p><i class="fas fa-phone"></i> <span id="userPhone"></span></p>
-                        <input type="text" id="userPhoneInput" class="form-control editable">
+                        <input type="text" id="userPhoneInput" class="form-control editable" placeholder="Ej: 5491112345678">
                     </div>
                     <div class="detail-item">
                         <h3>Mi negocio</h3>
@@ -453,7 +449,6 @@
                     <button class="btn btn-primary" onclick="saveProfileInfo()">Guardar Cambios</button>
                 </div>
             </div>
-            <!-- FIN: MODIFICACIÓN EN TARJETA DE PERFIL -->
         </div>
     </section>
 
@@ -540,7 +535,6 @@
         </div>
     </div>
 
-    <!-- INICIO: MODAL PARA EDICIÓN DE FOTO DE PERFIL -->
     <div class="login-modal" id="profilePicModal">
         <div class="login-box">
             <button type="button" class="close-modal-btn" onclick="hideModal('profilePicModal')"><i class="fas fa-times"></i></button>
@@ -565,7 +559,6 @@
             </div>
         </div>
     </div>
-    <!-- FIN: MODAL PARA EDICIÓN DE FOTO DE PERFIL -->
 
     <div class="login-modal" id="productModal">
         <div class="login-box">
@@ -647,13 +640,15 @@
     const db = firebase.firestore();
     const auth = firebase.auth();
     
+    // --- INICIO: VARIABLES GLOBALES MODIFICADAS Y AÑADIDAS ---
     let currentUser = null;
     let isMerchant = false;
+    let currentMerchantData = null; // Para guardar los datos del comerciante y evitar llamadas a DB
+
     let selectedProductFile = null;
-    // INICIO: NUEVAS VARIABLES GLOBALES
     let selectedProfilePicFile = null;
     let selectedAvatarUrl = null;
-    // FIN: NUEVAS VARIABLES GLOBALES
+    // --- FIN: VARIABLES GLOBALES MODIFICADAS Y AÑADIDAS ---
 
     const profileLink = document.getElementById('profileLink');
     const storeLink = document.getElementById('storeLink');
@@ -675,18 +670,15 @@
     function showProductModal(productId = null) {
         const modal = document.getElementById('productModal');
         const title = document.getElementById('productModalTitle');
-        const saveButton = modal.querySelector('.btn-primary');
         resetProductForm();
         modal.style.display = 'flex';
         
         if (productId) {
             title.textContent = 'Editar Producto';
-            saveButton.textContent = 'Actualizar Producto';
             modal.dataset.productId = productId;
             loadProductForEdit(productId);
         } else {
             title.textContent = 'Agregar Nuevo Producto';
-            saveButton.textContent = 'Guardar Producto';
             delete modal.dataset.productId;
         }
     }
@@ -728,6 +720,7 @@
     }
 
     async function registerMerchant() {
+        // ... (sin cambios en esta función)
         const name = document.getElementById('regName').value.trim();
         const email = document.getElementById('regEmail').value.trim();
         const password = document.getElementById('regPassword').value;
@@ -751,6 +744,7 @@
     }
 
     async function login() {
+        // ... (sin cambios en esta función)
         const email = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value;
         const msgEl = document.getElementById('loginMessage');
@@ -765,51 +759,43 @@
             }, 1000);
         } catch (error) { showMessage(msgEl, 'Correo o contraseña incorrectos.', 'error'); }
     }
-
+    
+    // --- INICIO: FUNCIÓN `updateUserProfile` REFACTORIZADA ---
     async function updateUserProfile(userId) {
         try {
             const doc = await db.collection('merchants').doc(userId).get();
+            if (!doc.exists) return;
+
+            currentMerchantData = doc.data(); // Guardamos los datos globalmente
             const productsSnapshot = await db.collection('products').where('vendorId', '==', userId).get();
             
-            if (doc.exists) {
-                const data = doc.data();
-                // Poblar campos de texto
-                document.getElementById('userName').textContent = data.name;
-                document.getElementById('userEmail').textContent = data.email;
-                document.getElementById('userPhone').textContent = data.phone || 'No especificado';
-                document.getElementById('userBusiness').textContent = data.business;
-                document.getElementById('userProducts').textContent = `${productsSnapshot.size} productos publicados`;
-                const createdAt = data.createdAt?.toDate();
-                document.getElementById('userSince').textContent = createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A';
-                
-                // INICIO: NUEVA LÓGICA PARA FOTO DE PERFIL
-                const profilePicContainer = document.getElementById('profilePicContainer');
-                if (data.profilePic) {
-                    profilePicContainer.innerHTML = `
-                        <img src="${data.profilePic}" alt="Foto de perfil">
-                        <div class="profile-pic-edit-overlay" onclick="showProfilePicModal()">
-                            <i class="fas fa-camera"></i>
-                        </div>`;
-                } else {
-                     profilePicContainer.innerHTML = `
-                        <i class="fas fa-user"></i>
-                        <div class="profile-pic-edit-overlay" onclick="showProfilePicModal()">
-                            <i class="fas fa-camera"></i>
-                        </div>`;
-                }
-                // FIN: NUEVA LÓGICA PARA FOTO DE PERFIL
-
-                // Poblar formulario "Mi Puesto"
-                document.getElementById('storeName').value = data.business;
-                document.getElementById('storeDescription').value = data.description;
-                
-                toggleStoreEditMode(false);
-                toggleProfileEditMode(false);
+            // Poblar campos de texto del perfil
+            document.getElementById('userName').textContent = currentMerchantData.name;
+            document.getElementById('userEmail').textContent = currentMerchantData.email;
+            document.getElementById('userPhone').textContent = currentMerchantData.phone || 'No especificado';
+            document.getElementById('userBusiness').textContent = currentMerchantData.business;
+            document.getElementById('userProducts').textContent = `${productsSnapshot.size} productos publicados`;
+            const createdAt = currentMerchantData.createdAt?.toDate();
+            document.getElementById('userSince').textContent = createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A';
+            
+            // Actualizar foto de perfil
+            const profilePicContainer = document.getElementById('profilePicContainer');
+            if (currentMerchantData.profilePic) {
+                profilePicContainer.innerHTML = `<img src="${currentMerchantData.profilePic}" alt="Foto de perfil"><div class="profile-pic-edit-overlay"><i class="fas fa-camera"></i></div>`;
+            } else {
+                 profilePicContainer.innerHTML = `<i class="fas fa-user"></i><div class="profile-pic-edit-overlay"><i class="fas fa-camera"></i></div>`;
             }
+
+            // Poblar formulario "Mi Puesto"
+            document.getElementById('storeName').value = currentMerchantData.business;
+            document.getElementById('storeDescription').value = currentMerchantData.description;
+            
         } catch (error) { console.error("Error loading profile:", error); }
     }
+    // --- FIN: FUNCIÓN `updateUserProfile` REFACTORIZADA ---
 
     function setupImageUpload(areaId, inputId, fileVariableSetter) {
+        // ... (sin cambios en esta función)
         const uploadArea = document.getElementById(areaId);
         const fileInput = document.getElementById(inputId);
         uploadArea.addEventListener('click', () => fileInput.click());
@@ -827,6 +813,7 @@
     }
 
     async function loadProductForEdit(productId) {
+        // ... (sin cambios en esta función)
         try {
             const doc = await db.collection('products').doc(productId).get();
             if (doc.exists) {
@@ -843,6 +830,7 @@
     }
 
     async function saveProduct() {
+        // ... (sin cambios en esta función)
         const isEditing = !!document.getElementById('productModal').dataset.productId;
         const productData = { name: document.getElementById('productName').value, price: parseFloat(document.getElementById('productPrice').value), description: document.getElementById('productDescription').value, vendorId: currentUser.uid, vendorName: document.getElementById('userBusiness').textContent };
         
@@ -868,6 +856,7 @@
     }
 
     function resetProductForm() {
+        // ... (sin cambios en esta función)
         document.getElementById('productName').value = '';
         document.getElementById('productPrice').value = '';
         document.getElementById('productDescription').value = '';
@@ -877,6 +866,7 @@
     }
 
     function renderProductCard(container, product) {
+        // ... (sin cambios en esta función)
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
@@ -896,6 +886,7 @@
     }
 
     function renderMyProductCard(container, product) {
+        // ... (sin cambios en esta función)
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
@@ -915,7 +906,7 @@
     async function deleteProduct(id) { if (confirm('¿Eliminar producto?')) { await db.collection('products').doc(id).delete(); loadMyProducts(); } }
     async function toggleProductStatus(id, status) { await db.collection('products').doc(id).update({ published: status }); loadMyProducts(); }
     
-    // INICIO: NUEVAS FUNCIONES Y MODIFICACIONES
+    // --- INICIO: FUNCIONES DE EDICIÓN REFACTORIZADAS ---
     async function showVendorPage(vendorId, vendorName) {
         showSection('vendor-page');
         document.getElementById('vendorPageTitle').textContent = vendorName;
@@ -926,8 +917,10 @@
             const doc = await db.collection('merchants').doc(vendorId).get();
             if (doc.exists && doc.data().phone) {
                 const phone = doc.data().phone.replace(/[^0-9]/g, '');
-                whatsappBtn.href = `https://wa.me/${phone}`;
-                whatsappBtn.style.display = 'inline-flex';
+                if(phone) {
+                    whatsappBtn.href = `https://wa.me/${phone}`;
+                    whatsappBtn.style.display = 'inline-flex';
+                }
             }
         } catch (error) { console.error("Error fetching vendor phone:", error); }
         
@@ -939,12 +932,18 @@
         document.getElementById('storeDescription').readOnly = !isEditing;
         document.getElementById('editStoreBtn').style.display = isEditing ? 'none' : 'block';
         document.getElementById('storeFormFooter').style.display = isEditing ? 'flex' : 'none';
-        if (!isEditing) updateUserProfile(currentUser.uid);
+        
+        // Si se cancela, se restauran los valores desde la variable global
+        if (!isEditing && currentMerchantData) {
+            document.getElementById('storeName').value = currentMerchantData.business;
+            document.getElementById('storeDescription').value = currentMerchantData.description;
+        }
     }
 
     async function saveStoreInfo() {
         const newData = { business: document.getElementById('storeName').value, description: document.getElementById('storeDescription').value };
         await db.collection('merchants').doc(currentUser.uid).update(newData);
+        await updateUserProfile(currentUser.uid); // Actualizar datos después de guardar
         toggleStoreEditMode(false);
         showToast('Información del puesto actualizada.', 'success');
     }
@@ -955,11 +954,11 @@
         document.getElementById('editProfileBtn').style.display = isEditing ? 'none' : 'block';
         document.getElementById('profileFormFooter').style.display = isEditing ? 'flex' : 'none';
 
-        if(isEditing) {
+        if (isEditing) {
+            // Poblar los inputs con los datos actuales al entrar en modo edición
             document.getElementById('userNameInput').value = document.getElementById('userName').textContent;
-            document.getElementById('userPhoneInput').value = document.getElementById('userPhone').textContent;
-        } else {
-            updateUserProfile(currentUser.uid);
+            const currentPhone = document.getElementById('userPhone').textContent;
+            document.getElementById('userPhoneInput').value = currentPhone === 'No especificado' ? '' : currentPhone;
         }
     }
     
@@ -969,6 +968,7 @@
             phone: document.getElementById('userPhoneInput').value.trim()
         };
         await db.collection('merchants').doc(currentUser.uid).update(newData);
+        await updateUserProfile(currentUser.uid); // Actualizar datos después de guardar
         toggleProfileEditMode(false);
         showToast('Perfil actualizado.', 'success');
     }
@@ -1006,27 +1006,28 @@
     function populateAvatars() {
         const container = document.getElementById('avatarSelection');
         container.innerHTML = '';
-        const avatarCount = 8;
-        for(let i=1; i <= avatarCount; i++) {
-            const avatarUrl = `https://api.dicebear.com/8.x/pixel-art/svg?seed=${i}&radius=50`;
+        const avatars = ['male', 'female', 'human', 'identicon', 'bottts', 'avataaars', 'jdenticon', 'micah'];
+        avatars.forEach(seed => {
+            const avatarUrl = `https://api.dicebear.com/8.x/pixel-art/svg?seed=${seed}&radius=50`;
             const avatarItem = document.createElement('div');
             avatarItem.className = 'avatar-item';
-            avatarItem.innerHTML = `<img src="${avatarUrl}" alt="Avatar ${i}">`;
+            avatarItem.innerHTML = `<img src="${avatarUrl}" alt="Avatar ${seed}">`;
             avatarItem.onclick = () => {
                 selectedAvatarUrl = avatarUrl;
-                selectedProfilePicFile = null; // deseleccionar archivo si lo habia
+                selectedProfilePicFile = null;
                 document.getElementById('profilePicUploadArea').innerHTML = `<img src="${avatarUrl}" class="preview-image">`;
                 document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
                 avatarItem.style.borderColor = 'var(--cyan)';
             };
             container.appendChild(avatarItem);
-        }
+        });
     }
-    // FIN: NUEVAS FUNCIONES Y MODIFICACIONES
+    // --- FIN: FUNCIONES DE EDICIÓN REFACTORIZADAS ---
 
     function logout() { auth.signOut(); }
 
     function updateAuthUI() {
+        // ... (sin cambios en esta función)
         if (isMerchant && currentUser) {
             authContainer.innerHTML = `
                 <div class="user-dropdown">
@@ -1072,19 +1073,18 @@
                     currentUser = user; isMerchant = true;
                     await updateUserProfile(user.uid);
                     showSection('profile');
-                } else { isMerchant = false; currentUser = null; }
+                } else { isMerchant = false; currentUser = null; currentMerchantData = null; }
             } else {
-                currentUser = null; isMerchant = false;
+                currentUser = null; isMerchant = false; currentMerchantData = null;
                 showSection('home');
             }
             updateAuthUI();
         });
 
-        // Setup de subida de imágenes
         setupImageUpload('productImageUploadArea', 'productImageInput', (file) => selectedProductFile = file);
         setupImageUpload('profilePicUploadArea', 'profilePicInput', (file) => {
             selectedProfilePicFile = file;
-            selectedAvatarUrl = null; // deseleccionar avatar
+            selectedAvatarUrl = null;
             document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
         });
 
