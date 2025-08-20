@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.1/dist/browser-image-compression.js"></script>
-    <!-- LIBRERÍA NUEVA PARA GENERAR PDF -->
+    <!-- LIBRERÍA PARA GENERAR PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -406,6 +406,25 @@
         line-height: 1.6;
         color: #4b5563;
     }
+    
+    /* --- Estilos para los botones de acción del header --- */
+    .header-actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .btn-small {
+        font-size: 0.9rem !important;
+        padding: 0.75rem 1.25rem !important; /* Hacemos el padding más pequeño */
+        gap: 0.5rem;
+    }
+
+    /* Hacemos que la etiqueta 'label' se comporte y vea como un botón */
+    .header-actions label.btn {
+        cursor: pointer;
+        margin-bottom: 0;
+    }
 </style>
 </head>
 <body>
@@ -546,10 +565,18 @@
         </div>
         <div class="products-header" style="margin-top: 3rem;">
             <h2 class="section-title">Mis Productos</h2>
-            <div>
-                <button id="exportPdfBtn" class="btn btn-secondary" onclick="exportCatalogToPDF()">
-                    <i class="fas fa-file-pdf"></i> Exportar Catálogo
+            <div class="header-actions">
+                <!-- Input oculto para la importación -->
+                <input type="file" id="importJsonInput" accept=".json" onchange="handleJsonImport(event)" style="display: none;">
+
+                <!-- Botones de acción -->
+                <button class="btn btn-small btn-secondary" onclick="exportCatalogToJSON()">
+                    <i class="fas fa-download"></i> Exportar JSON
                 </button>
+                <label for="importJsonInput" class="btn btn-small btn-secondary">
+                    <i class="fas fa-upload"></i> Importar JSON
+                </label>
+                
                 <button class="btn btn-primary" onclick="showProductModal()"><i class="fas fa-plus"></i> Nuevo Producto</button>
             </div>
         </div>
@@ -1099,98 +1126,211 @@
     }
 
     // --- FUNCIÓN PARA EXPORTAR PDF (VERSIÓN CORREGIDA Y ROBUSTA) ---
- async function exportCatalogToPDF() {
-    if (!currentUser || !currentMerchantData) {
-        showToast('Debes iniciar sesión como comerciante.', 'error');
-        return;
-    }
-
-    const exportBtn = document.getElementById('exportPdfBtn');
-    exportBtn.disabled = true;
-    exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparando...';
-
-    try {
-        const snapshot = await db.collection('products')
-            .where('vendorId', '==', currentUser.uid)
-            .where('published', '==', true)
-            .orderBy('createdAt', 'desc')
-            .get();
-
-        if (snapshot.empty) {
-            showToast('No tienes productos publicados para incluir.', 'error');
-            exportBtn.disabled = false;
-            exportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Exportar Catálogo';
+    async function exportCatalogToPDF() {
+        if (!currentUser || !currentMerchantData) {
+            showToast('Debes iniciar sesión como comerciante.', 'error');
             return;
         }
 
-        const products = snapshot.docs.map(doc => doc.data());
+        const exportBtn = document.getElementById('exportPdfBtn');
+        exportBtn.disabled = true;
+        exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparando...';
 
-        const catalogElement = document.createElement('div');
-        catalogElement.id = 'pdf-render-area';
-        catalogElement.style.position = 'absolute';
-        catalogElement.style.top = '0';
-        catalogElement.style.left = '0';
-        catalogElement.style.zIndex = '-1';
-        catalogElement.style.opacity = '0';
+        try {
+            const snapshot = await db.collection('products')
+                .where('vendorId', '==', currentUser.uid)
+                .where('published', '==', true)
+                .orderBy('createdAt', 'desc')
+                .get();
 
-        let contentHTML = `<div class="pdf-catalog">`;
-        contentHTML += `<div class="pdf-cover"><h1>Catálogo de Productos</h1><h2>${currentMerchantData.business}</h2><p>Generado el ${new Date().toLocaleDateString()}</p></div>`;
-        
-        products.forEach(product => {
-            contentHTML += `
-                <div class="pdf-product-item">
-                    ${product.imageUrl ? `<img src="${product.imageUrl}" alt="${product.name}">` : '<div style="width:200px; height:200px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; color:#ccc; border-radius:8px;">Sin imagen</div>'}
-                    <div class="pdf-product-details">
-                        <h3>${product.name}</h3>
-                        <div class="price">$${(product.price || 0).toFixed(2)}</div>
-                        <p class="description">${product.description || 'Sin descripción.'}</p>
+            if (snapshot.empty) {
+                showToast('No tienes productos publicados para incluir.', 'error');
+                exportBtn.disabled = false;
+                exportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Exportar Catálogo';
+                return;
+            }
+
+            const products = snapshot.docs.map(doc => doc.data());
+
+            const catalogElement = document.createElement('div');
+            catalogElement.id = 'pdf-render-area';
+            catalogElement.style.position = 'absolute';
+            catalogElement.style.top = '0';
+            catalogElement.style.left = '0';
+            catalogElement.style.zIndex = '-1';
+            catalogElement.style.opacity = '0';
+
+            let contentHTML = `<div class="pdf-catalog">`;
+            contentHTML += `<div class="pdf-cover"><h1>Catálogo de Productos</h1><h2>${currentMerchantData.business}</h2><p>Generado el ${new Date().toLocaleDateString()}</p></div>`;
+            
+            products.forEach(product => {
+                contentHTML += `
+                    <div class="pdf-product-item">
+                        ${product.imageUrl ? `<img src="${product.imageUrl}" alt="${product.name}">` : '<div style="width:200px; height:200px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; color:#ccc; border-radius:8px;">Sin imagen</div>'}
+                        <div class="pdf-product-details">
+                            <h3>${product.name}</h3>
+                            <div class="price">$${(product.price || 0).toFixed(2)}</div>
+                            <p class="description">${product.description || 'Sin descripción.'}</p>
+                        </div>
                     </div>
-                </div>
-            `;
-        });
-        contentHTML += `</div>`;
-        catalogElement.innerHTML = contentHTML;
-        document.body.appendChild(catalogElement);
+                `;
+            });
+            contentHTML += `</div>`;
+            catalogElement.innerHTML = contentHTML;
+            document.body.appendChild(catalogElement);
 
-        const images = catalogElement.querySelectorAll('img');
-        const imagePromises = [];
-        images.forEach(img => {
-            imagePromises.push(new Promise((resolve) => {
-                if (img.complete) return resolve();
-                img.onload = resolve;
-                img.onerror = resolve; 
-            }));
-        });
-        
-        await Promise.all(imagePromises);
-        
-        exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando PDF...';
+            const images = catalogElement.querySelectorAll('img');
+            const imagePromises = [];
+            images.forEach(img => {
+                imagePromises.push(new Promise((resolve) => {
+                    if (img.complete) return resolve();
+                    img.onload = resolve;
+                    img.onerror = resolve; 
+                }));
+            });
+            
+            await Promise.all(imagePromises);
+            
+            exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando PDF...';
 
-        const options = {
-            margin:       0.5,
-            filename:     `catalogo-${currentMerchantData.business.replace(/\s+/g, '-')}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, letterRendering: true }, // useCORS es VITAL aquí
-            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-        };
+            const options = {
+                margin:       0.5,
+                filename:     `catalogo-${currentMerchantData.business.replace(/\s+/g, '-')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, letterRendering: true }, // useCORS es VITAL aquí
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
 
-        await html2pdf().from(catalogElement).set(options).save();
-        
-        showToast('Catálogo PDF generado exitosamente.', 'success');
+            await html2pdf().from(catalogElement).set(options).save();
+            
+            showToast('Catálogo PDF generado exitosamente.', 'success');
 
-    } catch (error) {
-        console.error("Error generando el PDF:", error);
-        showToast('Hubo un error al generar el catálogo.', 'error');
-    } finally {
-        exportBtn.disabled = false;
-        exportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Exportar Catálogo';
-        const renderedElement = document.getElementById('pdf-render-area');
-        if (renderedElement) {
-            document.body.removeChild(renderedElement);
+        } catch (error) {
+            console.error("Error generando el PDF:", error);
+            showToast('Hubo un error al generar el catálogo.', 'error');
+        } finally {
+            exportBtn.disabled = false;
+            exportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Exportar Catálogo';
+            const renderedElement = document.getElementById('pdf-render-area');
+            if (renderedElement) {
+                document.body.removeChild(renderedElement);
+            }
         }
     }
-}
-    // --- FIN DE LA FUNCIÓN ---
+    // --- FIN DE LA FUNCIÓN PDF ---
+
+    // --- NUEVAS FUNCIONES PARA IMPORTAR Y EXPORTAR JSON ---
+    async function exportCatalogToJSON() {
+        if (!currentUser) {
+            showToast('Debes iniciar sesión para exportar tu catálogo.', 'error');
+            return;
+        }
+        showToast('Preparando la exportación...', 'success');
+
+        try {
+            const snapshot = await db.collection('products')
+                .where('vendorId', '==', currentUser.uid)
+                .get();
+            
+            if (snapshot.empty) {
+                showToast('No tienes productos para exportar.', 'error');
+                return;
+            }
+
+            const productsToExport = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    name: data.name,
+                    price: data.price,
+                    description: data.description,
+                    imageBase64: data.imageBase64 || null, // Se mantiene la lógica original de imageBase64
+                    published: data.published
+                };
+            });
+
+            const jsonString = JSON.stringify(productsToExport, null, 2);
+            
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `catalogo-feria-virtual-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast('Catálogo exportado exitosamente.', 'success');
+
+        } catch (error) {
+            console.error("Error exportando a JSON:", error);
+            showToast('Hubo un error al exportar el catálogo.', 'error');
+        }
+    }
+
+    function handleJsonImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const products = JSON.parse(e.target.result);
+                if (confirm(`¿Estás seguro de que deseas importar ${products.length} productos a tu catálogo? Esta acción no se puede deshacer.`)) {
+                    importCatalogFromJSON(products);
+                }
+            } catch (error) {
+                console.error("Error al parsear el archivo JSON:", error);
+                showToast('El archivo seleccionado no es un JSON válido.', 'error');
+            } finally {
+                event.target.value = '';
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    async function importCatalogFromJSON(products) {
+        if (!Array.isArray(products) || products.length === 0) {
+            showToast('El archivo no contiene productos para importar.', 'error');
+            return;
+        }
+        
+        showToast(`Importando ${products.length} productos...`, 'success');
+        
+        try {
+            let importedCount = 0;
+            const importPromises = products.map(product => {
+                if (!product.name) return Promise.resolve(); 
+
+                const newProductData = {
+                    name: product.name,
+                    price: product.price || 0,
+                    description: product.description || '',
+                    imageBase64: product.imageBase64 || null,
+                    published: typeof product.published === 'boolean' ? product.published : true,
+                    vendorId: currentUser.uid,
+                    vendorName: currentMerchantData.business,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                importedCount++;
+                return db.collection('products').add(newProductData);
+            });
+
+            await Promise.all(importPromises);
+
+            showToast(`${importedCount} productos importados correctamente.`, 'success');
+            
+            loadMyProducts();
+            updateUserProfile(currentUser.uid);
+
+        } catch (error) {
+            console.error("Error durante la importación masiva:", error);
+            showToast('Ocurrió un error durante la importación.', 'error');
+        }
+    }
+    // --- FIN DE FUNCIONES JSON ---
 
     function logout() { auth.signOut(); }
 
