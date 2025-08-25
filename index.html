@@ -153,9 +153,14 @@
                 <h2 class="section-title">Mis Productos</h2>
                 <div class="header-actions">
                     <input type="file" id="importJsonInput" accept=".json" onchange="handleJsonImport(event)" style="display: none;">
-                    <button class="btn btn-small btn-secondary" onclick="showPdfThemeModal()">
-                        <i class="fas fa-file-pdf"></i> Crear Catálogo PDF
+                    
+                    <button class="btn btn-small btn-secondary" onclick="showExportModal('pdf')">
+                        <i class="fas fa-file-pdf"></i> Catálogo PDF
                     </button>
+                    <button class="btn btn-small btn-secondary" onclick="showExportModal('jpg')">
+                        <i class="fas fa-file-image"></i> Catálogo JPG
+                    </button>
+
                     <button class="btn btn-small btn-secondary" onclick="exportCatalogToJSON()">
                         <i class="fas fa-download"></i> Exportar JSON
                     </button>
@@ -285,11 +290,11 @@
         </div>
     </div>
     
-    <div class="login-modal" id="pdfThemeModal">
+    <div class="login-modal" id="exportThemeModal">
         <div class="login-box">
-            <button type="button" class="close-modal-btn" onclick="hideModal('pdfThemeModal')"><i class="fas fa-times"></i></button>
+            <button type="button" class="close-modal-btn" onclick="hideModal('exportThemeModal')"><i class="fas fa-times"></i></button>
             <div class="login-header">
-                <h2>Elige un Diseño para tu Catálogo</h2>
+                <h2 id="exportModalTitle">Elige un Diseño para tu Catálogo</h2>
                 <p>Selecciona la plantilla que mejor represente a tu marca.</p>
             </div>
             <div id="themeSelectionGrid" class="theme-selection-grid"></div>
@@ -324,6 +329,13 @@
     <div id="imageLightbox" class="image-lightbox" onclick="hideImageLightbox()">
         <span class="lightbox-close" onclick="hideImageLightbox()">&times;</span>
         <img class="lightbox-content" id="lightboxImg">
+    </div>
+
+    <div id="globalLoadingOverlay" class="global-loading">
+        <div class="loading-box">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Generando catálogo, un momento por favor...</p>
+        </div>
     </div>
 
     <!-- Librerías Externas -->

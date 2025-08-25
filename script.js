@@ -484,7 +484,9 @@ async function importCatalogFromJSON(products) {
     }
 }
 
-// --- FUNCIONALIDAD DE GENERACIÓN DE CATÁLOGO PDF ---
+
+// --- GENERACIÓN DE CATÁLOGOS (PDF & JPG) ---
+
 const PDF_THEMES = {
     naturaleza: { name: 'Naturaleza', icon: 'fa-leaf', headerColor: '#22c55e', accentColor: '#16a34a' },
     gastronomia: { name: 'Gastronomía', icon: 'fa-utensils', headerColor: '#f97316', accentColor: '#ea580c' },
@@ -496,100 +498,176 @@ const PDF_THEMES = {
     elegante: { name: 'Elegante', icon: 'fa-gem', headerColor: '#d97706', accentColor: '#b45309' }
 };
 
-window.showPdfThemeModal = function() {
+function buildCatalogHtml(themeKey, products) {
+    return new Promise((resolve) => {
+        const theme = PDF_THEMES[themeKey];
+        const merchantInfo = currentMerchantData;
+        
+        const wrapper = document.createElement('div');
+        wrapper.id = 'pdf-content-wrapper';
+
+        let contentHTML = `
+            <style>
+                .pdf-header { border-color: ${theme.headerColor}; }
+                .pdf-header h1 { color: ${theme.headerColor}; }
+                .pdf-product-details .price { color: ${theme.accentColor}; }
+                .pdf-product-details h3 { color: ${theme.headerColor}; }
+            </style>
+            <div class="pdf-page">
+                <div class="pdf-header">
+                    <h1>${merchantInfo.business}</h1>
+                    <p>${merchantInfo.description || ''}</p>
+                </div>
+                <div class="pdf-product-grid">
+        `;
+
+        products.forEach((product, index) => {
+            const itemsPerPage = 4;
+            if (index > 0 && index % itemsPerPage === 0) {
+                contentHTML += `</div><div class="html2pdf__page-break"></div><div class="pdf-product-grid">`;
+            }
+            contentHTML += `
+                <div class="pdf-product-item">
+                    <div class="pdf-product-image-container">
+                        ${product.imageBase64 ? `<img src="${product.imageBase64}" crossorigin="anonymous">` : '<i class="fas fa-image" style="font-size: 50px; color: #ccc;"></i>'}
+                    </div>
+                    <div class="pdf-product-details">
+                        <h3>${product.name}</h3>
+                        <div class="price">$${(product.price || 0).toFixed(2)}</div>
+                        <p class="description">${product.description || 'Sin descripción.'}</p>
+                    </div>
+                </div>
+            `;
+        });
+        
+        contentHTML += `
+                </div>
+                <div class="pdf-footer">
+                    Catálogo de ${merchantInfo.business} &copy; ${new Date().getFullYear()}
+                </div>
+            </div>
+        `;
+        
+        wrapper.innerHTML = contentHTML;
+        document.body.appendChild(wrapper);
+
+        const images = wrapper.getElementsByTagName('img');
+        const imagePromises = [];
+        if (images.length === 0) {
+            resolve(wrapper);
+            return;
+        }
+        
+        for (let i = 0; i < images.length; i++) {
+            const img = images[i];
+            if (img.complete) continue;
+            
+            imagePromises.push(new Promise(res => {
+                img.onload = res;
+                img.onerror = res;
+            }));
+        }
+
+        Promise.all(imagePromises).then(() => {
+            setTimeout(() => resolve(wrapper), 100);
+        });
+    });
+}
+
+window.showExportModal = function(exportType) {
     if (!currentUser) {
         showToast('Debes iniciar sesión para crear un catálogo.', 'error');
         return;
     }
     const grid = document.getElementById('themeSelectionGrid');
+    const modalTitle = document.getElementById('exportModalTitle');
     grid.innerHTML = '';
+    
+    modalTitle.textContent = `Elige un Diseño para tu Catálogo ${exportType.toUpperCase()}`;
     
     for (const key in PDF_THEMES) {
         const theme = PDF_THEMES[key];
         const card = document.createElement('div');
         card.className = 'theme-card';
         card.innerHTML = `<i class="fas ${theme.icon}"></i><span>${theme.name}</span>`;
-        card.onclick = () => generatePdfCatalog(key);
+        if (exportType === 'pdf') {
+            card.onclick = () => generatePdfCatalog(key);
+        } else {
+            card.onclick = () => generateJpgCatalog(key);
+        }
         grid.appendChild(card);
     }
-    document.getElementById('pdfThemeModal').style.display = 'flex';
+    document.getElementById('exportThemeModal').style.display = 'flex';
 }
 
 async function generatePdfCatalog(themeKey) {
-    hideModal('pdfThemeModal');
-    showToast('Generando tu catálogo PDF, por favor espera...', 'success');
-
-    const theme = PDF_THEMES[themeKey];
-    const merchantInfo = currentMerchantData;
-    const productsSnapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).where('published', '==', true).get();
+    hideModal('exportThemeModal');
+    const loadingOverlay = document.getElementById('globalLoadingOverlay');
     
-    if (productsSnapshot.empty) {
-        showToast('No tienes productos publicados para incluir en el catálogo.', 'error');
-        return;
-    }
-    const products = productsSnapshot.docs.map(doc => doc.data());
+    try {
+        loadingOverlay.style.display = 'flex';
 
-    const wrapper = document.createElement('div');
-    wrapper.id = 'pdf-content-wrapper';
-    
-    let contentHTML = `
-        <style>
-            .pdf-header { border-color: ${theme.headerColor}; }
-            .pdf-header h1 { color: ${theme.headerColor}; }
-            .pdf-product-details .price { color: ${theme.accentColor}; }
-            .pdf-product-details h3 { color: ${theme.headerColor}; }
-        </style>
-        <div class="pdf-page">
-            <div class="pdf-header">
-                <h1>${merchantInfo.business}</h1>
-                <p>${merchantInfo.description || ''}</p>
-            </div>
-            <div class="pdf-product-grid">
-    `;
-
-    products.forEach((product, index) => {
-        if (index > 0 && index % 4 === 0) {
-            contentHTML += `</div><div class="html2pdf__page-break"></div><div class="pdf-product-grid">`;
+        const productsSnapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).where('published', '==', true).get();
+        if (productsSnapshot.empty) {
+            showToast('No tienes productos publicados para incluir.', 'error');
+            return;
         }
-        contentHTML += `
-            <div class="pdf-product-item">
-                <div class="pdf-product-image-container">
-                    ${product.imageBase64 ? `<img src="${product.imageBase64}">` : '<i class="fas fa-image" style="font-size: 50px; color: #ccc;"></i>'}
-                </div>
-                <div class="pdf-product-details">
-                    <h3>${product.name}</h3>
-                    <div class="price">$${(product.price || 0).toFixed(2)}</div>
-                    <p class="description">${product.description || 'Sin descripción.'}</p>
-                </div>
-            </div>
-        `;
-    });
-    
-    contentHTML += `
-            </div>
-            <div class="pdf-footer">
-                Catálogo de ${merchantInfo.business} &copy; ${new Date().getFullYear()}
-            </div>
-        </div>
-    `;
+        const products = productsSnapshot.docs.map(doc => doc.data());
 
-    wrapper.innerHTML = contentHTML;
-    document.body.appendChild(wrapper);
+        const element = await buildCatalogHtml(themeKey, products);
+        
+        const opt = {
+            margin: 0,
+            filename: `catalogo-${currentMerchantData.business.replace(/\s+/g, '-')}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        await html2pdf().from(element).set(opt).save();
+        document.body.removeChild(element);
 
-    const element = document.getElementById('pdf-content-wrapper');
-    const opt = {
-        margin: 0,
-        filename: `catalogo-${merchantInfo.business.replace(/\s+/g, '-')}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-    
-    setTimeout(() => {
-        html2pdf().from(element).set(opt).save().then(() => {
-            document.body.removeChild(wrapper);
-        });
-    }, 200);
+    } catch (error) {
+        console.error("Error generando PDF:", error);
+        showToast("Hubo un error al generar el catálogo.", "error");
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+}
+
+async function generateJpgCatalog(themeKey) {
+    hideModal('exportThemeModal');
+    const loadingOverlay = document.getElementById('globalLoadingOverlay');
+
+    try {
+        loadingOverlay.style.display = 'flex';
+
+        const productsSnapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).where('published', '==', true).get();
+        if (productsSnapshot.empty) {
+            showToast('No tienes productos publicados para incluir.', 'error');
+            return;
+        }
+        const products = productsSnapshot.docs.map(doc => doc.data());
+
+        const element = await buildCatalogHtml(themeKey, products);
+
+        const canvas = await html2canvas(element.querySelector('.pdf-page'), { useCORS: true, scale: 2 });
+        
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/jpeg', 0.95);
+        a.download = `catalogo-${currentMerchantData.business.replace(/\s+/g, '-')}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        document.body.removeChild(element);
+
+    } catch (error) {
+        console.error("Error generando JPG:", error);
+        showToast("Hubo un error al generar la imagen del catálogo.", "error");
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
 }
 
 // --- UTILIDADES Y FUNCIONES AUXILIARES ---
