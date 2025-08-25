@@ -1299,7 +1299,7 @@
     // NUEVA FUNCIÓN: Llama a la API de Gemini
     async function generateCatalogWithAI(merchantData, products) {
         // *** ¡CLAVE API INTEGRADA AQUÍ! ***
-        const API_KEY = "AIzaSyB8yQBcJSmdTPKK7t-dUVPXBsCUc_ees7c";
+        const API_KEY = "AIzaSyAkhah0pwJsppNnwQZFbanw-jf2-jRFQjI";
         const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
         
         const simplifiedProducts = products.map(p => ({ name: p.name, description: p.description })).slice(0, 10);
