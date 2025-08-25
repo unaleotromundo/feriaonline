@@ -437,9 +437,9 @@
         .export-option-card h3 { margin-bottom: 0.5rem; color: var(--black); }
         .export-option-card p { font-size: 0.9rem; color: #6b7280; }
 
-        /* --- ESTILOS BASE PARA EL PDF GENERADO (SE SOBREESCRIBIRÁN DINÁMICAMENTE) --- */
+        /* --- ESTILOS BASE Y PULIDOS PARA EL PDF GENERADO --- */
         .pdf-catalog-container {
-            width: 210mm;
+            width: 210mm; /* Ancho de A4 para referencia */
             box-sizing: border-box;
             padding: 15mm;
             --pdf-primary-color: #1f2937;
@@ -459,46 +459,61 @@
         }
         .pdf-header h1 {
             font-family: 'Montserrat', sans-serif;
-            font-size: 26pt;
+            font-size: 24pt;
+            font-weight: 700;
             color: var(--pdf-primary-color);
             margin: 0 0 5mm 0;
         }
         .pdf-header p {
             font-size: 11pt;
             font-style: italic;
+            max-width: 80%;
+            margin: 0 auto;
             color: var(--pdf-text-color);
         }
         .pdf-products-grid {
             display: flex;
             flex-wrap: wrap;
             gap: 10mm;
+            justify-content: space-between;
         }
         .pdf-product-item {
-            width: calc(50% - 5mm);
-            page-break-inside: avoid;
+            width: calc(50% - 5mm); /* Dos columnas con espaciado perfecto */
+            page-break-inside: avoid; /* Instrucción clave para evitar cortes */
             margin-bottom: 10mm;
-            border: 1px solid #eee;
+            border: 1px solid #eeeeee;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        .pdf-image-container {
+            width: 100%;
+            aspect-ratio: 4 / 3; /* Proporción profesional para las imágenes */
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #b0b0b0;
         }
         .pdf-product-image {
-            width: 50%;
-            height: 60mm;
-            object-fit: cover;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* La clave para no distorsionar imágenes */
         }
         .pdf-product-info {
             padding: 5mm;
+            flex-grow: 1; /* Asegura que todas las tarjetas tengan la misma altura */
         }
         .pdf-product-title {
             font-family: 'Montserrat', sans-serif;
-            font-size: 14pt;
+            font-size: 13pt;
             font-weight: 700;
             color: var(--pdf-primary-color);
             margin: 0 0 2mm 0;
         }
         .pdf-product-price {
-            font-size: 16pt;
+            font-size: 15pt;
             font-weight: 700;
             color: var(--pdf-secondary-color);
             margin: 0 0 4mm 0;
@@ -509,11 +524,12 @@
         }
         .pdf-footer {
             padding-top: 5mm;
-            margin-top: 5mm;
+            margin-top: 10mm;
             text-align: center;
             font-size: 8pt;
             color: #999;
             border-top: 1px solid #eee;
+            page-break-before: auto;
         }
     </style>
 </head>
@@ -1298,8 +1314,7 @@
     
     // NUEVA FUNCIÓN: Llama a la API de Gemini
     async function generateCatalogWithAI(merchantData, products) {
-        // *** ¡CLAVE API INTEGRADA AQUÍ! ***
-        const API_KEY = "AIzaSyAkhah0pwJsppNnwQZFbanw-jf2-jRFQjI";
+        const API_KEY = "AIzaSyB8yQBcJSmdTPKK7t-dUVPXBsCUc_ees7c";
         const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
         
         const simplifiedProducts = products.map(p => ({ name: p.name, description: p.description })).slice(0, 10);
@@ -1342,7 +1357,11 @@
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
 
-            if (!response.ok) throw new Error(`Error en la API de Gemini: ${response.statusText}`);
+            if (!response.ok) {
+                // Capturamos el texto del error para más detalles
+                const errorBody = await response.text();
+                throw new Error(`Error en la API de Gemini: ${response.status} ${response.statusText} - ${errorBody}`);
+            }
 
             const data = await response.json();
             const jsonString = data.candidates[0].content.parts[0].text;
@@ -1359,12 +1378,16 @@
     // NUEVA FUNCIÓN: Carga fuentes de Google y aplica estilos dinámicos
     function applyDynamicStyles(design) {
         const fontLink = document.createElement('link');
+        fontLink.id = 'dynamic-google-font';
         fontLink.href = `https://fonts.googleapis.com/css2?family=${design.googleFontPair.headings.replace(/ /g, '+')}:wght@700&family=${design.googleFontPair.body.replace(/ /g, '+')}:wght@400&display=swap`;
         fontLink.rel = 'stylesheet';
+
+        const existingFontLink = document.getElementById('dynamic-google-font');
+        if (existingFontLink) existingFontLink.remove();
         document.head.appendChild(fontLink);
 
         const styleSheet = document.createElement("style");
-        styleSheet.id = 'dynamic-pdf-styles'; // ID para poder removerla si es necesario
+        styleSheet.id = 'dynamic-pdf-styles';
         styleSheet.innerText = `
             .pdf-catalog-container.dynamic-style {
                 --pdf-primary-color: ${design.colorPalette.primary};
@@ -1378,7 +1401,6 @@
                 font-family: '${design.googleFontPair.headings}', sans-serif;
             }
         `;
-        // Remover estilos previos si existen, para evitar acumulación
         const existingStyle = document.getElementById('dynamic-pdf-styles');
         if (existingStyle) existingStyle.remove();
         
@@ -1411,7 +1433,7 @@
             if (!aiDesign) {
                 aiDesign = {
                     catalogTitle: currentMerchantData.business,
-                    introText: "Descubre nuestra colección de productos únicos.",
+                    introText: "Descubre nuestra colección de productos únicos, hechos con dedicación y pasión.",
                     design: {
                         googleFontPair: { headings: "Montserrat", body: "Roboto" },
                         colorPalette: { primary: "#1f2937", secondary: "#06b6d4", text: "#333333", background: "#ffffff" }
@@ -1431,7 +1453,9 @@
             products.forEach(product => {
                 catalogHtml += `
                     <div class="pdf-product-item">
-                        ${product.imageBase64 ? `<img src="${product.imageBase64}" class="pdf-product-image">` : ''}
+                        <div class="pdf-image-container">
+                            ${product.imageBase64 ? `<img src="${product.imageBase64}" class="pdf-product-image">` : '<span>Sin Imagen</span>'}
+                        </div>
                         <div class="pdf-product-info">
                             <h2 class="pdf-product-title">${product.name}</h2>
                             <p class="pdf-product-price">$${(product.price || 0).toFixed(2)}</p>
@@ -1447,7 +1471,12 @@
                 </div>`;
 
             const elementToConvert = document.createElement('div');
+            // Es crucial añadir el elemento al DOM para que los estilos se apliquen correctamente,
+            // pero lo hacemos invisible para el usuario.
+            elementToConvert.style.position = 'absolute';
+            elementToConvert.style.left = '-250mm'; // Fuera de la pantalla
             elementToConvert.innerHTML = catalogHtml;
+            document.body.appendChild(elementToConvert);
 
             const opt = {
                 margin: 0,
@@ -1458,6 +1487,10 @@
             };
 
             await html2pdf().from(elementToConvert).set(opt).save();
+            
+            // Limpieza: removemos el elemento temporal del DOM
+            document.body.removeChild(elementToConvert);
+
             showToast('¡Tu catálogo único se ha generado!', 'success');
 
         } catch (error) {
