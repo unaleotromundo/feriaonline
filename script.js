@@ -53,7 +53,6 @@ window.showProductModal = function(productId = null) {
     }
 }
 
-// ... (El resto de funciones hasta la generación de catálogos se mantiene igual)
 async function loadProducts(containerId = 'productsGrid', filter = {}) {
     const productsGrid = document.getElementById(containerId);
     productsGrid.innerHTML = `<div>Cargando productos...</div>`;
@@ -365,15 +364,75 @@ function populateAvatars() {
 }
 
 window.exportCatalogToJSON = async function() {
-    // ... (sin cambios)
+    if (!currentUser) return showToast('Debes iniciar sesión para exportar tu catálogo.', 'error');
+    showToast('Preparando la exportación...', 'success');
+    try {
+        const snapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).get();
+        if (snapshot.empty) return showToast('No tienes productos para exportar.', 'error');
+        const productsToExport = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return { name: data.name, price: data.price, description: data.description, imageBase64: data.imageBase64 || null, published: data.published };
+        });
+        const jsonString = JSON.stringify(productsToExport, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `catalogo-feria-virtual-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Catálogo exportado exitosamente.', 'success');
+    } catch (error) {
+        console.error("Error exportando a JSON:", error);
+        showToast('Hubo un error al exportar el catálogo.', 'error');
+    }
 }
 
 window.handleJsonImport = function(event) {
-    // ... (sin cambios)
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const products = JSON.parse(e.target.result);
+            if (confirm(`¿Estás seguro de que deseas importar ${products.length} productos a tu catálogo? Esta acción no se puede deshacer.`)) {
+                importCatalogFromJSON(products);
+            }
+        } catch (error) {
+            console.error("Error al parsear el archivo JSON:", error);
+            showToast('El archivo seleccionado no es un JSON válido.', 'error');
+        } finally {
+            event.target.value = '';
+        }
+    };
+    reader.readAsText(file);
 }
 
 async function importCatalogFromJSON(products) {
-    // ... (sin cambios)
+    if (!Array.isArray(products) || products.length === 0) return showToast('El archivo no contiene productos para importar.', 'error');
+    showToast(`Importando ${products.length} productos...`, 'success');
+    try {
+        let importedCount = 0;
+        const importPromises = products.map(product => {
+            if (!product.name) return Promise.resolve();
+            const newProductData = {
+                name: product.name, price: product.price || 0, description: product.description || '', imageBase64: product.imageBase64 || null,
+                published: typeof product.published === 'boolean' ? product.published : true,
+                vendorId: currentUser.uid, vendorName: currentMerchantData.business, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            importedCount++;
+            return db.collection('products').add(newProductData);
+        });
+        await Promise.all(importPromises);
+        showToast(`${importedCount} productos importados correctamente.`, 'success');
+        loadMyProducts();
+        updateUserProfile(currentUser.uid);
+    } catch (error) {
+        console.error("Error durante la importación masiva:", error);
+        showToast('Ocurrió un error durante la importación.', 'error');
+    }
 }
 
 // --- GENERACIÓN DE CATÁLOGOS (PDF & JPG) ---
@@ -406,7 +465,7 @@ window.showExportModal = function(exportType) {
         card.className = 'theme-card';
         card.innerHTML = `<i class="fas ${theme.icon}"></i><span>${theme.name}</span>`;
         if (exportType === 'pdf') {
-            card.onclick = () => generatePdfWithJsPDF(key); // <--- Llamamos a la nueva función
+            card.onclick = () => generatePdfWithJsPDF(key);
         } else {
             card.onclick = () => generateJpgCatalog(key);
         }
@@ -415,10 +474,6 @@ window.showExportModal = function(exportType) {
     document.getElementById('exportThemeModal').style.display = 'flex';
 }
 
-/**
- * NUEVA FUNCIÓN ROBUSTA PARA GENERAR PDF CON JSPDF
- * Este es el nuevo motor de PDF.
- */
 async function generatePdfWithJsPDF(themeKey) {
     hideModal('exportThemeModal');
     const loadingOverlay = document.getElementById('globalLoadingOverlay');
@@ -435,7 +490,6 @@ async function generatePdfWithJsPDF(themeKey) {
         const theme = PDF_THEMES[themeKey];
         const merchantInfo = currentMerchantData;
 
-        // 1. Inicializar jsPDF
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
         const pageWidth = doc.internal.pageSize.getWidth();
@@ -444,7 +498,6 @@ async function generatePdfWithJsPDF(themeKey) {
         const contentWidth = pageWidth - (margin * 2);
         let currentY = margin;
 
-        // --- Helper Functions para dibujar en la página ---
         const addHeader = () => {
             doc.setFontSize(22);
             doc.setTextColor(theme.headerColor);
@@ -453,7 +506,8 @@ async function generatePdfWithJsPDF(themeKey) {
             
             doc.setFontSize(10);
             doc.setTextColor('#666');
-            const descLines = doc.splitTextToSize(merchantInfo.description || '', contentWidth);
+            const descriptionText = String(merchantInfo.description || '');
+            const descLines = doc.splitTextToSize(descriptionText, contentWidth);
             doc.text(descLines, pageWidth / 2, currentY, { align: 'center' });
             currentY += (descLines.length * 4) + 10;
             
@@ -470,14 +524,12 @@ async function generatePdfWithJsPDF(themeKey) {
             doc.text(footerText, pageWidth / 2, footerY, { align: 'center' });
         };
 
-        // --- Iniciar la primera página ---
         addHeader();
         let pageCount = 1;
         addFooter(pageCount);
 
-        // 2. Iterar sobre los productos y dibujarlos
         for (const product of products) {
-            const productHeight = 85; // Altura estimada de cada bloque de producto
+            const productHeight = 85;
 
             if (currentY + productHeight > pageHeight - margin) {
                 doc.addPage();
@@ -487,30 +539,31 @@ async function generatePdfWithJsPDF(themeKey) {
                 addFooter(pageCount);
             }
 
-            // Dibujar imagen
             if (product.imageBase64) {
                 try {
-                    const img = new Image();
-                    img.src = product.imageBase64;
-                    // Esperar a que la imagen cargue para obtener sus dimensiones
-                    await new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+                    const format = product.imageBase64.substring("data:image/".length, product.imageBase64.indexOf(";base64")).toUpperCase();
+                    if (['JPG', 'JPEG', 'PNG'].includes(format)) {
+                        const img = new Image();
+                        img.src = product.imageBase64;
+                        await new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
 
-                    const ratio = img.width / img.height;
-                    const imgWidth = 80;
-                    const imgHeight = imgWidth / ratio;
-                    doc.addImage(product.imageBase64, 'JPEG', margin, currentY, imgWidth, imgHeight);
-                } catch (e) {
-                    console.error("No se pudo añadir la imagen:", e);
-                }
+                        const ratio = img.width / img.height;
+                        const imgWidth = 80;
+                        let imgHeight = imgWidth / ratio;
+                        if (imgHeight > (productHeight - 10)) {
+                            imgHeight = productHeight - 10;
+                        }
+                        doc.addImage(product.imageBase64, format, margin, currentY, imgWidth, imgHeight);
+                    }
+                } catch (e) { console.error("Error al añadir imagen:", e); }
             }
             
-            const textX = margin + 90; // Posición X para el texto, a la derecha de la imagen
+            const textX = margin + 90;
             const textWidth = contentWidth - 90;
 
-            // Dibujar textos
             doc.setFontSize(14);
             doc.setTextColor(theme.headerColor);
-            const titleLines = doc.splitTextToSize(product.name, textWidth);
+            const titleLines = doc.splitTextToSize(String(product.name || ''), textWidth);
             doc.text(titleLines, textX, currentY + 5);
 
             let textY = currentY + 5 + (titleLines.length * 6);
@@ -522,13 +575,12 @@ async function generatePdfWithJsPDF(themeKey) {
 
             doc.setFontSize(9);
             doc.setTextColor('#333');
-            const descLines = doc.splitTextToSize(product.description || '', textWidth);
+            const descLines = doc.splitTextToSize(String(product.description || ''), textWidth);
             doc.text(descLines, textX, textY);
             
             currentY += productHeight;
         }
 
-        // 3. Guardar el documento
         doc.save(`catalogo-${merchantInfo.business.replace(/\s+/g, '-')}.pdf`);
 
     } catch (error) {
@@ -540,7 +592,6 @@ async function generatePdfWithJsPDF(themeKey) {
 }
 
 async function generateJpgCatalog(themeKey) {
-    // Esta función usa el método antiguo, que es adecuado para JPG
     hideModal('exportThemeModal');
     const loadingOverlay = document.getElementById('globalLoadingOverlay');
     try {
@@ -568,7 +619,6 @@ async function generateJpgCatalog(themeKey) {
     }
 }
 
-// Helper para JPG que usa el método antiguo
 function buildCatalogHtml_forImage(themeKey, products) {
     return new Promise((resolve) => {
         const theme = PDF_THEMES[themeKey];
@@ -589,7 +639,7 @@ function buildCatalogHtml_forImage(themeKey, products) {
                 </div>
                 <div class="pdf-product-grid">
         `;
-        products.forEach((product, index) => {
+        products.forEach((product) => {
             contentHTML += `
                 <div class="pdf-product-item">
                     <div class="pdf-product-image-container">
@@ -618,7 +668,6 @@ function buildCatalogHtml_forImage(themeKey, products) {
         });
     });
 }
-
 
 // --- UTILIDADES Y FUNCIONES AUXILIARES ---
 function updateAuthUI() {
