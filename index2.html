@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -405,118 +406,6 @@
             cursor: pointer;
             margin-bottom: 0;
         }
-        
-        /* --- ESTILOS PARA EL MODAL DE EXPORTACIÓN --- */
-        .export-options-container {
-            display: flex;
-            gap: 1.5rem;
-            margin-top: 2rem;
-        }
-
-        .export-option-card {
-            flex: 1;
-            padding: 2rem 1.5rem;
-            border: 1px solid var(--gray);
-            border-radius: 1rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .export-option-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--cyan);
-            box-shadow: 0 8px 20px rgba(6, 182, 212, 0.15);
-        }
-
-        .export-option-card i { color: var(--cyan); margin-bottom: 1rem; }
-        .export-option-card h3 { margin-bottom: 0.5rem; color: var(--black); }
-        .export-option-card p { font-size: 0.9rem; color: #6b7280; }
-
-        .template-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-
-        .template-card {
-            border: 3px solid transparent;
-            border-radius: 0.8rem;
-            overflow: hidden;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-        .template-card:hover { transform: scale(1.05); }
-        .template-card.selected { border-color: var(--cyan); box-shadow: 0 0 15px rgba(6, 182, 212, 0.5); }
-        .template-card img { width: 100%; height: auto; display: block; background-color: var(--light); }
-        .template-card h4 { font-size: 0.9rem; padding: 0.75rem 0.5rem; background: var(--light); color: var(--black); margin:0; }
-        .template-card.disabled { cursor: not-allowed; filter: grayscale(80%); opacity: 0.6; }
-
-
-        /* --- ESTILOS ESPECÍFICOS PARA LA PLANTILLA PDF 'MINIMALIST' --- */
-        /* (Estos estilos solo se aplicarán al HTML que generemos para el PDF) */
-        .pdf-template-minimalist {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #333;
-        }
-        .pdf-template-minimalist .pdf-page {
-            padding: 20mm 15mm;
-            box-sizing: border-box;
-        }
-        .pdf-template-minimalist .pdf-header {
-            padding-bottom: 10mm;
-            border-bottom: 1px solid #e0e0e0;
-            margin-bottom: 10mm;
-        }
-        .pdf-template-minimalist .pdf-header h1 {
-            font-size: 24pt;
-            font-weight: 800;
-            margin: 0;
-            color: #1f2937;
-        }
-        .pdf-template-minimalist .pdf-footer {
-            position: absolute;
-            bottom: 10mm;
-            left: 15mm;
-            right: 15mm;
-            text-align: center;
-            font-size: 8pt;
-            color: #999;
-        }
-        .pdf-template-minimalist .pdf-products-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12mm;
-        }
-        .pdf-template-minimalist .pdf-product-item {
-            page-break-inside: avoid; /* Evita que un producto se corte entre páginas */
-        }
-        .pdf-template-minimalist .pdf-product-image {
-            width: 100%;
-            height: 60mm; /* Altura fija para uniformidad */
-            object-fit: cover;
-            border-radius: 8px;
-            margin-bottom: 5mm;
-            background-color: #f0f0f0;
-        }
-        .pdf-template-minimalist .pdf-product-title {
-            font-size: 14pt;
-            font-weight: 600;
-            margin: 0 0 2mm 0;
-        }
-        .pdf-template-minimalist .pdf-product-price {
-            font-size: 16pt;
-            font-weight: 700;
-            color: #06b6d4; /* Color cyan */
-            margin: 0 0 3mm 0;
-        }
-        .pdf-template-minimalist .pdf-product-description {
-            font-size: 9pt;
-            line-height: 1.5;
-            color: #555;
-        }
     </style>
 </head>
 <body>
@@ -663,12 +552,12 @@
                 <h2 class="section-title">Mis Productos</h2>
                 <div class="header-actions">
                     <input type="file" id="importJsonInput" accept=".json" onchange="handleJsonImport(event)" style="display: none;">
-                    
-                    <!-- NUEVO BOTÓN PRINCIPAL DE EXPORTACIÓN -->
-                    <button class="btn btn-primary" onclick="showExportModal()">
-                        <i class="fas fa-file-export"></i> Crear Catálogo / Respaldo
+                    <button class="btn btn-small btn-secondary" onclick="exportCatalogToJSON()">
+                        <i class="fas fa-download"></i> Exportar JSON
                     </button>
-                    
+                    <label for="importJsonInput" class="btn btn-small btn-secondary">
+                        <i class="fas fa-upload"></i> Importar JSON
+                    </label>
                     <button class="btn btn-primary" onclick="showProductModal()"><i class="fas fa-plus"></i> Nuevo Producto</button>
                 </div>
             </div>
@@ -791,64 +680,6 @@
             </div>
         </div>
     </div>
-    
-    <!-- NUEVO: Modal de Exportación de Catálogo -->
-    <div class="login-modal" id="exportModal" style="display: none;">
-        <div class="login-box" id="exportBox" style="max-width: 650px;">
-            <button type="button" class="close-modal-btn" onclick="hideModal('exportModal')"><i class="fas fa-times"></i></button>
-            
-            <!-- Paso 1: Selección de Formato -->
-            <div id="exportStep1">
-                <div class="login-header">
-                    <h2>Exportar tu Catálogo</h2>
-                    <p>Elige el formato que mejor se adapte a tu necesidad.</p>
-                </div>
-                <div class="export-options-container">
-                    <div class="export-option-card" onclick="selectExportOption('pdf')">
-                        <i class="fas fa-file-pdf fa-2x"></i>
-                        <h3>Catálogo Profesional (PDF)</h3>
-                        <p>Ideal para compartir con clientes o para imprimir.</p>
-                    </div>
-                    <div class="export-option-card" onclick="exportCatalogToJSON_Wrapper()">
-                        <i class="fas fa-file-code fa-2x"></i>
-                        <h3>Copia de Seguridad (JSON)</h3>
-                        <p>Un archivo técnico para guardar y respaldar tus datos.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Paso 2: Selección de Plantilla PDF -->
-            <div id="exportStep2" style="display: none;">
-                <div class="login-header">
-                    <h2>Elige un Estilo</h2>
-                    <p>Selecciona el diseño para tu catálogo en PDF.</p>
-                </div>
-                <div class="template-grid">
-                    <div class="template-card" data-template="minimalist" onclick="selectTemplate(this)">
-                        <img src="https://i.imgur.com/2A2A8bB.png" alt="Minimalista Nórdico" loading="lazy">
-                        <h4>Minimalista Nórdico</h4>
-                    </div>
-                    <!-- Aquí añadiremos más plantillas en el futuro -->
-                    <div class="template-card disabled">
-                        <img src="https://i.imgur.com/dJ8bX8U.png" alt="Próximamente" loading="lazy">
-                        <h4>Botánico (Próximamente)</h4>
-                    </div>
-                     <div class="template-card disabled">
-                        <img src="https://i.imgur.com/dJ8bX8U.png" alt="Próximamente" loading="lazy">
-                        <h4>Místico (Próximamente)</h4>
-                    </div>
-                </div>
-                <div class="form-footer" style="margin-top: 2rem;">
-                     <button class="btn btn-secondary" onclick="returnToStep1()">Volver</button>
-                     <button class="btn btn-primary" id="generatePdfBtn" onclick="generatePdf()" disabled>
-                        <span id="pdfBtnText">Generar PDF</span>
-                        <span id="pdfBtnSpinner" style="display:none;"><i class="fas fa-spinner fa-spin"></i> Generando...</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
 
     <footer class="footer">
         <p>Únete a la comunidad de pequeños comerciantes que ya están creciendo con Feria Virtual</p>
@@ -1377,127 +1208,6 @@
             showToast('Ocurrió un error durante la importación.', 'error');
         }
     }
-    
-    // --- NUEVO: LÓGICA DEL MODAL DE EXPORTACIÓN Y GENERADOR PDF ---
-    let selectedTemplateName = null;
-
-    window.showExportModal = function() {
-        returnToStep1(); // Resetea al estado inicial cada vez que se abre
-        document.getElementById('exportModal').style.display = 'flex';
-    }
-
-    window.returnToStep1 = function() {
-        document.getElementById('exportStep1').style.display = 'block';
-        document.getElementById('exportStep2').style.display = 'none';
-        selectedTemplateName = null;
-        document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
-        document.getElementById('generatePdfBtn').disabled = true;
-    }
-
-    window.selectExportOption = function(option) {
-        if (option === 'pdf') {
-            document.getElementById('exportStep1').style.display = 'none';
-            document.getElementById('exportStep2').style.display = 'block';
-        }
-    }
-
-    // Un wrapper para llamar la función original desde el nuevo modal
-    window.exportCatalogToJSON_Wrapper = function() {
-        hideModal('exportModal');
-        exportCatalogToJSON(); // Esta es tu función original que ya funciona
-    }
-    
-    window.selectTemplate = function(element) {
-        if (element.classList.contains('disabled')) return;
-        
-        document.querySelectorAll('.template-card').forEach(card => card.classList.remove('selected'));
-        element.classList.add('selected');
-        selectedTemplateName = element.dataset.template;
-        document.getElementById('generatePdfBtn').disabled = false;
-    }
-
-    window.generatePdf = async function() {
-        if (!selectedTemplateName || !currentUser || !currentMerchantData) {
-            showToast('Por favor, selecciona una plantilla.', 'error');
-            return;
-        }
-
-        const btn = document.getElementById('generatePdfBtn');
-        const btnText = document.getElementById('pdfBtnText');
-        const btnSpinner = document.getElementById('pdfBtnSpinner');
-
-        btn.disabled = true;
-        btnText.style.display = 'none';
-        btnSpinner.style.display = 'inline';
-
-        try {
-            const snapshot = await db.collection('products')
-                                     .where('vendorId', '==', currentUser.uid)
-                                     .where('published', '==', true)
-                                     .orderBy('createdAt', 'desc')
-                                     .get();
-            
-            if (snapshot.empty) {
-                showToast('No tienes productos publicados para incluir en el catálogo.', 'error');
-                return;
-            }
-            const products = snapshot.docs.map(doc => doc.data());
-
-            let catalogHtml = `<div class="pdf-template-${selectedTemplateName}">`;
-            catalogHtml += `
-                <div class="pdf-page">
-                    <div class="pdf-header"><h1>${currentMerchantData.business}</h1></div>
-                    <div class="pdf-products-grid">
-            `;
-
-            products.forEach(product => {
-                catalogHtml += `
-                    <div class="pdf-product-item">
-                        ${product.imageBase64 ? `<img src="${product.imageBase64}" class="pdf-product-image">` : '<div class="pdf-product-image"></div>'}
-                        <h2 class="pdf-product-title">${product.name}</h2>
-                        <p class="pdf-product-price">$${(product.price || 0).toFixed(2)}</p>
-                        <p class="pdf-product-description">${product.description || ''}</p>
-                    </div>
-                `;
-            });
-            
-            catalogHtml += `
-                    </div>
-                    <div class="pdf-footer">Catálogo generado con Feria Virtual - ${currentMerchantData.business}</div>
-                </div>
-            `;
-            catalogHtml += `</div>`;
-
-            const element = document.createElement('div');
-            element.style.position = 'absolute';
-            element.style.left = '-9999px';
-            element.innerHTML = catalogHtml;
-            document.body.appendChild(element);
-
-            const opt = {
-                margin:       0,
-                filename:     `catalogo-${currentMerchantData.business.replace(/\s+/g, '-')}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            await html2pdf().set(opt).from(element).save();
-
-            document.body.removeChild(element);
-            hideModal('exportModal');
-            showToast('¡Tu catálogo PDF se ha generado con éxito!', 'success');
-
-        } catch (error) {
-            console.error("Error generando el PDF:", error);
-            showToast('Hubo un error al generar tu catálogo.', 'error');
-        } finally {
-            btn.disabled = false;
-            btnText.style.display = 'inline';
-            btnSpinner.style.display = 'none';
-        }
-    }
-
 
     // --- UTILIDADES Y FUNCIONES AUXILIARES ---
     function updateAuthUI() {
