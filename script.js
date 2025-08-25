@@ -491,29 +491,37 @@ async function generatePdfWithJsPDF(themeKey) {
         const merchantInfo = currentMerchantData;
 
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('p', 'mm', 'a4');
+        // CORRECCIÓN: 'l' para landscape (apaisado)
+        const doc = new jsPDF('l', 'mm', 'a4'); 
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
-        const margin = 20;
+        const margin = 15;
+        const gutter = 7; // Espacio entre columnas
+
         const contentWidth = pageWidth - (margin * 2);
+        const columnWidth = (contentWidth - (gutter * 2)) / 3;
+        const rowHeight = 85;
+
         let currentY = margin;
+        let columnIndex = 0;
 
         const addHeader = () => {
+            currentY = margin;
             doc.setFontSize(22);
             doc.setTextColor(theme.headerColor);
             doc.text(merchantInfo.business, pageWidth / 2, currentY, { align: 'center' });
-            currentY += 10;
+            currentY += 8;
             
-            doc.setFontSize(10);
+            doc.setFontSize(9);
             doc.setTextColor('#666');
             const descriptionText = String(merchantInfo.description || '');
-            const descLines = doc.splitTextToSize(descriptionText, contentWidth);
+            const descLines = doc.splitTextToSize(descriptionText, contentWidth - 20);
             doc.text(descLines, pageWidth / 2, currentY, { align: 'center' });
-            currentY += (descLines.length * 4) + 10;
+            currentY += (descLines.length * 4) + 5;
             
             doc.setDrawColor(theme.headerColor);
             doc.line(margin, currentY, pageWidth - margin, currentY);
-            currentY += 10;
+            currentY += 8;
         };
 
         const addFooter = (pageNumber) => {
@@ -529,16 +537,22 @@ async function generatePdfWithJsPDF(themeKey) {
         addFooter(pageCount);
 
         for (const product of products) {
-            const productBlockHeight = 85; // Espacio total reservado para el producto
+            // Comprobar si necesitamos una nueva fila o una nueva página
+            if (columnIndex > 2) {
+                columnIndex = 0;
+                currentY += rowHeight;
+            }
 
-            if (currentY + productBlockHeight > pageHeight - margin) {
+            if (currentY + rowHeight > pageHeight - margin) {
                 doc.addPage();
                 pageCount++;
-                currentY = margin;
                 addHeader();
                 addFooter(pageCount);
             }
-
+            
+            const columnX = margin + (columnIndex * (columnWidth + gutter));
+            
+            // Dibujar imagen con la lógica corregida
             if (product.imageBase64) {
                 try {
                     const format = product.imageBase64.substring("data:image/".length, product.imageBase64.indexOf(";base64")).toUpperCase();
@@ -547,53 +561,49 @@ async function generatePdfWithJsPDF(themeKey) {
                         img.src = product.imageBase64;
                         await new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
 
-                        // --- LÓGICA DE BOUNDING BOX PARA EVITAR DEFORMACIÓN ---
-                        const maxWidth = 80;
-                        const maxHeight = productBlockHeight - 10; // Dejar un margen inferior
+                        const imageBoxWidth = columnWidth;
+                        const imageBoxHeight = 45; // Altura fija para la caja de la imagen
                         
                         let finalWidth = img.width;
                         let finalHeight = img.height;
 
-                        if (finalWidth > maxWidth) {
-                            finalHeight = (maxWidth / finalWidth) * finalHeight;
-                            finalWidth = maxWidth;
+                        if (finalWidth > imageBoxWidth) {
+                            finalHeight = (imageBoxWidth / finalWidth) * finalHeight;
+                            finalWidth = imageBoxWidth;
                         }
 
-                        if (finalHeight > maxHeight) {
-                            finalWidth = (maxHeight / finalHeight) * finalWidth;
-                            finalHeight = maxHeight;
+                        if (finalHeight > imageBoxHeight) {
+                            finalWidth = (imageBoxHeight / finalHeight) * finalWidth;
+                            finalHeight = imageBoxHeight;
                         }
 
-                        // Centrar la imagen en su caja
-                        const xOffset = margin + (maxWidth - finalWidth) / 2;
-                        const yOffset = currentY + (maxHeight - finalHeight) / 2;
+                        const xOffset = columnX + (imageBoxWidth - finalWidth) / 2;
+                        const yOffset = currentY + (imageBoxHeight - finalHeight) / 2;
 
                         doc.addImage(product.imageBase64, format, xOffset, yOffset, finalWidth, finalHeight);
                     }
                 } catch (e) { console.error("Error al añadir imagen:", e); }
             }
             
-            const textX = margin + 90;
-            const textWidth = contentWidth - 90;
+            let textY = currentY + 50; // Posición Y para el texto, debajo de la imagen
+            
+            doc.setFontSize(12);
+            doc.setTextColor(theme.headerColor);
+            const titleLines = doc.splitTextToSize(String(product.name || ''), columnWidth);
+            doc.text(titleLines, columnX, textY);
+            textY += (titleLines.length * 5) + 2;
 
             doc.setFontSize(14);
-            doc.setTextColor(theme.headerColor);
-            const titleLines = doc.splitTextToSize(String(product.name || ''), textWidth);
-            doc.text(titleLines, textX, currentY + 5);
-
-            let textY = currentY + 5 + (titleLines.length * 6);
-            
-            doc.setFontSize(16);
             doc.setTextColor(theme.accentColor);
-            doc.text(`$${(product.price || 0).toFixed(2)}`, textX, textY);
-            textY += 10;
-
-            doc.setFontSize(9);
-            doc.setTextColor('#333');
-            const descLines = doc.splitTextToSize(String(product.description || ''), textWidth);
-            doc.text(descLines, textX, textY);
+            doc.text(`$${(product.price || 0).toFixed(2)}`, columnX, textY);
+            textY += 6;
             
-            currentY += productBlockHeight;
+            doc.setFontSize(8);
+            doc.setTextColor('#333');
+            const descLines = doc.splitTextToSize(String(product.description || ''), columnWidth);
+            doc.text(descLines, columnX, textY);
+            
+            columnIndex++;
         }
 
         doc.save(`catalogo-${merchantInfo.business.replace(/\s+/g, '-')}.pdf`);
@@ -683,7 +693,6 @@ function buildCatalogHtml_forImage(themeKey, products) {
         });
     });
 }
-
 
 // --- UTILIDADES Y FUNCIONES AUXILIARES ---
 function updateAuthUI() {
