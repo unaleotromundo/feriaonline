@@ -491,42 +491,46 @@ async function generatePdfWithJsPDF(themeKey) {
         const merchantInfo = currentMerchantData;
 
         const { jsPDF } = window.jspdf;
-        // CORRECCIÓN: 'l' para landscape (apaisado)
-        const doc = new jsPDF('l', 'mm', 'a4'); 
+        const doc = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+        });
+        
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         const margin = 15;
-        const gutter = 7; // Espacio entre columnas
+        const gutter = 10;
 
         const contentWidth = pageWidth - (margin * 2);
-        const columnWidth = (contentWidth - (gutter * 2)) / 3;
-        const rowHeight = 85;
+        const columnWidth = (contentWidth - (gutter * 2)) / 3; // 3 columnas
 
         let currentY = margin;
         let columnIndex = 0;
 
         const addHeader = () => {
             currentY = margin;
-            doc.setFontSize(22);
+            doc.setFontSize(28); // Más grande
             doc.setTextColor(theme.headerColor);
-            doc.text(merchantInfo.business, pageWidth / 2, currentY, { align: 'center' });
-            currentY += 8;
+            doc.text(String(merchantInfo.business || ''), pageWidth / 2, currentY, { align: 'center' });
+            currentY += 10;
             
-            doc.setFontSize(9);
+            doc.setFontSize(11); // Más grande
             doc.setTextColor('#666');
             const descriptionText = String(merchantInfo.description || '');
-            const descLines = doc.splitTextToSize(descriptionText, contentWidth - 20);
+            const descLines = doc.splitTextToSize(descriptionText, contentWidth - 40);
             doc.text(descLines, pageWidth / 2, currentY, { align: 'center' });
-            currentY += (descLines.length * 4) + 5;
+            currentY += (descLines.length * 5) + 8;
             
             doc.setDrawColor(theme.headerColor);
+            doc.setLineWidth(0.5);
             doc.line(margin, currentY, pageWidth - margin, currentY);
-            currentY += 8;
+            currentY += 10;
         };
 
         const addFooter = (pageNumber) => {
             const footerY = pageHeight - 10;
-            doc.setFontSize(8);
+            doc.setFontSize(9); // Más grande
             doc.setTextColor('#999');
             const footerText = `Catálogo de ${merchantInfo.business} | Página ${pageNumber}`;
             doc.text(footerText, pageWidth / 2, footerY, { align: 'center' });
@@ -536,23 +540,27 @@ async function generatePdfWithJsPDF(themeKey) {
         let pageCount = 1;
         addFooter(pageCount);
 
-        for (const product of products) {
-            // Comprobar si necesitamos una nueva fila o una nueva página
-            if (columnIndex > 2) {
-                columnIndex = 0;
-                currentY += rowHeight;
-            }
+        for (const [index, product] of products.entries()) {
+            const productBlockHeight = 140; // Espacio vertical MUCHO más grande para cada producto
 
-            if (currentY + rowHeight > pageHeight - margin) {
+            if (columnIndex > 2) { // Si hemos llenado las 3 columnas
+                columnIndex = 0;
+                currentY += productBlockHeight;
+            }
+            
+            // Si la fila actual no cabe en la página, crear una nueva
+            if (currentY + productBlockHeight > pageHeight - margin) {
                 doc.addPage();
                 pageCount++;
                 addHeader();
                 addFooter(pageCount);
+                // Reiniciar Y y la columna para la nueva página
+                currentY = doc.internal.pageSize.getHeight() - pageHeight + 48; // Calcular el Y inicial después del header en la nueva página
+                columnIndex = 0;
             }
             
             const columnX = margin + (columnIndex * (columnWidth + gutter));
             
-            // Dibujar imagen con la lógica corregida
             if (product.imageBase64) {
                 try {
                     const format = product.imageBase64.substring("data:image/".length, product.imageBase64.indexOf(";base64")).toUpperCase();
@@ -562,7 +570,7 @@ async function generatePdfWithJsPDF(themeKey) {
                         await new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
 
                         const imageBoxWidth = columnWidth;
-                        const imageBoxHeight = 45; // Altura fija para la caja de la imagen
+                        const imageBoxHeight = 80; // Caja de imagen más grande
                         
                         let finalWidth = img.width;
                         let finalHeight = img.height;
@@ -585,20 +593,20 @@ async function generatePdfWithJsPDF(themeKey) {
                 } catch (e) { console.error("Error al añadir imagen:", e); }
             }
             
-            let textY = currentY + 50; // Posición Y para el texto, debajo de la imagen
+            let textY = currentY + 90; // Posición Y para el texto, debajo de la imagen
             
-            doc.setFontSize(12);
+            doc.setFontSize(18); // Más grande
             doc.setTextColor(theme.headerColor);
             const titleLines = doc.splitTextToSize(String(product.name || ''), columnWidth);
             doc.text(titleLines, columnX, textY);
-            textY += (titleLines.length * 5) + 2;
+            textY += (titleLines.length * 7) + 3;
 
-            doc.setFontSize(14);
+            doc.setFontSize(20); // Más grande
             doc.setTextColor(theme.accentColor);
             doc.text(`$${(product.price || 0).toFixed(2)}`, columnX, textY);
-            textY += 6;
+            textY += 10;
             
-            doc.setFontSize(8);
+            doc.setFontSize(11); // Más grande
             doc.setTextColor('#333');
             const descLines = doc.splitTextToSize(String(product.description || ''), columnWidth);
             doc.text(descLines, columnX, textY);
