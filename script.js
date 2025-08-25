@@ -438,14 +438,14 @@ async function importCatalogFromJSON(products) {
 // --- GENERACIÓN DE CATÁLOGOS (PDF & JPG) ---
 
 const PDF_THEMES = {
-    naturaleza: { name: 'Naturaleza', icon: 'fa-leaf', headerColor: '#22c55e', accentColor: '#16a34a', iconUnicode: '\uf06c' },
-    gastronomia: { name: 'Gastronomía', icon: 'fa-utensils', headerColor: '#f97316', accentColor: '#ea580c', iconUnicode: '\uf2e7' },
-    juguetes: { name: 'Juguetes', icon: 'fa-shapes', headerColor: '#3b82f6', accentColor: '#2563eb', iconUnicode: '\uf61f' },
-    moda: { name: 'Moda', icon: 'fa-tshirt', headerColor: '#ec4899', accentColor: '#db2777', iconUnicode: '\uf553' },
-    tecnologia: { name: 'Tecnología', icon: 'fa-microchip', headerColor: '#6366f1', accentColor: '#4f46e5', iconUnicode: '\uf2db' },
-    artesania: { name: 'Artesanía', icon: 'fa-palette', headerColor: '#a855f7', accentColor: '#9333ea', iconUnicode: '\uf53f' },
-    minimalista: { name: 'Minimalista', icon: 'fa-dot-circle', headerColor: '#6b7280', accentColor: '#4b5563', iconUnicode: '\uf192' },
-    elegante: { name: 'Elegante', icon: 'fa-gem', headerColor: '#d97706', accentColor: '#b45309', iconUnicode: '\uf3a5' }
+    naturaleza: { name: 'Naturaleza', icon: 'fa-leaf', headerColor: '#22c55e', accentColor: '#16a34a' },
+    gastronomia: { name: 'Gastronomía', icon: 'fa-utensils', headerColor: '#f97316', accentColor: '#ea580c' },
+    juguetes: { name: 'Juguetes', icon: 'fa-shapes', headerColor: '#3b82f6', accentColor: '#2563eb' },
+    moda: { name: 'Moda', icon: 'fa-tshirt', headerColor: '#ec4899', accentColor: '#db2777' },
+    tecnologia: { name: 'Tecnología', icon: 'fa-microchip', headerColor: '#6366f1', accentColor: '#4f46e5' },
+    artesania: { name: 'Artesanía', icon: 'fa-palette', headerColor: '#a855f7', accentColor: '#9333ea' },
+    minimalista: { name: 'Minimalista', icon: 'fa-dot-circle', headerColor: '#6b7280', accentColor: '#4b5563' },
+    elegante: { name: 'Elegante', icon: 'fa-gem', headerColor: '#d97706', accentColor: '#b45309' }
 };
 
 window.showExportModal = function(exportType) {
@@ -491,55 +491,27 @@ async function generatePdfWithJsPDF(themeKey) {
         const merchantInfo = currentMerchantData;
 
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('l', 'mm', 'a4'); // 'l' for landscape
+        const doc = new jsPDF('p', 'mm', 'a4');
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
-        const margin = 15;
-        const numColumns = 3;
-        const columnGutter = 10;
+        const margin = 20;
         const contentWidth = pageWidth - (margin * 2);
-        const columnWidth = (contentWidth - (columnGutter * (numColumns - 1))) / numColumns;
-        let currentColumnIndex = 0;
         let currentY = margin;
-        
-        const columnXPositions = Array.from({ length: numColumns }, (_, i) => margin + i * (columnWidth + columnGutter));
-
-        // --- Helper Functions para dibujar en la página ---
-        const addPageDecorations = () => {
-            // Dibujar icono de fondo
-            doc.setFont('FontAwesome', 'normal');
-            doc.setFontSize(180);
-            doc.setTextColor(theme.headerColor);
-            doc.text(theme.iconUnicode, pageWidth / 2, pageHeight / 2 + 45, { align: 'center', opacity: 0.08 });
-            doc.setFont('Helvetica', 'normal'); // Reset font
-
-            // Dibujar patrón de fondo
-            doc.setDrawColor(theme.accentColor);
-            doc.setLineWidth(0.1);
-            for (let i = 0; i < pageWidth; i += 10) {
-                doc.line(i, 0, i, pageHeight);
-            }
-            for (let i = 0; i < pageHeight; i += 10) {
-                doc.line(0, i, pageWidth, i);
-            }
-        };
 
         const addHeader = () => {
-            currentY = margin;
-            doc.setFontSize(32);
+            doc.setFontSize(22);
             doc.setTextColor(theme.headerColor);
-            doc.text(merchantInfo.business, pageWidth / 2, currentY + 5, { align: 'center' });
-            currentY += 15;
+            doc.text(merchantInfo.business, pageWidth / 2, currentY, { align: 'center' });
+            currentY += 10;
             
             doc.setFontSize(10);
             doc.setTextColor('#666');
             const descriptionText = String(merchantInfo.description || '');
-            const descLines = doc.splitTextToSize(descriptionText, contentWidth - 60);
+            const descLines = doc.splitTextToSize(descriptionText, contentWidth);
             doc.text(descLines, pageWidth / 2, currentY, { align: 'center' });
-            currentY += (descLines.length * 4) + 8;
+            currentY += (descLines.length * 4) + 10;
             
             doc.setDrawColor(theme.headerColor);
-            doc.setLineWidth(0.5);
             doc.line(margin, currentY, pageWidth - margin, currentY);
             currentY += 10;
         };
@@ -551,37 +523,22 @@ async function generatePdfWithJsPDF(themeKey) {
             const footerText = `Catálogo de ${merchantInfo.business} | Página ${pageNumber}`;
             doc.text(footerText, pageWidth / 2, footerY, { align: 'center' });
         };
-        
-        const addNewPage = () => {
-            doc.addPage();
-            pageCount++;
-            currentY = margin;
-            currentColumnIndex = 0;
-            addPageDecorations();
-            addHeader();
-            addFooter(pageCount);
-        };
 
-        // --- Inicio del Documento ---
-        let pageCount = 1;
-        addPageDecorations();
         addHeader();
+        let pageCount = 1;
         addFooter(pageCount);
 
         for (const product of products) {
-            const productBlockHeight = 70; // Espacio vertical para cada producto
-            
+            const productBlockHeight = 85; // Espacio total reservado para el producto
+
             if (currentY + productBlockHeight > pageHeight - margin) {
-                currentColumnIndex++;
-                currentY = margin + 42; // Reset Y a la posición inicial después del header
-                if (currentColumnIndex >= numColumns) {
-                    addNewPage();
-                }
+                doc.addPage();
+                pageCount++;
+                currentY = margin;
+                addHeader();
+                addFooter(pageCount);
             }
 
-            const currentX = columnXPositions[currentColumnIndex];
-
-            // Dibujar Imagen
             if (product.imageBase64) {
                 try {
                     const format = product.imageBase64.substring("data:image/".length, product.imageBase64.indexOf(";base64")).toUpperCase();
@@ -590,8 +547,9 @@ async function generatePdfWithJsPDF(themeKey) {
                         img.src = product.imageBase64;
                         await new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
 
-                        const maxWidth = columnWidth;
-                        const maxHeight = 40;
+                        // --- LÓGICA DE BOUNDING BOX PARA EVITAR DEFORMACIÓN ---
+                        const maxWidth = 80;
+                        const maxHeight = productBlockHeight - 10; // Dejar un margen inferior
                         
                         let finalWidth = img.width;
                         let finalHeight = img.height;
@@ -600,38 +558,42 @@ async function generatePdfWithJsPDF(themeKey) {
                             finalHeight = (maxWidth / finalWidth) * finalHeight;
                             finalWidth = maxWidth;
                         }
+
                         if (finalHeight > maxHeight) {
                             finalWidth = (maxHeight / finalHeight) * finalWidth;
                             finalHeight = maxHeight;
                         }
 
-                        const xOffset = currentX + (maxWidth - finalWidth) / 2;
+                        // Centrar la imagen en su caja
+                        const xOffset = margin + (maxWidth - finalWidth) / 2;
                         const yOffset = currentY + (maxHeight - finalHeight) / 2;
 
                         doc.addImage(product.imageBase64, format, xOffset, yOffset, finalWidth, finalHeight);
                     }
                 } catch (e) { console.error("Error al añadir imagen:", e); }
             }
-            let textY = currentY + 48; // Posición Y para el texto, debajo de la imagen
+            
+            const textX = margin + 90;
+            const textWidth = contentWidth - 90;
 
-            // Dibujar Textos
-            doc.setFontSize(11);
+            doc.setFontSize(14);
             doc.setTextColor(theme.headerColor);
-            const titleLines = doc.splitTextToSize(String(product.name || ''), columnWidth);
-            doc.text(titleLines, currentX, textY);
-            textY += (titleLines.length * 4.5);
+            const titleLines = doc.splitTextToSize(String(product.name || ''), textWidth);
+            doc.text(titleLines, textX, currentY + 5);
 
-            doc.setFontSize(12);
+            let textY = currentY + 5 + (titleLines.length * 6);
+            
+            doc.setFontSize(16);
             doc.setTextColor(theme.accentColor);
-            doc.text(`$${(product.price || 0).toFixed(2)}`, currentX, textY);
-            textY += 6;
-            
-            doc.setFontSize(8);
+            doc.text(`$${(product.price || 0).toFixed(2)}`, textX, textY);
+            textY += 10;
+
+            doc.setFontSize(9);
             doc.setTextColor('#333');
-            const descLines = doc.splitTextToSize(String(product.description || ''), columnWidth);
-            doc.text(descLines, currentX, textY);
+            const descLines = doc.splitTextToSize(String(product.description || ''), textWidth);
+            doc.text(descLines, textX, textY);
             
-            currentY += productBlockHeight + 10;
+            currentY += productBlockHeight;
         }
 
         doc.save(`catalogo-${merchantInfo.business.replace(/\s+/g, '-')}.pdf`);
@@ -721,6 +683,7 @@ function buildCatalogHtml_forImage(themeKey, products) {
         });
     });
 }
+
 
 // --- UTILIDADES Y FUNCIONES AUXILIARES ---
 function updateAuthUI() {
