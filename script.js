@@ -529,9 +529,9 @@ async function generatePdfWithJsPDF(themeKey) {
         addFooter(pageCount);
 
         for (const product of products) {
-            const productHeight = 85;
+            const productBlockHeight = 85; // Espacio total reservado para el producto
 
-            if (currentY + productHeight > pageHeight - margin) {
+            if (currentY + productBlockHeight > pageHeight - margin) {
                 doc.addPage();
                 pageCount++;
                 currentY = margin;
@@ -547,13 +547,28 @@ async function generatePdfWithJsPDF(themeKey) {
                         img.src = product.imageBase64;
                         await new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
 
-                        const ratio = img.width / img.height;
-                        const imgWidth = 80;
-                        let imgHeight = imgWidth / ratio;
-                        if (imgHeight > (productHeight - 10)) {
-                            imgHeight = productHeight - 10;
+                        // --- LÓGICA DE BOUNDING BOX PARA EVITAR DEFORMACIÓN ---
+                        const maxWidth = 80;
+                        const maxHeight = productBlockHeight - 10; // Dejar un margen inferior
+                        
+                        let finalWidth = img.width;
+                        let finalHeight = img.height;
+
+                        if (finalWidth > maxWidth) {
+                            finalHeight = (maxWidth / finalWidth) * finalHeight;
+                            finalWidth = maxWidth;
                         }
-                        doc.addImage(product.imageBase64, format, margin, currentY, imgWidth, imgHeight);
+
+                        if (finalHeight > maxHeight) {
+                            finalWidth = (maxHeight / finalHeight) * finalWidth;
+                            finalHeight = maxHeight;
+                        }
+
+                        // Centrar la imagen en su caja
+                        const xOffset = margin + (maxWidth - finalWidth) / 2;
+                        const yOffset = currentY + (maxHeight - finalHeight) / 2;
+
+                        doc.addImage(product.imageBase64, format, xOffset, yOffset, finalWidth, finalHeight);
                     }
                 } catch (e) { console.error("Error al añadir imagen:", e); }
             }
@@ -578,7 +593,7 @@ async function generatePdfWithJsPDF(themeKey) {
             const descLines = doc.splitTextToSize(String(product.description || ''), textWidth);
             doc.text(descLines, textX, textY);
             
-            currentY += productHeight;
+            currentY += productBlockHeight;
         }
 
         doc.save(`catalogo-${merchantInfo.business.replace(/\s+/g, '-')}.pdf`);
@@ -668,6 +683,7 @@ function buildCatalogHtml_forImage(themeKey, products) {
         });
     });
 }
+
 
 // --- UTILIDADES Y FUNCIONES AUXILIARES ---
 function updateAuthUI() {
