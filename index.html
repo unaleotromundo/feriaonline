@@ -6,9 +6,6 @@
     <title>Feria Virtual - Conecta tu negocio</title>
     <!-- Los estilos se quedan en el head para evitar el "flash" de contenido sin estilo -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Montserrat:wght@700&display=swap" rel="stylesheet">
     <style>
         :root {
             --cyan: #06b6d4;
@@ -22,7 +19,7 @@
             --whatsapp: #25D366;
         }
         
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
         body {
             background: linear-gradient(135deg, #f0f9ff, #fdf2f8);
@@ -409,16 +406,15 @@
             margin-bottom: 0;
         }
         
-        /* --- ESTILOS PARA EL MODAL DE EXPORTACIÓN (SIMPLIFICADO) --- */
+        /* --- ESTILOS PARA EL MODAL DE EXPORTACIÓN --- */
         .export-options-container {
             display: flex;
             gap: 1.5rem;
             margin-top: 2rem;
-            justify-content: center;
         }
 
         .export-option-card {
-            flex-basis: 250px;
+            flex: 1;
             padding: 2rem 1.5rem;
             border: 1px solid var(--gray);
             border-radius: 1rem;
@@ -437,99 +433,89 @@
         .export-option-card h3 { margin-bottom: 0.5rem; color: var(--black); }
         .export-option-card p { font-size: 0.9rem; color: #6b7280; }
 
-        /* --- ESTILOS BASE Y PULIDOS PARA EL PDF GENERADO --- */
-        .pdf-catalog-container {
-            width: 210mm; /* Ancho de A4 para referencia */
-            box-sizing: border-box;
-            padding: 15mm;
-            --pdf-primary-color: #1f2937;
-            --pdf-secondary-color: #06b6d4;
-            --pdf-text-color: #333;
-            --pdf-bg-color: #ffffff;
-            font-family: 'Roboto', sans-serif;
-            color: var(--pdf-text-color);
-            background-color: var(--pdf-bg-color);
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
         }
-        .pdf-header {
-            padding-bottom: 10mm;
-            border-bottom: 2px solid var(--pdf-secondary-color);
-            margin-bottom: 10mm;
-            text-align: center;
-            page-break-after: avoid;
-        }
-        .pdf-header h1 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 24pt;
-            font-weight: 700;
-            color: var(--pdf-primary-color);
-            margin: 0 0 5mm 0;
-        }
-        .pdf-header p {
-            font-size: 11pt;
-            font-style: italic;
-            max-width: 80%;
-            margin: 0 auto;
-            color: var(--pdf-text-color);
-        }
-        .pdf-products-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10mm;
-            justify-content: space-between;
-        }
-        .pdf-product-item {
-            width: calc(50% - 5mm); /* Dos columnas con espaciado perfecto */
-            page-break-inside: avoid; /* Instrucción clave para evitar cortes */
-            margin-bottom: 10mm;
-            border: 1px solid #eeeeee;
-            border-radius: 8px;
+
+        .template-card {
+            border: 3px solid transparent;
+            border-radius: 0.8rem;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
         }
-        .pdf-image-container {
-            width: 100%;
-            aspect-ratio: 4 / 3; /* Proporción profesional para las imágenes */
-            background-color: #f0f0f0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #b0b0b0;
+        .template-card:hover { transform: scale(1.05); }
+        .template-card.selected { border-color: var(--cyan); box-shadow: 0 0 15px rgba(6, 182, 212, 0.5); }
+        .template-card img { width: 100%; height: auto; display: block; background-color: var(--light); }
+        .template-card h4 { font-size: 0.9rem; padding: 0.75rem 0.5rem; background: var(--light); color: var(--black); margin:0; }
+        .template-card.disabled { cursor: not-allowed; filter: grayscale(80%); opacity: 0.6; }
+
+
+        /* --- ESTILOS ESPECÍFICOS PARA LA PLANTILLA PDF 'MINIMALIST' --- */
+        /* (Estos estilos solo se aplicarán al HTML que generemos para el PDF) */
+        .pdf-template-minimalist {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
         }
-        .pdf-product-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover; /* La clave para no distorsionar imágenes */
+        .pdf-template-minimalist .pdf-page {
+            padding: 20mm 15mm;
+            box-sizing: border-box;
         }
-        .pdf-product-info {
-            padding: 5mm;
-            flex-grow: 1; /* Asegura que todas las tarjetas tengan la misma altura */
+        .pdf-template-minimalist .pdf-header {
+            padding-bottom: 10mm;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 10mm;
         }
-        .pdf-product-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 13pt;
-            font-weight: 700;
-            color: var(--pdf-primary-color);
-            margin: 0 0 2mm 0;
+        .pdf-template-minimalist .pdf-header h1 {
+            font-size: 24pt;
+            font-weight: 800;
+            margin: 0;
+            color: #1f2937;
         }
-        .pdf-product-price {
-            font-size: 15pt;
-            font-weight: 700;
-            color: var(--pdf-secondary-color);
-            margin: 0 0 4mm 0;
-        }
-        .pdf-product-description {
-            font-size: 9pt;
-            line-height: 1.5;
-        }
-        .pdf-footer {
-            padding-top: 5mm;
-            margin-top: 10mm;
+        .pdf-template-minimalist .pdf-footer {
+            position: absolute;
+            bottom: 10mm;
+            left: 15mm;
+            right: 15mm;
             text-align: center;
             font-size: 8pt;
             color: #999;
-            border-top: 1px solid #eee;
-            page-break-before: auto;
+        }
+        .pdf-template-minimalist .pdf-products-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12mm;
+        }
+        .pdf-template-minimalist .pdf-product-item {
+            page-break-inside: avoid; /* Evita que un producto se corte entre páginas */
+        }
+        .pdf-template-minimalist .pdf-product-image {
+            width: 100%;
+            height: 60mm; /* Altura fija para uniformidad */
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 5mm;
+            background-color: #f0f0f0;
+        }
+        .pdf-template-minimalist .pdf-product-title {
+            font-size: 14pt;
+            font-weight: 600;
+            margin: 0 0 2mm 0;
+        }
+        .pdf-template-minimalist .pdf-product-price {
+            font-size: 16pt;
+            font-weight: 700;
+            color: #06b6d4; /* Color cyan */
+            margin: 0 0 3mm 0;
+        }
+        .pdf-template-minimalist .pdf-product-description {
+            font-size: 9pt;
+            line-height: 1.5;
+            color: #555;
         }
     </style>
 </head>
@@ -676,9 +662,13 @@
             <div class="products-header" style="margin-top: 3rem;">
                 <h2 class="section-title">Mis Productos</h2>
                 <div class="header-actions">
-                    <button class="btn btn-secondary" onclick="showExportModal()">
+                    <input type="file" id="importJsonInput" accept=".json" onchange="handleJsonImport(event)" style="display: none;">
+                    
+                    <!-- NUEVO BOTÓN PRINCIPAL DE EXPORTACIÓN -->
+                    <button class="btn btn-primary" onclick="showExportModal()">
                         <i class="fas fa-file-export"></i> Crear Catálogo / Respaldo
                     </button>
+                    
                     <button class="btn btn-primary" onclick="showProductModal()"><i class="fas fa-plus"></i> Nuevo Producto</button>
                 </div>
             </div>
@@ -802,26 +792,58 @@
         </div>
     </div>
     
-    <!-- Modal de Exportación de Catálogo (SIMPLIFICADO) -->
+    <!-- NUEVO: Modal de Exportación de Catálogo -->
     <div class="login-modal" id="exportModal" style="display: none;">
         <div class="login-box" id="exportBox" style="max-width: 650px;">
             <button type="button" class="close-modal-btn" onclick="hideModal('exportModal')"><i class="fas fa-times"></i></button>
+            
+            <!-- Paso 1: Selección de Formato -->
             <div id="exportStep1">
                 <div class="login-header">
                     <h2>Exportar tu Catálogo</h2>
                     <p>Elige el formato que mejor se adapte a tu necesidad.</p>
                 </div>
                 <div class="export-options-container">
-                    <div class="export-option-card" onclick="generatePdf()">
-                        <i class="fas fa-magic fa-2x"></i>
+                    <div class="export-option-card" onclick="selectExportOption('pdf')">
+                        <i class="fas fa-file-pdf fa-2x"></i>
                         <h3>Catálogo Profesional (PDF)</h3>
-                        <p>Generado con IA para un diseño único y profesional.</p>
+                        <p>Ideal para compartir con clientes o para imprimir.</p>
                     </div>
                     <div class="export-option-card" onclick="exportCatalogToJSON_Wrapper()">
                         <i class="fas fa-file-code fa-2x"></i>
                         <h3>Copia de Seguridad (JSON)</h3>
                         <p>Un archivo técnico para guardar y respaldar tus datos.</p>
                     </div>
+                </div>
+            </div>
+
+            <!-- Paso 2: Selección de Plantilla PDF -->
+            <div id="exportStep2" style="display: none;">
+                <div class="login-header">
+                    <h2>Elige un Estilo</h2>
+                    <p>Selecciona el diseño para tu catálogo en PDF.</p>
+                </div>
+                <div class="template-grid">
+                    <div class="template-card" data-template="minimalist" onclick="selectTemplate(this)">
+                        <img src="https://i.imgur.com/2A2A8bB.png" alt="Minimalista Nórdico" loading="lazy">
+                        <h4>Minimalista Nórdico</h4>
+                    </div>
+                    <!-- Aquí añadiremos más plantillas en el futuro -->
+                    <div class="template-card disabled">
+                        <img src="https://i.imgur.com/dJ8bX8U.png" alt="Próximamente" loading="lazy">
+                        <h4>Botánico (Próximamente)</h4>
+                    </div>
+                     <div class="template-card disabled">
+                        <img src="https://i.imgur.com/dJ8bX8U.png" alt="Próximamente" loading="lazy">
+                        <h4>Místico (Próximamente)</h4>
+                    </div>
+                </div>
+                <div class="form-footer" style="margin-top: 2rem;">
+                     <button class="btn btn-secondary" onclick="returnToStep1()">Volver</button>
+                     <button class="btn btn-primary" id="generatePdfBtn" onclick="generatePdf()" disabled>
+                        <span id="pdfBtnText">Generar PDF</span>
+                        <span id="pdfBtnSpinner" style="display:none;"><i class="fas fa-spinner fa-spin"></i> Generando...</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -867,6 +889,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 
 <script>
+    // Se deja este script aquí, pero se ejecutará después de que el HTML esté listo
+    // gracias al evento 'DOMContentLoaded'.
     document.addEventListener('DOMContentLoaded', () => {
 
     // Configuración de Firebase
@@ -903,6 +927,7 @@
         const targetSection = document.getElementById(sectionId);
         if (targetSection) targetSection.classList.add('active-section');
         
+        // Cierra el menú móvil si está abierto al cambiar de sección
         document.getElementById('navContainer').classList.remove('active');
         
         if (sectionId === 'products') loadProducts();
@@ -1299,205 +1324,180 @@
             showToast('Hubo un error al exportar el catálogo.', 'error');
         }
     }
+
+    window.handleJsonImport = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const products = JSON.parse(e.target.result);
+                if (confirm(`¿Estás seguro de que deseas importar ${products.length} productos a tu catálogo? Esta acción no se puede deshacer.`)) {
+                    importCatalogFromJSON(products);
+                }
+            } catch (error) {
+                console.error("Error al parsear el archivo JSON:", error);
+                showToast('El archivo seleccionado no es un JSON válido.', 'error');
+            } finally {
+                event.target.value = '';
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    async function importCatalogFromJSON(products) {
+        if (!Array.isArray(products) || products.length === 0) {
+            showToast('El archivo no contiene productos para importar.', 'error');
+            return;
+        }
+        showToast(`Importando ${products.length} productos...`, 'success');
+        try {
+            let importedCount = 0;
+            const importPromises = products.map(product => {
+                if (!product.name) return Promise.resolve();
+                const newProductData = {
+                    name: product.name,
+                    price: product.price || 0,
+                    description: product.description || '',
+                    imageBase64: product.imageBase64 || null,
+                    published: typeof product.published === 'boolean' ? product.published : true,
+                    vendorId: currentUser.uid,
+                    vendorName: currentMerchantData.business,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                importedCount++;
+                return db.collection('products').add(newProductData);
+            });
+            await Promise.all(importPromises);
+            showToast(`${importedCount} productos importados correctamente.`, 'success');
+            loadMyProducts();
+            updateUserProfile(currentUser.uid);
+        } catch (error) {
+            console.error("Error durante la importación masiva:", error);
+            showToast('Ocurrió un error durante la importación.', 'error');
+        }
+    }
     
-    // --- LÓGICA DEL MODAL DE EXPORTACIÓN Y GENERADOR PDF CON IA ---
+    // --- NUEVO: LÓGICA DEL MODAL DE EXPORTACIÓN Y GENERADOR PDF ---
+    let selectedTemplateName = null;
 
     window.showExportModal = function() {
+        returnToStep1(); // Resetea al estado inicial cada vez que se abre
         document.getElementById('exportModal').style.display = 'flex';
     }
 
-    // Wrapper para la función original de exportar JSON
+    window.returnToStep1 = function() {
+        document.getElementById('exportStep1').style.display = 'block';
+        document.getElementById('exportStep2').style.display = 'none';
+        selectedTemplateName = null;
+        document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+        document.getElementById('generatePdfBtn').disabled = true;
+    }
+
+    window.selectExportOption = function(option) {
+        if (option === 'pdf') {
+            document.getElementById('exportStep1').style.display = 'none';
+            document.getElementById('exportStep2').style.display = 'block';
+        }
+    }
+
+    // Un wrapper para llamar la función original desde el nuevo modal
     window.exportCatalogToJSON_Wrapper = function() {
         hideModal('exportModal');
-        exportCatalogToJSON();
+        exportCatalogToJSON(); // Esta es tu función original que ya funciona
     }
     
-    // NUEVA FUNCIÓN: Llama a la API de Gemini
-    async function generateCatalogWithAI(merchantData, products) {
-        const API_KEY = "AIzaSyB8yQBcJSmdTPKK7t-dUVPXBsCUc_ees7c";
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
+    window.selectTemplate = function(element) {
+        if (element.classList.contains('disabled')) return;
         
-        const simplifiedProducts = products.map(p => ({ name: p.name, description: p.description })).slice(0, 10);
-
-        const prompt = `
-        Eres un diseñador gráfico y copywriter experto para la plataforma "Feria Virtual".
-        Tu tarea es crear un concepto de diseño y textos para un catálogo en PDF.
-
-        DATOS DEL NEGOCIO:
-        - Nombre: "${merchantData.business}"
-        - Descripción: "${merchantData.description}"
-        - Productos: ${JSON.stringify(simplifiedProducts)}
-
-        INSTRUCCIONES:
-        Analiza el nombre, la descripción y los productos para entender la identidad de la marca.
-        Devuelve SOLAMENTE un objeto JSON válido con la siguiente estructura:
-        {
-          "catalogTitle": "Un título creativo y atractivo para el catálogo",
-          "introText": "Un párrafo corto (20-30 palabras) que capture la esencia del negocio",
-          "design": {
-            "concept": "Describe el estilo en 2-3 palabras (ej: 'Minimalista y Terroso', 'Vibrante y Moderno', 'Elegante y Místico')",
-            "googleFontPair": {
-              "headings": "Nombre de fuente de Google Fonts para títulos (ej: 'Montserrat')",
-              "body": "Nombre de fuente de Google Fonts para el cuerpo (ej: 'Roboto')"
-            },
-            "colorPalette": {
-              "primary": "#XXXXXX (un color dominante y oscuro para títulos)",
-              "secondary": "#XXXXXX (un color de acento vibrante para precios y detalles)",
-              "text": "#XXXXXX (un color de texto legible, usualmente un gris oscuro)",
-              "background": "#XXXXXX (un color de fondo, usualmente blanco o un tono muy claro)"
-            }
-          }
-        }
-        NO incluyas ninguna otra palabra, explicación o formato markdown en tu respuesta.`;
-
-        try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
-
-            if (!response.ok) {
-                // Capturamos el texto del error para más detalles
-                const errorBody = await response.text();
-                throw new Error(`Error en la API de Gemini: ${response.status} ${response.statusText} - ${errorBody}`);
-            }
-
-            const data = await response.json();
-            const jsonString = data.candidates[0].content.parts[0].text;
-            const cleanedJsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
-            return JSON.parse(cleanedJsonString);
-
-        } catch (error) {
-            console.error("Error al contactar la IA:", error);
-            showToast("No se pudo generar el diseño con IA. Se usará un estilo por defecto.", "error");
-            return null;
-        }
+        document.querySelectorAll('.template-card').forEach(card => card.classList.remove('selected'));
+        element.classList.add('selected');
+        selectedTemplateName = element.dataset.template;
+        document.getElementById('generatePdfBtn').disabled = false;
     }
 
-    // NUEVA FUNCIÓN: Carga fuentes de Google y aplica estilos dinámicos
-    function applyDynamicStyles(design) {
-        const fontLink = document.createElement('link');
-        fontLink.id = 'dynamic-google-font';
-        fontLink.href = `https://fonts.googleapis.com/css2?family=${design.googleFontPair.headings.replace(/ /g, '+')}:wght@700&family=${design.googleFontPair.body.replace(/ /g, '+')}:wght@400&display=swap`;
-        fontLink.rel = 'stylesheet';
-
-        const existingFontLink = document.getElementById('dynamic-google-font');
-        if (existingFontLink) existingFontLink.remove();
-        document.head.appendChild(fontLink);
-
-        const styleSheet = document.createElement("style");
-        styleSheet.id = 'dynamic-pdf-styles';
-        styleSheet.innerText = `
-            .pdf-catalog-container.dynamic-style {
-                --pdf-primary-color: ${design.colorPalette.primary};
-                --pdf-secondary-color: ${design.colorPalette.secondary};
-                --pdf-text-color: ${design.colorPalette.text};
-                --pdf-bg-color: ${design.colorPalette.background};
-                font-family: '${design.googleFontPair.body}', sans-serif;
-            }
-            .pdf-catalog-container.dynamic-style .pdf-header h1,
-            .pdf-catalog-container.dynamic-style .pdf-product-title {
-                font-family: '${design.googleFontPair.headings}', sans-serif;
-            }
-        `;
-        const existingStyle = document.getElementById('dynamic-pdf-styles');
-        if (existingStyle) existingStyle.remove();
-        
-        document.head.appendChild(styleSheet);
-    }
-    
-    // FUNCIÓN PRINCIPAL (MODIFICADA): Orquesta todo el proceso
     window.generatePdf = async function() {
-        if (!currentUser || !currentMerchantData) {
-            showToast('Debes iniciar sesión para generar un catálogo.', 'error');
+        if (!selectedTemplateName || !currentUser || !currentMerchantData) {
+            showToast('Por favor, selecciona una plantilla.', 'error');
             return;
         }
 
-        hideModal('exportModal');
-        showToast('Generando catálogo con IA, por favor espera...', 'success');
+        const btn = document.getElementById('generatePdfBtn');
+        const btnText = document.getElementById('pdfBtnText');
+        const btnSpinner = document.getElementById('pdfBtnSpinner');
+
+        btn.disabled = true;
+        btnText.style.display = 'none';
+        btnSpinner.style.display = 'inline';
 
         try {
             const snapshot = await db.collection('products')
                                      .where('vendorId', '==', currentUser.uid)
                                      .where('published', '==', true)
+                                     .orderBy('createdAt', 'desc')
                                      .get();
+            
             if (snapshot.empty) {
-                showToast('No tienes productos publicados para el catálogo.', 'error');
+                showToast('No tienes productos publicados para incluir en el catálogo.', 'error');
                 return;
             }
-            const products = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
-            
-            let aiDesign = await generateCatalogWithAI(currentMerchantData, products);
+            const products = snapshot.docs.map(doc => doc.data());
 
-            if (!aiDesign) {
-                aiDesign = {
-                    catalogTitle: currentMerchantData.business,
-                    introText: "Descubre nuestra colección de productos únicos, hechos con dedicación y pasión.",
-                    design: {
-                        googleFontPair: { headings: "Montserrat", body: "Roboto" },
-                        colorPalette: { primary: "#1f2937", secondary: "#06b6d4", text: "#333333", background: "#ffffff" }
-                    }
-                };
-            }
+            let catalogHtml = `<div class="pdf-template-${selectedTemplateName}">`;
+            catalogHtml += `
+                <div class="pdf-page">
+                    <div class="pdf-header"><h1>${currentMerchantData.business}</h1></div>
+                    <div class="pdf-products-grid">
+            `;
 
-            applyDynamicStyles(aiDesign.design);
-
-            let catalogHtml = `
-                <div class="pdf-catalog-container dynamic-style">
-                    <header class="pdf-header">
-                        <h1>${aiDesign.catalogTitle}</h1>
-                        <p>${aiDesign.introText}</p>
-                    </header>
-                    <main class="pdf-products-grid">`;
             products.forEach(product => {
                 catalogHtml += `
                     <div class="pdf-product-item">
-                        <div class="pdf-image-container">
-                            ${product.imageBase64 ? `<img src="${product.imageBase64}" class="pdf-product-image">` : '<span>Sin Imagen</span>'}
-                        </div>
-                        <div class="pdf-product-info">
-                            <h2 class="pdf-product-title">${product.name}</h2>
-                            <p class="pdf-product-price">$${(product.price || 0).toFixed(2)}</p>
-                            <p class="pdf-product-description">${product.description || ''}</p>
-                        </div>
-                    </div>`;
+                        ${product.imageBase64 ? `<img src="${product.imageBase64}" class="pdf-product-image">` : '<div class="pdf-product-image"></div>'}
+                        <h2 class="pdf-product-title">${product.name}</h2>
+                        <p class="pdf-product-price">$${(product.price || 0).toFixed(2)}</p>
+                        <p class="pdf-product-description">${product.description || ''}</p>
+                    </div>
+                `;
             });
+            
             catalogHtml += `
-                    </main>
-                    <footer class="pdf-footer">
-                        Contacto: ${currentMerchantData.phone || currentMerchantData.email} | Generado con Feria Virtual
-                    </footer>
-                </div>`;
+                    </div>
+                    <div class="pdf-footer">Catálogo generado con Feria Virtual - ${currentMerchantData.business}</div>
+                </div>
+            `;
+            catalogHtml += `</div>`;
 
-            const elementToConvert = document.createElement('div');
-            // Es crucial añadir el elemento al DOM para que los estilos se apliquen correctamente,
-            // pero lo hacemos invisible para el usuario.
-            elementToConvert.style.position = 'absolute';
-            elementToConvert.style.left = '-250mm'; // Fuera de la pantalla
-            elementToConvert.innerHTML = catalogHtml;
-            document.body.appendChild(elementToConvert);
+            const element = document.createElement('div');
+            element.style.position = 'absolute';
+            element.style.left = '-9999px';
+            element.innerHTML = catalogHtml;
+            document.body.appendChild(element);
 
             const opt = {
-                margin: 0,
-                filename: `catalogo-IA-${currentMerchantData.business.replace(/\s+/g, '-')}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                margin:       0,
+                filename:     `catalogo-${currentMerchantData.business.replace(/\s+/g, '-')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            await html2pdf().from(elementToConvert).set(opt).save();
-            
-            // Limpieza: removemos el elemento temporal del DOM
-            document.body.removeChild(elementToConvert);
+            await html2pdf().set(opt).from(element).save();
 
-            showToast('¡Tu catálogo único se ha generado!', 'success');
+            document.body.removeChild(element);
+            hideModal('exportModal');
+            showToast('¡Tu catálogo PDF se ha generado con éxito!', 'success');
 
         } catch (error) {
-            console.error("Error en el proceso de generación de PDF:", error);
+            console.error("Error generando el PDF:", error);
             showToast('Hubo un error al generar tu catálogo.', 'error');
+        } finally {
+            btn.disabled = false;
+            btnText.style.display = 'inline';
+            btnSpinner.style.display = 'none';
         }
     }
+
 
     // --- UTILIDADES Y FUNCIONES AUXILIARES ---
     function updateAuthUI() {
@@ -1538,7 +1538,7 @@
     window.showImageLightbox = function(imageBase64) {
         const lightboxImg = document.getElementById('lightboxImg');
         lightboxImg.src = imageBase64;
-        lightboxImg.loading = 'lazy';
+        lightboxImg.loading = 'lazy'; // Carga perezosa también para el lightbox
         document.getElementById('imageLightbox').style.display = 'flex';
     }
     window.hideImageLightbox = function() { document.getElementById('imageLightbox').style.display = 'none'; }
@@ -1570,6 +1570,7 @@
             updateAuthUI();
         });
 
+        // Setup menú hamburguesa
         const hamburger = document.getElementById('hamburgerMenu');
         const navContainer = document.getElementById('navContainer');
         hamburger.addEventListener('click', () => {
