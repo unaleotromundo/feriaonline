@@ -585,9 +585,11 @@ async function generatePdfCatalog(themeKey) {
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     
-    html2pdf().from(element).set(opt).save().then(() => {
-        document.body.removeChild(wrapper);
-    });
+    setTimeout(() => {
+        html2pdf().from(element).set(opt).save().then(() => {
+            document.body.removeChild(wrapper);
+        });
+    }, 200);
 }
 
 // --- UTILIDADES Y FUNCIONES AUXILIARES ---

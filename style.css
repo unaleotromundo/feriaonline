@@ -413,10 +413,15 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
 /* --- ESTILOS BASE PARA EL CONTENIDO DEL PDF (FUERA DE PANTALLA) --- */
 #pdf-content-wrapper {
     position: absolute;
-    left: -9999px;
+    top: 0;
+    left: 0;
     width: 210mm;
     font-family: 'Helvetica', 'Arial', sans-serif;
     color: #333;
+    /* Lo hacemos invisible e inalcanzable para el usuario */
+    opacity: 0;
+    z-index: -1;
+    pointer-events: none;
 }
 .pdf-page {
     padding: 20mm;
