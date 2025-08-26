@@ -212,7 +212,6 @@ function resetProductForm() {
     document.getElementById('productDescription').value = '';
     document.getElementById('productImageUploadArea').innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic o arrastra una imagen aquí</p>';
     document.getElementById('productImageInput').value = '';
-    delete document.getElementById('productImageUploadArea').dataset.existingImage;
     selectedProductFile = null;
 }
 
@@ -252,7 +251,7 @@ function renderMyProductCard(container, product) {
     container.appendChild(card);
 }
 
-window.deleteProduct = async function(id) { if (confirm('¿Eliminar producto?')) { await db.collection('products').doc(id).delete(); loadMyProducts(); showToast('Producto eliminado.'); } }
+window.deleteProduct = async function(id) { if (confirm('¿Eliminar producto?')) { await db.collection('products').doc(id).delete(); loadMyProducts(); } }
 window.toggleProductStatus = async function(id, status) { await db.collection('products').doc(id).update({ published: status }); loadMyProducts(); }
 
 window.showVendorPage = async function(vendorId, vendorName) {
@@ -364,10 +363,8 @@ function populateAvatars() {
     });
 }
 
-// --- COPIA DE SEGURIDAD (IMPORT/EXPORT JSON) ---
 window.exportCatalogToJSON = async function() {
     if (!currentUser) return showToast('Debes iniciar sesión para exportar tu catálogo.', 'error');
-    hideModal('backup-options-modal');
     showToast('Preparando la exportación...', 'success');
     try {
         const snapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).get();
@@ -386,6 +383,7 @@ window.exportCatalogToJSON = async function() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        showToast('Catálogo exportado exitosamente.', 'success');
     } catch (error) {
         console.error("Error exportando a JSON:", error);
         showToast('Hubo un error al exportar el catálogo.', 'error');
@@ -395,7 +393,6 @@ window.exportCatalogToJSON = async function() {
 window.handleJsonImport = function(event) {
     const file = event.target.files[0];
     if (!file) return;
-    hideModal('backup-options-modal');
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
@@ -407,7 +404,7 @@ window.handleJsonImport = function(event) {
             console.error("Error al parsear el archivo JSON:", error);
             showToast('El archivo seleccionado no es un JSON válido.', 'error');
         } finally {
-            event.target.value = ''; // Reset input
+            event.target.value = '';
         }
     };
     reader.readAsText(file);
@@ -417,6 +414,7 @@ async function importCatalogFromJSON(products) {
     if (!Array.isArray(products) || products.length === 0) return showToast('El archivo no contiene productos para importar.', 'error');
     showToast(`Importando ${products.length} productos...`, 'success');
     try {
+        let importedCount = 0;
         const importPromises = products.map(product => {
             if (!product.name) return Promise.resolve();
             const newProductData = {
@@ -424,10 +422,11 @@ async function importCatalogFromJSON(products) {
                 published: typeof product.published === 'boolean' ? product.published : true,
                 vendorId: currentUser.uid, vendorName: currentMerchantData.business, createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
+            importedCount++;
             return db.collection('products').add(newProductData);
         });
         await Promise.all(importPromises);
-        showToast(`${products.length} productos importados correctamente.`, 'success');
+        showToast(`${importedCount} productos importados correctamente.`, 'success');
         loadMyProducts();
         updateUserProfile(currentUser.uid);
     } catch (error) {
@@ -436,7 +435,7 @@ async function importCatalogFromJSON(products) {
     }
 }
 
-// --- GENERACIÓN DE CATÁLOGOS ---
+// --- GENERACIÓN DE CATÁLOGOS (PDF & JPG) ---
 
 const PDF_THEMES = {
     naturaleza: { name: 'Naturaleza', icon: 'fa-leaf', headerColor: '#22c55e', accentColor: '#16a34a' },
@@ -450,24 +449,182 @@ const PDF_THEMES = {
 };
 
 window.showExportModal = function(exportType) {
-    if (!currentUser) return showToast('Debes iniciar sesión para crear un catálogo.', 'error');
+    if (!currentUser) {
+        showToast('Debes iniciar sesión para crear un catálogo.', 'error');
+        return;
+    }
     const grid = document.getElementById('themeSelectionGrid');
+    const modalTitle = document.getElementById('exportModalTitle');
     grid.innerHTML = '';
     
-    document.getElementById('exportModalTitle').textContent = `Elige un Diseño para tu Catálogo PDF`;
+    modalTitle.textContent = `Elige un Diseño para tu Catálogo ${exportType.toUpperCase()}`;
     
     for (const key in PDF_THEMES) {
         const theme = PDF_THEMES[key];
         const card = document.createElement('div');
         card.className = 'theme-card';
         card.innerHTML = `<i class="fas ${theme.icon}"></i><span>${theme.name}</span>`;
-        card.onclick = () => generatePdfWithJsPDF(key);
+        if (exportType === 'pdf') {
+            card.onclick = () => generatePdfWithJsPDF(key);
+        } else {
+            card.onclick = () => generateJpgCatalog(key);
+        }
         grid.appendChild(card);
     }
     document.getElementById('exportThemeModal').style.display = 'flex';
 }
 
 async function generatePdfWithJsPDF(themeKey) {
+    hideModal('exportThemeModal');
+    const loadingOverlay = document.getElementById('globalLoadingOverlay');
+
+    try {
+        loadingOverlay.style.display = 'flex';
+
+        const productsSnapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).where('published', '==', true).get();
+        if (productsSnapshot.empty) {
+            showToast('No tienes productos publicados para incluir.', 'error');
+            return;
+        }
+        const products = productsSnapshot.docs.map(doc => doc.data());
+        const theme = PDF_THEMES[themeKey];
+        const merchantInfo = currentMerchantData;
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+        });
+        
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 15;
+        const gutter = 10;
+
+        const contentWidth = pageWidth - (margin * 2);
+        const columnWidth = (contentWidth - (gutter * 2)) / 3; // 3 columnas
+
+        let currentY = margin;
+        let columnIndex = 0;
+
+        const addHeader = () => {
+            currentY = margin;
+            doc.setFontSize(28); // Más grande
+            doc.setTextColor(theme.headerColor);
+            doc.text(String(merchantInfo.business || ''), pageWidth / 2, currentY, { align: 'center' });
+            currentY += 10;
+            
+            doc.setFontSize(11); // Más grande
+            doc.setTextColor('#666');
+            const descriptionText = String(merchantInfo.description || '');
+            const descLines = doc.splitTextToSize(descriptionText, contentWidth - 40);
+            doc.text(descLines, pageWidth / 2, currentY, { align: 'center' });
+            currentY += (descLines.length * 5) + 8;
+            
+            doc.setDrawColor(theme.headerColor);
+            doc.setLineWidth(0.5);
+            doc.line(margin, currentY, pageWidth - margin, currentY);
+            currentY += 10;
+        };
+
+        const addFooter = (pageNumber) => {
+            const footerY = pageHeight - 10;
+            doc.setFontSize(9); // Más grande
+            doc.setTextColor('#999');
+            const footerText = `Catálogo de ${merchantInfo.business} | Página ${pageNumber}`;
+            doc.text(footerText, pageWidth / 2, footerY, { align: 'center' });
+        };
+
+        addHeader();
+        let pageCount = 1;
+        addFooter(pageCount);
+
+        for (const [index, product] of products.entries()) {
+            const productBlockHeight = 140; // Espacio vertical MUCHO más grande para cada producto
+
+            if (columnIndex > 2) { // Si hemos llenado las 3 columnas
+                columnIndex = 0;
+                currentY += productBlockHeight;
+            }
+            
+            // Si la fila actual no cabe en la página, crear una nueva
+            if (currentY + productBlockHeight > pageHeight - margin) {
+                doc.addPage();
+                pageCount++;
+                addHeader();
+                addFooter(pageCount);
+                // Reiniciar Y y la columna para la nueva página
+                currentY = doc.internal.pageSize.getHeight() - pageHeight + 48; // Calcular el Y inicial después del header en la nueva página
+                columnIndex = 0;
+            }
+            
+            const columnX = margin + (columnIndex * (columnWidth + gutter));
+            
+            if (product.imageBase64) {
+                try {
+                    const format = product.imageBase64.substring("data:image/".length, product.imageBase64.indexOf(";base64")).toUpperCase();
+                    if (['JPG', 'JPEG', 'PNG'].includes(format)) {
+                        const img = new Image();
+                        img.src = product.imageBase64;
+                        await new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+
+                        const imageBoxWidth = columnWidth;
+                        const imageBoxHeight = 80; // Caja de imagen más grande
+                        
+                        let finalWidth = img.width;
+                        let finalHeight = img.height;
+
+                        if (finalWidth > imageBoxWidth) {
+                            finalHeight = (imageBoxWidth / finalWidth) * finalHeight;
+                            finalWidth = imageBoxWidth;
+                        }
+
+                        if (finalHeight > imageBoxHeight) {
+                            finalWidth = (imageBoxHeight / finalHeight) * finalWidth;
+                            finalHeight = imageBoxHeight;
+                        }
+
+                        const xOffset = columnX + (imageBoxWidth - finalWidth) / 2;
+                        const yOffset = currentY + (imageBoxHeight - finalHeight) / 2;
+
+                        doc.addImage(product.imageBase64, format, xOffset, yOffset, finalWidth, finalHeight);
+                    }
+                } catch (e) { console.error("Error al añadir imagen:", e); }
+            }
+            
+            let textY = currentY + 90; // Posición Y para el texto, debajo de la imagen
+            
+            doc.setFontSize(18); // Más grande
+            doc.setTextColor(theme.headerColor);
+            const titleLines = doc.splitTextToSize(String(product.name || ''), columnWidth);
+            doc.text(titleLines, columnX, textY);
+            textY += (titleLines.length * 7) + 3;
+
+            doc.setFontSize(20); // Más grande
+            doc.setTextColor(theme.accentColor);
+            doc.text(`$${(product.price || 0).toFixed(2)}`, columnX, textY);
+            textY += 10;
+            
+            doc.setFontSize(11); // Más grande
+            doc.setTextColor('#333');
+            const descLines = doc.splitTextToSize(String(product.description || ''), columnWidth);
+            doc.text(descLines, columnX, textY);
+            
+            columnIndex++;
+        }
+
+        doc.save(`catalogo-${merchantInfo.business.replace(/\s+/g, '-')}.pdf`);
+
+    } catch (error) {
+        console.error("Error generando PDF con jsPDF:", error);
+        showToast("Hubo un error al generar el catálogo.", "error");
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+}
+
+async function generateJpgCatalog(themeKey) {
     hideModal('exportThemeModal');
     const loadingOverlay = document.getElementById('globalLoadingOverlay');
     try {
@@ -478,213 +635,72 @@ async function generatePdfWithJsPDF(themeKey) {
             return;
         }
         const products = productsSnapshot.docs.map(doc => doc.data());
-        const theme = PDF_THEMES[themeKey];
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-        // (El resto de tu lógica de PDF permanece aquí, sin cambios)
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
-        const margin = 15;
-        const gutter = 10;
-        const contentWidth = pageWidth - (margin * 2);
-        const columnWidth = (contentWidth - (gutter * 2)) / 3;
-        let currentY = margin;
-        let columnIndex = 0;
-        const addHeader = () => {
-            currentY = margin;
-            doc.setFontSize(28); doc.setTextColor(theme.headerColor);
-            doc.text(String(currentMerchantData.business || ''), pageWidth / 2, currentY, { align: 'center' });
-            currentY += 10;
-            doc.setFontSize(11); doc.setTextColor('#666');
-            const descLines = doc.splitTextToSize(String(currentMerchantData.description || ''), contentWidth - 40);
-            doc.text(descLines, pageWidth / 2, currentY, { align: 'center' });
-            currentY += (descLines.length * 5) + 8;
-            doc.setDrawColor(theme.headerColor); doc.setLineWidth(0.5);
-            doc.line(margin, currentY, pageWidth - margin, currentY);
-            currentY += 10;
-        };
-        const addFooter = (pageNumber) => {
-            const footerY = pageHeight - 10;
-            doc.setFontSize(9); doc.setTextColor('#999');
-            doc.text(`Catálogo de ${currentMerchantData.business} | Página ${pageNumber}`, pageWidth / 2, footerY, { align: 'center' });
-        };
-        addHeader();
-        let pageCount = 1;
-        addFooter(pageCount);
-        for (const product of products) {
-            const productBlockHeight = 140;
-            if (columnIndex > 2) { columnIndex = 0; currentY += productBlockHeight; }
-            if (currentY + productBlockHeight > pageHeight - margin) {
-                doc.addPage(); pageCount++; addHeader(); addFooter(pageCount);
-                currentY = doc.internal.pageSize.getHeight() - pageHeight + 48;
-                columnIndex = 0;
-            }
-            const columnX = margin + (columnIndex * (columnWidth + gutter));
-            if (product.imageBase64) {
-                try {
-                    const format = product.imageBase64.substring("data:image/".length, product.imageBase64.indexOf(";base64")).toUpperCase();
-                    if (['JPG', 'JPEG', 'PNG'].includes(format)) {
-                        const img = new Image();
-                        img.src = product.imageBase64;
-                        await new Promise(r => { img.onload = r; img.onerror = r; });
-                        const boxW = columnWidth, boxH = 80;
-                        let w = img.width, h = img.height;
-                        if (w > boxW) { h = (boxW / w) * h; w = boxW; }
-                        if (h > boxH) { w = (boxH / h) * w; h = boxH; }
-                        const x = columnX + (boxW - w) / 2;
-                        const y = currentY + (boxH - h) / 2;
-                        doc.addImage(product.imageBase64, format, x, y, w, h);
-                    }
-                } catch (e) { console.error("Error al añadir imagen:", e); }
-            }
-            let textY = currentY + 90;
-            doc.setFontSize(18); doc.setTextColor(theme.headerColor);
-            doc.text(doc.splitTextToSize(String(product.name || ''), columnWidth), columnX, textY);
-            textY += (doc.splitTextToSize(String(product.name || ''), columnWidth).length * 7) + 3;
-            doc.setFontSize(20); doc.setTextColor(theme.accentColor);
-            doc.text(`$${(product.price || 0).toFixed(2)}`, columnX, textY);
-            textY += 10;
-            doc.setFontSize(11); doc.setTextColor('#333');
-            doc.text(doc.splitTextToSize(String(product.description || ''), columnWidth), columnX, textY);
-            columnIndex++;
-        }
-        doc.save(`catalogo-${currentMerchantData.business.replace(/\s+/g, '-')}.pdf`);
-
+        const element = await buildCatalogHtml_forImage(themeKey, products);
+        const canvas = await html2canvas(element.querySelector('.pdf-page'), { useCORS: true, scale: 2 });
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/jpeg', 0.95);
+        a.download = `catalogo-${currentMerchantData.business.replace(/\s+/g, '-')}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        document.body.removeChild(element);
     } catch (error) {
-        console.error("Error generando PDF:", error);
-        showToast("Hubo un error al generar el catálogo.", "error");
+        console.error("Error generando JPG:", error);
+        showToast("Hubo un error al generar la imagen del catálogo.", "error");
     } finally {
         loadingOverlay.style.display = 'none';
     }
 }
 
-// === NUEVAS FUNCIONES PARA FICHA DE PRODUCTO (JPG) ===
+function buildCatalogHtml_forImage(themeKey, products) {
+    return new Promise((resolve) => {
+        const theme = PDF_THEMES[themeKey];
+        const merchantInfo = currentMerchantData;
+        const wrapper = document.createElement('div');
+        wrapper.id = 'pdf-content-wrapper';
+        let contentHTML = `
+            <style>
+                .pdf-header { border-color: ${theme.headerColor}; }
+                .pdf-header h1 { color: ${theme.headerColor}; }
+                .pdf-product-details .price { color: ${theme.accentColor}; }
+                .pdf-product-details h3 { color: ${theme.headerColor}; }
+            </style>
+            <div class="pdf-page">
+                <div class="pdf-header">
+                    <h1>${merchantInfo.business}</h1>
+                    <p>${merchantInfo.description || ''}</p>
+                </div>
+                <div class="pdf-product-grid">
+        `;
+        products.forEach((product) => {
+            contentHTML += `
+                <div class="pdf-product-item">
+                    <div class="pdf-product-image-container">
+                        ${product.imageBase64 ? `<img src="${product.imageBase64}" crossorigin="anonymous">` : '<i class="fas fa-image" style="font-size: 50px; color: #ccc;"></i>'}
+                    </div>
+                    <div class="pdf-product-details">
+                        <h3>${product.name}</h3>
+                        <div class="price">$${(product.price || 0).toFixed(2)}</div>
+                        <p class="description">${product.description || 'Sin descripción.'}</p>
+                    </div>
+                </div>
+            `;
+        });
+        contentHTML += `</div></div>`;
+        wrapper.innerHTML = contentHTML;
+        document.body.appendChild(wrapper);
 
-/**
- * Obtiene todos los productos de un vendedor desde Firestore.
- * @param {string} vendorId El UID del vendedor.
- * @returns {Promise<Array>} Una promesa que resuelve a un array de productos.
- */
-async function getProductsByVendor(vendorId) {
-    const snapshot = await db.collection('products').where('vendorId', '==', vendorId).orderBy('createdAt', 'desc').get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-}
-
-/**
- * Carga los productos del usuario en el modal de selección para generar una ficha JPG.
- */
-async function loadUserProductsForSelection() {
-    if (!currentUser) return;
-    hideModal('catalog-options-modal');
-    const container = document.getElementById('product-selection-list');
-    container.innerHTML = '<p>Cargando tus productos...</p>';
-    document.getElementById('select-product-modal').style.display = 'flex';
-
-    try {
-        const products = await getProductsByVendor(currentUser.uid);
-        container.innerHTML = '';
-        if (products.length === 0) {
-            container.innerHTML = '<p>No tienes productos para seleccionar.</p>';
+        const images = wrapper.getElementsByTagName('img');
+        if (images.length === 0) {
+            setTimeout(() => resolve(wrapper), 100);
             return;
         }
-        products.forEach(product => {
-            const productElement = document.createElement('div');
-            productElement.className = 'product-selection-item';
-            productElement.innerHTML = `
-                <img src="${product.imageBase64 || 'https://placehold.co/120x80/e2e8f0/a0aec0?text=Sin+Imagen'}" alt="${product.name}" loading="lazy">
-                <p>${product.name}</p>
-            `;
-            productElement.onclick = () => {
-                generateProductJPG(product);
-                hideModal('select-product-modal');
-            };
-            container.appendChild(productElement);
+        const imagePromises = Array.from(images).filter(img => !img.complete).map(img => new Promise(res => { img.onload = res; img.onerror = res; }));
+        Promise.all(imagePromises).then(() => {
+            setTimeout(() => resolve(wrapper), 100);
         });
-    } catch (error) {
-        console.error("Error loading products for selection:", error);
-        container.innerHTML = '<p>Error al cargar productos.</p>';
-    }
+    });
 }
-
-/**
- * Genera una imagen JPG de un solo producto usando un canvas.
- * @param {object} product El objeto del producto.
- */
-async function generateProductJPG(product) {
-    showToast('Generando ficha de producto...', 'success');
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-
-    const canvasWidth = 800, canvasHeight = 800;
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-
-    // Fondo y membretado
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-    
-    ctx.fillStyle = 'var(--cyan)';
-    ctx.fillRect(0, 0, canvasWidth, 100);
-    ctx.font = 'bold 36px "Segoe UI", sans-serif';
-    ctx.fillStyle = 'white';
-    ctx.textAlign = 'center';
-    ctx.fillText(currentMerchantData.business || "Mi Tienda", canvasWidth / 2, 65);
-
-    // Imagen del producto
-    const productImage = new Image();
-    productImage.crossOrigin = "anonymous";
-    productImage.src = product.imageBase64 || 'https://placehold.co/700x400/e2e8f0/a0aec0?text=Producto+sin+imagen';
-
-    productImage.onload = () => {
-        ctx.drawImage(productImage, 50, 120, 700, 400);
-
-        // Textos
-        ctx.fillStyle = '#333333';
-        ctx.textAlign = 'left';
-        ctx.font = 'bold 32px "Segoe UI", sans-serif';
-        ctx.fillText(product.name, 50, 580);
-
-        ctx.font = 'bold 48px "Segoe UI", sans-serif';
-        ctx.fillStyle = 'var(--success)';
-        ctx.textAlign = 'right';
-        ctx.fillText(`$${(product.price || 0).toFixed(2)}`, 750, 580);
-
-        ctx.font = '20px "Segoe UI", sans-serif';
-        ctx.fillStyle = '#555555';
-        ctx.textAlign = 'left';
-        wrapText(ctx, product.description || 'Sin descripción.', 50, 630, 700, 24);
-
-        // Descarga
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = `ficha-${product.name.replace(/\s+/g, '-')}.jpg`;
-        link.click();
-    };
-
-    productImage.onerror = () => showToast("Error al cargar la imagen del producto.", "error");
-}
-
-/**
- * Dibuja texto con ajuste de línea en un canvas.
- */
-function wrapText(context, text, x, y, maxWidth, lineHeight) {
-    const words = text.split(' ');
-    let line = '';
-    for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' ';
-        const metrics = context.measureText(testLine);
-        if (metrics.width > maxWidth && n > 0) {
-            context.fillText(line, x, y);
-            line = words[n] + ' ';
-            y += lineHeight;
-        } else {
-            line = testLine;
-        }
-    }
-    context.fillText(line, x, y);
-}
-
 
 // --- UTILIDADES Y FUNCIONES AUXILIARES ---
 function updateAuthUI() {
@@ -723,7 +739,9 @@ function showToast(message, type = 'success') {
 }
 
 window.showImageLightbox = function(imageBase64) {
-    document.getElementById('lightboxImg').src = imageBase64;
+    const lightboxImg = document.getElementById('lightboxImg');
+    lightboxImg.src = imageBase64;
+    lightboxImg.loading = 'lazy';
     document.getElementById('imageLightbox').style.display = 'flex';
 }
 window.hideImageLightbox = function() { document.getElementById('imageLightbox').style.display = 'none'; }
@@ -754,40 +772,23 @@ function initializeApp() {
         }
         updateAuthUI();
     });
-
-    // --- EVENT LISTENERS GLOBALES ---
-    document.getElementById('hamburgerMenu').addEventListener('click', () => {
-        document.getElementById('navContainer').classList.toggle('active');
+    const hamburger = document.getElementById('hamburgerMenu');
+    const navContainer = document.getElementById('navContainer');
+    hamburger.addEventListener('click', () => {
+        navContainer.classList.toggle('active');
     });
-    
-    // Listeners para los nuevos botones de acción
-    document.getElementById('create-catalog-btn').addEventListener('click', () => document.getElementById('catalog-options-modal').style.display = 'flex');
-    document.getElementById('backup-btn').addEventListener('click', () => document.getElementById('backup-options-modal').style.display = 'flex');
-    
-    // Listeners para los botones dentro de los modales de acción
-    document.getElementById('generate-pdf-btn').addEventListener('click', () => {
-        hideModal('catalog-options-modal');
-        showExportModal('pdf');
-    });
-    document.getElementById('generate-jpg-btn').addEventListener('click', loadUserProductsForSelection);
-
-    // Conectar el input de importación de JSON
-    document.getElementById('json-import-input').addEventListener('change', handleJsonImport);
-
     setupImageUpload('productImageUploadArea', 'productImageInput', (file) => selectedProductFile = file);
     setupImageUpload('profilePicUploadArea', 'profilePicInput', (file) => {
         selectedProfilePicFile = file;
         selectedAvatarUrl = null;
         document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
     });
-    
+    loadProducts();
+    populateAvatars();
     const themeToggle = document.getElementById('themeToggle');
     const applyTheme = (theme) => { document.body.dataset.theme = theme; localStorage.setItem('theme', theme); };
     themeToggle.addEventListener('click', () => applyTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
     applyTheme(localStorage.getItem('theme') || 'light');
-    
-    loadProducts();
-    populateAvatars();
 }
 
 initializeApp();

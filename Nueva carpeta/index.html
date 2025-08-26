@@ -152,17 +152,21 @@
             <div class="products-header" style="margin-top: 3rem;">
                 <h2 class="section-title">Mis Productos</h2>
                 <div class="header-actions">
-                    <!-- === NUEVOS BOTONES === -->
-                    <button id="create-catalog-btn" class="btn btn-secondary">
-                        <i class="fas fa-file-alt"></i> Crear Catálogo
-                    </button>
-                    <button id="backup-btn" class="btn btn-secondary">
-                        <i class="fas fa-save"></i> Copia de Seguridad
-                    </button>
-                    <!-- Input para importar JSON (oculto, se activa desde el modal) -->
-                    <input type="file" id="json-import-input" accept=".json" style="display: none;">
+                    <input type="file" id="importJsonInput" accept=".json" onchange="handleJsonImport(event)" style="display: none;">
                     
-                    <!-- Botón existente -->
+                    <button class="btn btn-small btn-secondary" onclick="showExportModal('pdf')">
+                        <i class="fas fa-file-pdf"></i> Catálogo PDF
+                    </button>
+                    <button class="btn btn-small btn-secondary" onclick="showExportModal('jpg')">
+                        <i class="fas fa-file-image"></i> Catálogo JPG
+                    </button>
+
+                    <button class="btn btn-small btn-secondary" onclick="exportCatalogToJSON()">
+                        <i class="fas fa-download"></i> Exportar JSON
+                    </button>
+                    <label for="importJsonInput" class="btn btn-small btn-secondary">
+                        <i class="fas fa-upload"></i> Importar JSON
+                    </label>
                     <button class="btn btn-primary" onclick="showProductModal()"><i class="fas fa-plus"></i> Nuevo Producto</button>
                 </div>
             </div>
@@ -296,57 +300,6 @@
             <div id="themeSelectionGrid" class="theme-selection-grid"></div>
         </div>
     </div>
-
-    <!-- === NUEVOS MODALES AÑADIDOS AQUÍ === -->
-    <div class="login-modal" id="catalog-options-modal">
-        <div class="login-box">
-            <button type="button" class="close-modal-btn" onclick="hideModal('catalog-options-modal')"><i class="fas fa-times"></i></button>
-            <div class="login-header">
-                <h2>Crear Catálogo</h2>
-                <p>Elige un formato para presentar tus productos.</p>
-            </div>
-            <div class="modal-options" style="display: flex; flex-direction: column; gap: 1rem;">
-                <button id="generate-pdf-btn" class="btn btn-primary" style="width: 100%;">
-                    <i class="fas fa-file-pdf"></i> Generar Catálogo PDF
-                </button>
-                <button id="generate-jpg-btn" class="btn btn-primary" style="width: 100%;">
-                    <i class="fas fa-file-image"></i> Crear Ficha de Producto (JPG)
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div class="login-modal" id="backup-options-modal">
-        <div class="login-box">
-            <button type="button" class="close-modal-btn" onclick="hideModal('backup-options-modal')"><i class="fas fa-times"></i></button>
-            <div class="login-header">
-                <h2>Copia de Seguridad</h2>
-                <p>Exporta tus datos o importa un catálogo existente.</p>
-            </div>
-            <div class="modal-options" style="display: flex; flex-direction: column; gap: 1rem;">
-                <button onclick="exportCatalogToJSON()" class="btn btn-secondary" style="width: 100%;">
-                    <i class="fas fa-download"></i> Exportar a JSON
-                </button>
-                <label for="json-import-input" class="btn btn-secondary" style="width: 100%; text-align: center; box-sizing: border-box;">
-                    <i class="fas fa-upload"></i> Importar desde JSON
-                </label>
-            </div>
-        </div>
-    </div>
-
-    <div class="login-modal" id="select-product-modal">
-        <div class="login-box" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
-            <button type="button" class="close-modal-btn" onclick="hideModal('select-product-modal')"><i class="fas fa-times"></i></button>
-            <div class="login-header">
-                <h2>Crear Ficha de Producto</h2>
-                <p>Selecciona un producto para generar su ficha individual.</p>
-            </div>
-            <div id="product-selection-list" class="product-selection-grid">
-                <!-- Los productos se cargarán aquí con JavaScript -->
-            </div>
-        </div>
-    </div>
-    <!-- === FIN DE NUEVOS MODALES === -->
 
     <footer class="footer">
         <p>Únete a la comunidad de pequeños comerciantes que ya están creciendo con Feria Virtual</p>
