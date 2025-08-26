@@ -14,7 +14,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
-const functions = firebase.functions(); // Inicializa Cloud Functions
 
 // --- VARIABLES GLOBALES ---
 let currentUser = null;
@@ -23,7 +22,6 @@ let currentMerchantData = null;
 let selectedProductFile = null;
 let selectedProfilePicFile = null;
 let selectedAvatarUrl = null;
-let currentAITask = {}; // Almacena la tarea de IA actual
 const profileLink = document.getElementById('profileLink');
 const storeLink = document.getElementById('storeLink');
 const authContainer = document.getElementById('authContainer');
@@ -366,6 +364,7 @@ function populateAvatars() {
     });
 }
 
+// --- COPIA DE SEGURIDAD (IMPORT/EXPORT JSON) ---
 window.exportCatalogToJSON = async function() {
     if (!currentUser) return showToast('Debes iniciar sesión para exportar tu catálogo.', 'error');
     hideModal('backup-options-modal');
@@ -408,7 +407,7 @@ window.handleJsonImport = function(event) {
             console.error("Error al parsear el archivo JSON:", error);
             showToast('El archivo seleccionado no es un JSON válido.', 'error');
         } finally {
-            event.target.value = '';
+            event.target.value = ''; // Reset input
         }
     };
     reader.readAsText(file);
@@ -436,6 +435,8 @@ async function importCatalogFromJSON(products) {
         showToast('Ocurrió un error durante la importación.', 'error');
     }
 }
+
+// --- GENERACIÓN DE CATÁLOGOS ---
 
 const PDF_THEMES = {
     naturaleza: { name: 'Naturaleza', icon: 'fa-leaf', headerColor: '#22c55e', accentColor: '#16a34a' },
@@ -547,7 +548,7 @@ async function generatePdfWithJsPDF(themeKey) {
             columnIndex++;
         }
         doc.save(`catalogo-${currentMerchantData.business.replace(/\s+/g, '-')}.pdf`);
-        showAIUpsellModal('pdf');
+
     } catch (error) {
         console.error("Error generando PDF:", error);
         showToast("Hubo un error al generar el catálogo.", "error");
@@ -556,112 +557,7 @@ async function generatePdfWithJsPDF(themeKey) {
     }
 }
 
-function showAIUpsellModal(type, data = null) {
-    currentAITask = { type, data };
-    const title = document.getElementById('aiUpsellTitle');
-    const desc = document.getElementById('aiUpsellDescription');
-    if (type === 'pdf') {
-        title.textContent = '¡Sube de Nivel tu Catálogo!';
-        desc.textContent = '¿Quieres usar la magia de la IA para crear un encabezado y pie de página únicos?';
-    } else {
-        title.textContent = '¡Crea una Promo Irresistible!';
-        desc.textContent = '¿Quieres que la IA genere un fondo profesional para la foto de tu producto?';
-    }
-    document.getElementById('ai-upsell-modal').style.display = 'flex';
-}
-
-function showAIPromptModal() {
-    hideModal('ai-upsell-modal');
-    document.getElementById('ai-prompt-modal').style.display = 'flex';
-    document.getElementById('aiPromptInput').value = '';
-}
-
-async function handleAIGeneration() {
-    const userPrompt = document.getElementById('aiPromptInput').value.trim();
-    if (!userPrompt) {
-        showToast('Por favor, describe el estilo que buscas.', 'error');
-        return;
-    }
-
-    const generateBtn = document.getElementById('aiGenerateBtn');
-    generateBtn.classList.add('loading');
-    generateBtn.disabled = true;
-
-    try {
-        const generateAIDesigns = functions.httpsCallable('generateAIDesigns');
-        const result = await generateAIDesigns({
-            designType: currentAITask.type,
-            userPrompt: userPrompt
-        });
-
-        if (currentAITask.type === 'pdf') {
-            showToast('Función de PDF con IA aún no implementada.', 'success');
-        } else if (currentAITask.type === 'jpg' && result.data.backgroundImageUrl) {
-            await generateAIJpg(currentAITask.data, result.data.backgroundImageUrl);
-        }
-
-    } catch (error) {
-        console.error("Error en la función de IA:", error);
-        showToast(error.message || 'Hubo un error al generar el diseño.', 'error');
-    } finally {
-        generateBtn.classList.remove('loading');
-        generateBtn.disabled = false;
-        hideModal('ai-prompt-modal');
-    }
-}
-
-async function generateAIJpg(product, backgroundImageUrl) {
-    showToast('Creando tu imagen profesional...', 'success');
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const canvasWidth = 1024, canvasHeight = 1024;
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-
-    const backgroundImage = new Image();
-    backgroundImage.crossOrigin = "anonymous";
-    backgroundImage.src = backgroundImageUrl;
-    await new Promise(r => backgroundImage.onload = r);
-    ctx.drawImage(backgroundImage, 0, 0, canvasWidth, canvasHeight);
-    
-    const productImage = new Image();
-    productImage.crossOrigin = "anonymous";
-    productImage.src = product.imageBase64 || 'https://placehold.co/700x400/e2e8f0/a0aec0?text=Producto';
-    await new Promise(r => productImage.onload = r);
-    
-    const boxSize = canvasWidth * 0.6;
-    const imgRatio = productImage.width / productImage.height;
-    let finalWidth, finalHeight;
-    if (imgRatio > 1) {
-        finalWidth = boxSize;
-        finalHeight = finalWidth / imgRatio;
-    } else {
-        finalHeight = boxSize;
-        finalWidth = finalHeight * imgRatio;
-    }
-    const finalX = (canvasWidth - finalWidth) / 2;
-    const finalY = (canvasHeight - finalHeight) / 2;
-    ctx.drawImage(productImage, finalX, finalY, finalWidth, finalHeight);
-
-    ctx.textAlign = 'center';
-    ctx.font = 'bold 52px "Segoe UI", sans-serif';
-    ctx.fillStyle = 'white';
-    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-    ctx.lineWidth = 4;
-    ctx.strokeText(product.name, canvasWidth / 2, canvasHeight - 120);
-    ctx.fillText(product.name, canvasWidth / 2, canvasHeight - 120);
-
-    ctx.font = 'bold 72px "Segoe UI", sans-serif';
-    ctx.fillStyle = '#ffdd59';
-    ctx.strokeText(`$${(product.price || 0).toFixed(2)}`, canvasWidth / 2, canvasHeight - 40);
-    ctx.fillText(`$${(product.price || 0).toFixed(2)}`, canvasWidth / 2, canvasHeight - 40);
-
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-    const link = document.createElement('a');
-    link.href = dataUrl;
-    link.download = `promo-ia-${product.name.replace(/\s+/g, '-')}.jpg`;
-    link.click();
-}
+// === NUEVAS FUNCIONES PARA FICHA DE PRODUCTO (JPG) ===
 
 async function getProductsByVendor(vendorId) {
     const snapshot = await db.collection('products').where('vendorId', '==', vendorId).orderBy('createdAt', 'desc').get();
@@ -701,15 +597,23 @@ async function loadUserProductsForSelection() {
     }
 }
 
+/**
+ * Genera una imagen JPG de un solo producto usando un canvas.
+ * @param {object} product El objeto del producto.
+ */
 async function generateProductJPG(product) {
     showToast('Generando ficha de producto...', 'success');
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
+
     const canvasWidth = 800, canvasHeight = 800;
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
+
+    // Fondo y membretado
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    
     const themeCyan = getComputedStyle(document.documentElement).getPropertyValue('--cyan').trim();
     ctx.fillStyle = themeCyan || '#06b6d4';
     ctx.fillRect(0, 0, canvasWidth, 100);
@@ -717,14 +621,19 @@ async function generateProductJPG(product) {
     ctx.fillStyle = 'white';
     ctx.textAlign = 'center';
     ctx.fillText(currentMerchantData.business || "Mi Tienda", canvasWidth / 2, 65);
+
+    // Imagen del producto
     const productImage = new Image();
     productImage.crossOrigin = "anonymous";
     productImage.src = product.imageBase64 || 'https://placehold.co/700x400/e2e8f0/a0aec0?text=Producto+sin+imagen';
+
     productImage.onload = () => {
+        // --- INICIO DE LA LÓGICA DE ESCALADO PROPORCIONAL ---
         const boxX = 50, boxY = 120, boxWidth = 700, boxHeight = 400;
         const imgRatio = productImage.width / productImage.height;
         const boxRatio = boxWidth / boxHeight;
         let finalWidth, finalHeight;
+
         if (imgRatio > boxRatio) {
             finalWidth = boxWidth;
             finalHeight = finalWidth / imgRatio;
@@ -732,29 +641,38 @@ async function generateProductJPG(product) {
             finalHeight = boxHeight;
             finalWidth = finalHeight * imgRatio;
         }
+        
         const finalX = boxX + (boxWidth - finalWidth) / 2;
         const finalY = boxY + (boxHeight - finalHeight) / 2;
+        
         ctx.drawImage(productImage, finalX, finalY, finalWidth, finalHeight);
+        // --- FIN DE LA LÓGICA DE ESCALADO ---
+
+        // Textos
         ctx.fillStyle = '#333333';
         ctx.textAlign = 'left';
         ctx.font = 'bold 32px "Segoe UI", sans-serif';
         ctx.fillText(product.name, 50, 580);
+
         const themeSuccess = getComputedStyle(document.documentElement).getPropertyValue('--success').trim();
         ctx.font = 'bold 48px "Segoe UI", sans-serif';
         ctx.fillStyle = themeSuccess || '#10b981';
         ctx.textAlign = 'right';
         ctx.fillText(`$${(product.price || 0).toFixed(2)}`, 750, 580);
+
         ctx.font = '20px "Segoe UI", sans-serif';
         ctx.fillStyle = '#555555';
         ctx.textAlign = 'left';
         wrapText(ctx, product.description || 'Sin descripción.', 50, 630, 700, 24);
+
+        // Descarga
         const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
         const link = document.createElement('a');
         link.href = dataUrl;
         link.download = `ficha-${product.name.replace(/\s+/g, '-')}.jpg`;
         link.click();
-        showAIUpsellModal('jpg', product);
     };
+
     productImage.onerror = () => showToast("Error al cargar la imagen del producto.", "error");
 }
 
@@ -775,6 +693,7 @@ function wrapText(context, text, x, y, maxWidth, lineHeight) {
     context.fillText(line, x, y);
 }
 
+// --- UTILIDADES Y FUNCIONES AUXILIARES ---
 function updateAuthUI() {
     if (isMerchant && currentUser) {
         authContainer.innerHTML = `
@@ -826,6 +745,7 @@ window.toggleChatbot = function toggleChatbot() {
     }
 };
 
+// --- INICIALIZACIÓN DE LA APLICACIÓN ---
 function initializeApp() {
     auth.onAuthStateChanged(async (user) => {
         if (user) {
@@ -842,6 +762,7 @@ function initializeApp() {
         updateAuthUI();
     });
 
+    // --- EVENT LISTENERS GLOBALES ---
     document.getElementById('hamburgerMenu').addEventListener('click', () => {
         document.getElementById('navContainer').classList.toggle('active');
     });
@@ -854,10 +775,8 @@ function initializeApp() {
         showExportModal('pdf');
     });
     document.getElementById('generate-jpg-btn').addEventListener('click', loadUserProductsForSelection);
-    document.getElementById('json-import-input').addEventListener('change', handleJsonImport);
 
-    document.getElementById('aiConfirmBtn').addEventListener('click', showAIPromptModal);
-    document.getElementById('aiGenerateBtn').addEventListener('click', handleAIGeneration);
+    document.getElementById('json-import-input').addEventListener('change', handleJsonImport);
 
     setupImageUpload('productImageUploadArea', 'productImageInput', (file) => selectedProductFile = file);
     setupImageUpload('profilePicUploadArea', 'profilePicInput', (file) => {

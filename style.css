@@ -1,4 +1,3 @@
-/* ... (Todo tu CSS existente se mantiene igual) ... */
 /* Feria Virtual - Hoja de Estilos Principal */
 
 :root {
@@ -438,8 +437,6 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
 }
 
 /* --- ESTILOS BASE PARA EL CONTENIDO DEL PDF (FUERA DE PANTALLA) --- */
-/* ... (esta sección se mantiene igual) ... */
-
 #pdf-content-wrapper {
     position: absolute;
     top: 0;
@@ -520,10 +517,13 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
     height: 0;
     page-break-before: always;
 }
+
 /* === CORRECCIÓN PARA EL MODAL DE PRODUCTO === */
 #productModal .login-box { max-height: 85vh; overflow-y: auto; }
 
+
 /* === NUEVOS ESTILOS PARA MODALES Y ACCIONES === */
+
 .modal-options {
     display: flex;
     flex-direction: column;
@@ -569,6 +569,7 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
     font-weight: 600;
     color: var(--black);
     font-size: 0.9rem;
+    /* Truncate text that is too long */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -576,12 +577,4 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
 
 body[data-theme="dark"] .product-selection-item {
     border-color: #4b5563;
-}
-
-/* === ESTILOS PARA BOTÓN DE IA CARGANDO === */
-.btn.loading .btn-text {
-    display: none;
-}
-.btn.loading .btn-loader {
-    display: inline-block;
 }
