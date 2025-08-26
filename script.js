@@ -481,7 +481,6 @@ async function generatePdfWithJsPDF(themeKey) {
         const theme = PDF_THEMES[themeKey];
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-        // (El resto de tu lógica de PDF permanece aquí, sin cambios)
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         const margin = 15;
@@ -560,19 +559,11 @@ async function generatePdfWithJsPDF(themeKey) {
 
 // === NUEVAS FUNCIONES PARA FICHA DE PRODUCTO (JPG) ===
 
-/**
- * Obtiene todos los productos de un vendedor desde Firestore.
- * @param {string} vendorId El UID del vendedor.
- * @returns {Promise<Array>} Una promesa que resuelve a un array de productos.
- */
 async function getProductsByVendor(vendorId) {
     const snapshot = await db.collection('products').where('vendorId', '==', vendorId).orderBy('createdAt', 'desc').get();
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
-/**
- * Carga los productos del usuario en el modal de selección para generar una ficha JPG.
- */
 async function loadUserProductsForSelection() {
     if (!currentUser) return;
     hideModal('catalog-options-modal');
@@ -623,7 +614,8 @@ async function generateProductJPG(product) {
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     
-    ctx.fillStyle = 'var(--cyan)';
+    const themeCyan = getComputedStyle(document.documentElement).getPropertyValue('--cyan').trim();
+    ctx.fillStyle = themeCyan || '#06b6d4';
     ctx.fillRect(0, 0, canvasWidth, 100);
     ctx.font = 'bold 36px "Segoe UI", sans-serif';
     ctx.fillStyle = 'white';
@@ -636,7 +628,25 @@ async function generateProductJPG(product) {
     productImage.src = product.imageBase64 || 'https://placehold.co/700x400/e2e8f0/a0aec0?text=Producto+sin+imagen';
 
     productImage.onload = () => {
-        ctx.drawImage(productImage, 50, 120, 700, 400);
+        // --- INICIO DE LA LÓGICA DE ESCALADO PROPORCIONAL ---
+        const boxX = 50, boxY = 120, boxWidth = 700, boxHeight = 400;
+        const imgRatio = productImage.width / productImage.height;
+        const boxRatio = boxWidth / boxHeight;
+        let finalWidth, finalHeight;
+
+        if (imgRatio > boxRatio) {
+            finalWidth = boxWidth;
+            finalHeight = finalWidth / imgRatio;
+        } else {
+            finalHeight = boxHeight;
+            finalWidth = finalHeight * imgRatio;
+        }
+        
+        const finalX = boxX + (boxWidth - finalWidth) / 2;
+        const finalY = boxY + (boxHeight - finalHeight) / 2;
+        
+        ctx.drawImage(productImage, finalX, finalY, finalWidth, finalHeight);
+        // --- FIN DE LA LÓGICA DE ESCALADO ---
 
         // Textos
         ctx.fillStyle = '#333333';
@@ -644,8 +654,9 @@ async function generateProductJPG(product) {
         ctx.font = 'bold 32px "Segoe UI", sans-serif';
         ctx.fillText(product.name, 50, 580);
 
+        const themeSuccess = getComputedStyle(document.documentElement).getPropertyValue('--success').trim();
         ctx.font = 'bold 48px "Segoe UI", sans-serif';
-        ctx.fillStyle = 'var(--success)';
+        ctx.fillStyle = themeSuccess || '#10b981';
         ctx.textAlign = 'right';
         ctx.fillText(`$${(product.price || 0).toFixed(2)}`, 750, 580);
 
@@ -665,9 +676,6 @@ async function generateProductJPG(product) {
     productImage.onerror = () => showToast("Error al cargar la imagen del producto.", "error");
 }
 
-/**
- * Dibuja texto con ajuste de línea en un canvas.
- */
 function wrapText(context, text, x, y, maxWidth, lineHeight) {
     const words = text.split(' ');
     let line = '';
@@ -684,7 +692,6 @@ function wrapText(context, text, x, y, maxWidth, lineHeight) {
     }
     context.fillText(line, x, y);
 }
-
 
 // --- UTILIDADES Y FUNCIONES AUXILIARES ---
 function updateAuthUI() {
@@ -760,18 +767,15 @@ function initializeApp() {
         document.getElementById('navContainer').classList.toggle('active');
     });
     
-    // Listeners para los nuevos botones de acción
     document.getElementById('create-catalog-btn').addEventListener('click', () => document.getElementById('catalog-options-modal').style.display = 'flex');
     document.getElementById('backup-btn').addEventListener('click', () => document.getElementById('backup-options-modal').style.display = 'flex');
     
-    // Listeners para los botones dentro de los modales de acción
     document.getElementById('generate-pdf-btn').addEventListener('click', () => {
         hideModal('catalog-options-modal');
         showExportModal('pdf');
     });
     document.getElementById('generate-jpg-btn').addEventListener('click', loadUserProductsForSelection);
 
-    // Conectar el input de importación de JSON
     document.getElementById('json-import-input').addEventListener('change', handleJsonImport);
 
     setupImageUpload('productImageUploadArea', 'productImageInput', (file) => selectedProductFile = file);
