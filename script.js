@@ -54,8 +54,7 @@ window.showProductModal = function(productId = null) {
         delete modal.dataset.productId;
     }
 }
-// (El resto de las funciones hasta `generatePdfWithJsPDF` se mantienen igual)
-// ...
+
 async function loadProducts(containerId = 'productsGrid', filter = {}) {
     const productsGrid = document.getElementById(containerId);
     productsGrid.innerHTML = `<div>Cargando productos...</div>`;
@@ -76,6 +75,7 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
         productsGrid.innerHTML = `<div>Error al cargar productos.</div>`;
     }
 }
+
 async function loadMyProducts() {
     if (!currentUser) return;
     const productsGrid = document.getElementById('myProductsGrid');
@@ -90,6 +90,7 @@ async function loadMyProducts() {
         snapshot.forEach(doc => renderMyProductCard(productsGrid, { id: doc.id, ...doc.data() }));
     } catch (error) { console.error("Error loading user products:", error); }
 }
+
 window.registerMerchant = async function() {
     const name = document.getElementById('regName').value.trim();
     const email = document.getElementById('regEmail').value.trim();
@@ -110,6 +111,7 @@ window.registerMerchant = async function() {
         showMessage(msgEl, '¡Registro exitoso! Redirigiendo...', 'success');
     } catch (error) { showMessage(msgEl, 'Error en el registro.', 'error'); }
 }
+
 window.login = async function() {
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
@@ -124,7 +126,9 @@ window.login = async function() {
         }, 1000);
     } catch (error) { showMessage(msgEl, 'Correo o contraseña incorrectos.', 'error'); }
 }
+
 window.logout = function() { auth.signOut(); }
+
 async function updateUserProfile(userId) {
     try {
         const doc = await db.collection('merchants').doc(userId).get();
@@ -148,6 +152,7 @@ async function updateUserProfile(userId) {
         document.getElementById('storeDescription').value = currentMerchantData.description;
     } catch (error) { console.error("Error loading profile:", error); }
 }
+
 function setupImageUpload(areaId, inputId, fileVariableSetter) {
     const uploadArea = document.getElementById(areaId);
     const fileInput = document.getElementById(inputId);
@@ -164,6 +169,7 @@ function setupImageUpload(areaId, inputId, fileVariableSetter) {
         }
     });
 }
+
 async function loadProductForEdit(productId) {
     try {
         const doc = await db.collection('products').doc(productId).get();
@@ -179,6 +185,7 @@ async function loadProductForEdit(productId) {
         }
     } catch (error) { console.error("Error loading product for edit:", error); } 
 }
+
 window.saveProduct = async function() {
     const isEditing = !!document.getElementById('productModal').dataset.productId;
     const productData = { name: document.getElementById('productName').value, price: parseFloat(document.getElementById('productPrice').value), description: document.getElementById('productDescription').value, vendorId: currentUser.uid, vendorName: document.getElementById('userBusiness').textContent };
@@ -200,6 +207,7 @@ window.saveProduct = async function() {
     hideModal('productModal');
     loadMyProducts();
 }
+
 function resetProductForm() {
     document.getElementById('productName').value = '';
     document.getElementById('productPrice').value = '';
@@ -209,6 +217,7 @@ function resetProductForm() {
     delete document.getElementById('productImageUploadArea').dataset.existingImage;
     selectedProductFile = null;
 }
+
 function renderProductCard(container, product) {
     const card = document.createElement('div');
     card.className = 'product-card';
@@ -227,6 +236,7 @@ function renderProductCard(container, product) {
         </div>`;
     container.appendChild(card);
 }
+
 function renderMyProductCard(container, product) {
     const card = document.createElement('div');
     card.className = 'product-card';
@@ -243,8 +253,10 @@ function renderMyProductCard(container, product) {
         </div>`;
     container.appendChild(card);
 }
+
 window.deleteProduct = async function(id) { if (confirm('¿Eliminar producto?')) { await db.collection('products').doc(id).delete(); loadMyProducts(); showToast('Producto eliminado.'); } }
 window.toggleProductStatus = async function(id, status) { await db.collection('products').doc(id).update({ published: status }); loadMyProducts(); }
+
 window.showVendorPage = async function(vendorId, vendorName) {
     showSection('vendor-page');
     document.getElementById('vendorPageTitle').textContent = vendorName;
@@ -262,6 +274,7 @@ window.showVendorPage = async function(vendorId, vendorName) {
     } catch (error) { console.error("Error fetching vendor phone:", error); }
     loadProducts('vendorProductsGrid', { vendorId: vendorId });
 }
+
 window.toggleStoreEditMode = function(isEditing) {
     document.getElementById('storeName').readOnly = !isEditing;
     document.getElementById('storeDescription').readOnly = !isEditing;
@@ -272,6 +285,7 @@ window.toggleStoreEditMode = function(isEditing) {
         document.getElementById('storeDescription').value = currentMerchantData.description;
     }
 }
+
 window.saveStoreInfo = async function() {
     const newData = { business: document.getElementById('storeName').value, description: document.getElementById('storeDescription').value };
     await db.collection('merchants').doc(currentUser.uid).update(newData);
@@ -279,6 +293,7 @@ window.saveStoreInfo = async function() {
     toggleStoreEditMode(false);
     showToast('Información del puesto actualizada.', 'success');
 }
+
 window.toggleProfileEditMode = function(isEditing) {
     const card = document.getElementById('profileCard');
     card.classList.toggle('edit-mode', isEditing);
@@ -290,6 +305,7 @@ window.toggleProfileEditMode = function(isEditing) {
         document.getElementById('userPhoneInput').value = currentPhone === 'No especificado' ? '' : currentPhone;
     }
 }
+
 window.saveProfileInfo = async function() {
     const newData = {
         name: document.getElementById('userNameInput').value.trim(),
@@ -300,12 +316,14 @@ window.saveProfileInfo = async function() {
     toggleProfileEditMode(false);
     showToast('Perfil actualizado.', 'success');
 }
+
 window.showProfilePicModal = function() {
     document.getElementById('profilePicModal').style.display = 'flex';
     selectedProfilePicFile = null;
     selectedAvatarUrl = null;
     document.getElementById('profilePicUploadArea').innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic para subir</p>';
 }
+
 window.saveProfilePic = async function() {
     let picUrl = null;
     if (selectedProfilePicFile) {
@@ -327,6 +345,7 @@ window.saveProfilePic = async function() {
         showToast('No seleccionaste ninguna imagen.', 'error');
     }
 }
+
 function populateAvatars() {
     const container = document.getElementById('avatarSelection');
     container.innerHTML = '';
@@ -346,6 +365,7 @@ function populateAvatars() {
         container.appendChild(avatarItem);
     });
 }
+
 window.exportCatalogToJSON = async function() {
     if (!currentUser) return showToast('Debes iniciar sesión para exportar tu catálogo.', 'error');
     hideModal('backup-options-modal');
@@ -372,6 +392,7 @@ window.exportCatalogToJSON = async function() {
         showToast('Hubo un error al exportar el catálogo.', 'error');
     }
 }
+
 window.handleJsonImport = function(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -392,6 +413,7 @@ window.handleJsonImport = function(event) {
     };
     reader.readAsText(file);
 }
+
 async function importCatalogFromJSON(products) {
     if (!Array.isArray(products) || products.length === 0) return showToast('El archivo no contiene productos para importar.', 'error');
     showToast(`Importando ${products.length} productos...`, 'success');
@@ -415,7 +437,6 @@ async function importCatalogFromJSON(products) {
     }
 }
 
-// --- GENERACIÓN DE CATÁLOGOS ---
 const PDF_THEMES = {
     naturaleza: { name: 'Naturaleza', icon: 'fa-leaf', headerColor: '#22c55e', accentColor: '#16a34a' },
     gastronomia: { name: 'Gastronomía', icon: 'fa-utensils', headerColor: '#f97316', accentColor: '#ea580c' },
@@ -426,6 +447,7 @@ const PDF_THEMES = {
     minimalista: { name: 'Minimalista', icon: 'fa-dot-circle', headerColor: '#6b7280', accentColor: '#4b5563' },
     elegante: { name: 'Elegante', icon: 'fa-gem', headerColor: '#d97706', accentColor: '#b45309' }
 };
+
 window.showExportModal = function(exportType) {
     if (!currentUser) return showToast('Debes iniciar sesión para crear un catálogo.', 'error');
     const grid = document.getElementById('themeSelectionGrid');
@@ -449,11 +471,82 @@ async function generatePdfWithJsPDF(themeKey) {
     const loadingOverlay = document.getElementById('globalLoadingOverlay');
     try {
         loadingOverlay.style.display = 'flex';
-        // (Tu lógica de PDF estándar se mantiene igual)
-        // ...
+        const productsSnapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).where('published', '==', true).get();
+        if (productsSnapshot.empty) {
+            showToast('No tienes productos publicados para incluir.', 'error');
+            return;
+        }
+        const products = productsSnapshot.docs.map(doc => doc.data());
+        const theme = PDF_THEMES[themeKey];
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 15;
+        const gutter = 10;
+        const contentWidth = pageWidth - (margin * 2);
+        const columnWidth = (contentWidth - (gutter * 2)) / 3;
+        let currentY = margin;
+        let columnIndex = 0;
+        const addHeader = () => {
+            currentY = margin;
+            doc.setFontSize(28); doc.setTextColor(theme.headerColor);
+            doc.text(String(currentMerchantData.business || ''), pageWidth / 2, currentY, { align: 'center' });
+            currentY += 10;
+            doc.setFontSize(11); doc.setTextColor('#666');
+            const descLines = doc.splitTextToSize(String(currentMerchantData.description || ''), contentWidth - 40);
+            doc.text(descLines, pageWidth / 2, currentY, { align: 'center' });
+            currentY += (descLines.length * 5) + 8;
+            doc.setDrawColor(theme.headerColor); doc.setLineWidth(0.5);
+            doc.line(margin, currentY, pageWidth - margin, currentY);
+            currentY += 10;
+        };
+        const addFooter = (pageNumber) => {
+            const footerY = pageHeight - 10;
+            doc.setFontSize(9); doc.setTextColor('#999');
+            doc.text(`Catálogo de ${currentMerchantData.business} | Página ${pageNumber}`, pageWidth / 2, footerY, { align: 'center' });
+        };
+        addHeader();
+        let pageCount = 1;
+        addFooter(pageCount);
+        for (const product of products) {
+            const productBlockHeight = 140;
+            if (columnIndex > 2) { columnIndex = 0; currentY += productBlockHeight; }
+            if (currentY + productBlockHeight > pageHeight - margin) {
+                doc.addPage(); pageCount++; addHeader(); addFooter(pageCount);
+                currentY = doc.internal.pageSize.getHeight() - pageHeight + 48;
+                columnIndex = 0;
+            }
+            const columnX = margin + (columnIndex * (columnWidth + gutter));
+            if (product.imageBase64) {
+                try {
+                    const format = product.imageBase64.substring("data:image/".length, product.imageBase64.indexOf(";base64")).toUpperCase();
+                    if (['JPG', 'JPEG', 'PNG'].includes(format)) {
+                        const img = new Image();
+                        img.src = product.imageBase64;
+                        await new Promise(r => { img.onload = r; img.onerror = r; });
+                        const boxW = columnWidth, boxH = 80;
+                        let w = img.width, h = img.height;
+                        if (w > boxW) { h = (boxW / w) * h; w = boxW; }
+                        if (h > boxH) { w = (boxH / h) * w; h = boxH; }
+                        const x = columnX + (boxW - w) / 2;
+                        const y = currentY + (boxH - h) / 2;
+                        doc.addImage(product.imageBase64, format, x, y, w, h);
+                    }
+                } catch (e) { console.error("Error al añadir imagen:", e); }
+            }
+            let textY = currentY + 90;
+            doc.setFontSize(18); doc.setTextColor(theme.headerColor);
+            doc.text(doc.splitTextToSize(String(product.name || ''), columnWidth), columnX, textY);
+            textY += (doc.splitTextToSize(String(product.name || ''), columnWidth).length * 7) + 3;
+            doc.setFontSize(20); doc.setTextColor(theme.accentColor);
+            doc.text(`$${(product.price || 0).toFixed(2)}`, columnX, textY);
+            textY += 10;
+            doc.setFontSize(11); doc.setTextColor('#333');
+            doc.text(doc.splitTextToSize(String(product.description || ''), columnWidth), columnX, textY);
+            columnIndex++;
+        }
         doc.save(`catalogo-${currentMerchantData.business.replace(/\s+/g, '-')}.pdf`);
-
-        // NUEVO: Mostrar el modal de mejora con IA
         showAIUpsellModal('pdf');
     } catch (error) {
         console.error("Error generando PDF:", error);
@@ -462,8 +555,6 @@ async function generatePdfWithJsPDF(themeKey) {
         loadingOverlay.style.display = 'none';
     }
 }
-
-// --- LÓGICA DE MEJORA CON IA ---
 
 function showAIUpsellModal(type, data = null) {
     currentAITask = { type, data };
@@ -482,7 +573,7 @@ function showAIUpsellModal(type, data = null) {
 function showAIPromptModal() {
     hideModal('ai-upsell-modal');
     document.getElementById('ai-prompt-modal').style.display = 'flex';
-    document.getElementById('aiPromptInput').value = ''; // Limpiar input
+    document.getElementById('aiPromptInput').value = '';
 }
 
 async function handleAIGeneration() {
@@ -504,7 +595,6 @@ async function handleAIGeneration() {
         });
 
         if (currentAITask.type === 'pdf') {
-            // Lógica para generar PDF con los nuevos assets
             showToast('Función de PDF con IA aún no implementada.', 'success');
         } else if (currentAITask.type === 'jpg' && result.data.backgroundImageUrl) {
             await generateAIJpg(currentAITask.data, result.data.backgroundImageUrl);
@@ -524,28 +614,25 @@ async function generateAIJpg(product, backgroundImageUrl) {
     showToast('Creando tu imagen profesional...', 'success');
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    const canvasWidth = 1024, canvasHeight = 1024; // Usar el tamaño de la imagen generada
+    const canvasWidth = 1024, canvasHeight = 1024;
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
 
-    // Cargar imagen de fondo desde la URL de la IA
     const backgroundImage = new Image();
     backgroundImage.crossOrigin = "anonymous";
     backgroundImage.src = backgroundImageUrl;
     await new Promise(r => backgroundImage.onload = r);
     ctx.drawImage(backgroundImage, 0, 0, canvasWidth, canvasHeight);
     
-    // Cargar imagen del producto
     const productImage = new Image();
     productImage.crossOrigin = "anonymous";
     productImage.src = product.imageBase64 || 'https://placehold.co/700x400/e2e8f0/a0aec0?text=Producto';
     await new Promise(r => productImage.onload = r);
     
-    // Escalar proporcionalmente el producto para que ocupe un 60% del canvas
     const boxSize = canvasWidth * 0.6;
     const imgRatio = productImage.width / productImage.height;
     let finalWidth, finalHeight;
-    if (imgRatio > 1) { // más ancha que alta
+    if (imgRatio > 1) {
         finalWidth = boxSize;
         finalHeight = finalWidth / imgRatio;
     } else {
@@ -556,7 +643,6 @@ async function generateAIJpg(product, backgroundImageUrl) {
     const finalY = (canvasHeight - finalHeight) / 2;
     ctx.drawImage(productImage, finalX, finalY, finalWidth, finalHeight);
 
-    // Añadir textos (puedes hacerlos más estilizados)
     ctx.textAlign = 'center';
     ctx.font = 'bold 52px "Segoe UI", sans-serif';
     ctx.fillStyle = 'white';
@@ -566,7 +652,7 @@ async function generateAIJpg(product, backgroundImageUrl) {
     ctx.fillText(product.name, canvasWidth / 2, canvasHeight - 120);
 
     ctx.font = 'bold 72px "Segoe UI", sans-serif';
-    ctx.fillStyle = '#ffdd59'; // Un color de precio llamativo
+    ctx.fillStyle = '#ffdd59';
     ctx.strokeText(`$${(product.price || 0).toFixed(2)}`, canvasWidth / 2, canvasHeight - 40);
     ctx.fillText(`$${(product.price || 0).toFixed(2)}`, canvasWidth / 2, canvasHeight - 40);
 
@@ -577,9 +663,44 @@ async function generateAIJpg(product, backgroundImageUrl) {
     link.click();
 }
 
+async function getProductsByVendor(vendorId) {
+    const snapshot = await db.collection('products').where('vendorId', '==', vendorId).orderBy('createdAt', 'desc').get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
 
-// --- LÓGICA ESTÁNDAR PARA FICHA DE PRODUCTO (JPG) ---
-// (Se mantiene igual, solo se añade la llamada al modal de IA al final)
+async function loadUserProductsForSelection() {
+    if (!currentUser) return;
+    hideModal('catalog-options-modal');
+    const container = document.getElementById('product-selection-list');
+    container.innerHTML = '<p>Cargando tus productos...</p>';
+    document.getElementById('select-product-modal').style.display = 'flex';
+
+    try {
+        const products = await getProductsByVendor(currentUser.uid);
+        container.innerHTML = '';
+        if (products.length === 0) {
+            container.innerHTML = '<p>No tienes productos para seleccionar.</p>';
+            return;
+        }
+        products.forEach(product => {
+            const productElement = document.createElement('div');
+            productElement.className = 'product-selection-item';
+            productElement.innerHTML = `
+                <img src="${product.imageBase64 || 'https://placehold.co/120x80/e2e8f0/a0aec0?text=Sin+Imagen'}" alt="${product.name}" loading="lazy">
+                <p>${product.name}</p>
+            `;
+            productElement.onclick = () => {
+                generateProductJPG(product);
+                hideModal('select-product-modal');
+            };
+            container.appendChild(productElement);
+        });
+    } catch (error) {
+        console.error("Error loading products for selection:", error);
+        container.innerHTML = '<p>Error al cargar productos.</p>';
+    }
+}
+
 async function generateProductJPG(product) {
     showToast('Generando ficha de producto...', 'success');
     const canvas = document.createElement('canvas');
@@ -632,27 +753,126 @@ async function generateProductJPG(product) {
         link.href = dataUrl;
         link.download = `ficha-${product.name.replace(/\s+/g, '-')}.jpg`;
         link.click();
-
-        // NUEVO: Mostrar el modal de mejora con IA
         showAIUpsellModal('jpg', product);
     };
     productImage.onerror = () => showToast("Error al cargar la imagen del producto.", "error");
 }
 
+function wrapText(context, text, x, y, maxWidth, lineHeight) {
+    const words = text.split(' ');
+    let line = '';
+    for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = context.measureText(testLine);
+        if (metrics.width > maxWidth && n > 0) {
+            context.fillText(line, x, y);
+            line = words[n] + ' ';
+            y += lineHeight;
+        } else {
+            line = testLine;
+        }
+    }
+    context.fillText(line, x, y);
+}
 
-// --- INICIALIZACIÓN DE LA APLICACIÓN ---
+function updateAuthUI() {
+    if (isMerchant && currentUser) {
+        authContainer.innerHTML = `
+            <div class="user-dropdown">
+                <div class="nav-link" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'block' ? 'none' : 'block'">
+                    <i class="fas fa-user-circle"></i><span>Mi Cuenta</span>
+                </div>
+                <div class="dropdown-menu">
+                    <a href="#" onclick="showSection('profile')"><i class="fas fa-user"></i> Mi Perfil</a>
+                    <a href="#" onclick="showSection('my-store')"><i class="fas fa-store"></i> Mi Puesto</a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                </div>
+            </div>`;
+        profileLink.style.display = 'flex';
+        storeLink.style.display = 'flex';
+    } else {
+        authContainer.innerHTML = `<a href="#" class="nav-link" onclick="showLogin()"><i class="fas fa-sign-in-alt"></i><span>Iniciar sesión</span></a>`;
+        profileLink.style.display = 'none';
+        storeLink.style.display = 'none';
+    }
+}
+
+function showMessage(element, message, type) { element.textContent = message; element.className = `login-message login-${type}`; element.style.display = 'block'; }
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+        toast.addEventListener('animationend', () => toast.remove());
+    }, 3000);
+}
+
+window.showImageLightbox = function(imageBase64) {
+    document.getElementById('lightboxImg').src = imageBase64;
+    document.getElementById('imageLightbox').style.display = 'flex';
+}
+window.hideImageLightbox = function() { document.getElementById('imageLightbox').style.display = 'none'; }
+
+window.toggleChatbot = function toggleChatbot() {
+    const ctn = document.getElementById('chatbotContainer');
+    const isOpen = ctn.classList.toggle('visible');
+    if (typeof gsap !== 'undefined') {
+        gsap.to(ctn, { scale: isOpen ? 1 : 0.9, opacity: isOpen ? 1 : 0, duration: 0.3 });
+    } else {
+         ctn.style.opacity = isOpen ? '1' : '0';
+    }
+};
+
 function initializeApp() {
     auth.onAuthStateChanged(async (user) => {
-        // ... (lógica de autenticación se mantiene igual)
+        if (user) {
+            const merchantDoc = await db.collection('merchants').doc(user.uid).get();
+            if (merchantDoc.exists) {
+                currentUser = user; isMerchant = true;
+                await updateUserProfile(user.uid);
+                showSection('profile');
+            } else { isMerchant = false; currentUser = null; currentMerchantData = null; }
+        } else {
+            currentUser = null; isMerchant = false; currentMerchantData = null;
+            showSection('home');
+        }
+        updateAuthUI();
     });
 
-    // --- EVENT LISTENERS GLOBALES ---
-    // ... (listeners existentes)
+    document.getElementById('hamburgerMenu').addEventListener('click', () => {
+        document.getElementById('navContainer').classList.toggle('active');
+    });
     
-    // NUEVOS listeners para los botones de IA
+    document.getElementById('create-catalog-btn').addEventListener('click', () => document.getElementById('catalog-options-modal').style.display = 'flex');
+    document.getElementById('backup-btn').addEventListener('click', () => document.getElementById('backup-options-modal').style.display = 'flex');
+    
+    document.getElementById('generate-pdf-btn').addEventListener('click', () => {
+        hideModal('catalog-options-modal');
+        showExportModal('pdf');
+    });
+    document.getElementById('generate-jpg-btn').addEventListener('click', loadUserProductsForSelection);
+    document.getElementById('json-import-input').addEventListener('change', handleJsonImport);
+
     document.getElementById('aiConfirmBtn').addEventListener('click', showAIPromptModal);
     document.getElementById('aiGenerateBtn').addEventListener('click', handleAIGeneration);
-    // ...
+
+    setupImageUpload('productImageUploadArea', 'productImageInput', (file) => selectedProductFile = file);
+    setupImageUpload('profilePicUploadArea', 'profilePicInput', (file) => {
+        selectedProfilePicFile = file;
+        selectedAvatarUrl = null;
+        document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
+    });
+    
+    const themeToggle = document.getElementById('themeToggle');
+    const applyTheme = (theme) => { document.body.dataset.theme = theme; localStorage.setItem('theme', theme); };
+    themeToggle.addEventListener('click', () => applyTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
+    applyTheme(localStorage.getItem('theme') || 'light');
+    
+    loadProducts();
+    populateAvatars();
 }
 
 initializeApp();
