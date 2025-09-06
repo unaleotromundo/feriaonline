@@ -1,0 +1,1311 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feria Virtual - Conecta tu negocio</title>
+    <!-- Los estilos se quedan en el head para evitar el "flash" de contenido sin estilo -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --cyan: #06b6d4;
+            --magenta: #c026d3;
+            --yellow: #eab308;
+            --black: #1f2937;
+            --light: #f9fafb;
+            --gray: #e5e7eb;
+            --error: #ef4444;
+            --success: #10b981;
+            --whatsapp: #25D366;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        body {
+            background: linear-gradient(135deg, #f0f9ff, #fdf2f8);
+            color: #1f2937;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="none" stroke="%2306b6d4" stroke-width="0.5" opacity="0.1"/></svg>');
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--cyan) 0%, var(--magenta) 100%);
+            padding: 1rem 1.5rem; /* Ajustado para móviles */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            position: sticky; top: 0; z-index: 1000;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        
+        .logo { display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; font-weight: 800; color: white; text-decoration: none; }
+        .logo i { font-size: 1.75rem; }
+        
+        .nav-container { display: flex; gap: 1.5rem; }
+        .nav-link {
+            color: white; text-decoration: none; display: flex; align-items: center;
+            gap: 0.5rem; font-weight: 500; padding: 0.5rem 1rem; border-radius: 50px; transition: all 0.3s;
+        }
+        .nav-link:hover { background: rgba(255, 255, 255, 0.2); }
+        
+        .user-dropdown { position: relative; }
+        .dropdown-menu {
+            display: none; position: absolute; right: 0; top: 100%;
+            background: white; min-width: 200px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 0.5rem; overflow: hidden; z-index: 1000;
+        }
+        .dropdown-menu a { display: block; padding: 0.75rem 1rem; color: var(--black); text-decoration: none; transition: all 0.2s; }
+        .dropdown-menu a:hover { background: var(--light); color: var(--cyan); }
+        .dropdown-menu a i { margin-right: 0.5rem; width: 20px; text-align: center; }
+        .dropdown-divider { height: 1px; background: var(--gray); margin: 0.25rem 0; }
+        
+        .section { display: none; padding: 2rem 1rem; max-width: 1200px; margin: 0 auto; width: 100%; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .active-section { display: block; }
+        
+        .hero {
+            flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 3rem 1rem; text-align: center; max-width: 900px; margin: 0 auto;
+        }
+        .hero h1 {
+            font-size: 2.5rem; font-weight: 800; margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--cyan), var(--magenta));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2;
+        }
+        .hero p { font-size: 1.1rem; color: #4b5563; margin-bottom: 2.5rem; max-width: 700px; line-height: 1.6; }
+        .buttons { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-bottom: 3rem; }
+        
+        .btn {
+            font-weight: 600; padding: 1rem 2rem; border-radius: 50px; position: relative;
+            overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.3s ease;
+            z-index: 1; text-align: center; display: inline-flex; align-items: center;
+            gap: 0.75rem; font-size: 1rem; border: none; cursor: pointer; text-decoration: none;
+        }
+        .btn-primary { background-color: var(--magenta); color: white; }
+        .btn-secondary { background-color: var(--cyan); color: white; }
+        .btn-whatsapp { background-color: var(--whatsapp); color: white; }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 12px rgba(0,0,0,0.15); }
+        
+        .profile-container { display: flex; flex-wrap: wrap; gap: 2rem; }
+        .profile-card {
+            background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            padding: 2rem; flex: 1; min-width: 300px; border-top: 5px solid var(--cyan);
+            position: relative;
+        }
+        .profile-header {
+            display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem;
+            padding-bottom: 1.5rem; border-bottom: 1px solid var(--gray);
+        }
+        .profile-pic {
+            width: 100px; height: 100px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--cyan) 0%, var(--magenta) 100%);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 2.5rem; overflow: hidden; position: relative; flex-shrink: 0;
+        }
+        .profile-pic img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-pic-edit-overlay {
+            position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+            color: white; display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; cursor: pointer; opacity: 0; transition: opacity 0.3s ease;
+        }
+        .profile-card.edit-mode .profile-pic:hover .profile-pic-edit-overlay { opacity: 1; }
+        .profile-info h2 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+        .profile-info p { color: #4b5563; }
+        .profile-details { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
+        .detail-item { background: var(--light); padding: 1.5rem; border-radius: 0.8rem; }
+        .detail-item h3 { color: var(--cyan); margin-bottom: 0.5rem; }
+        
+        .products-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 2rem; gap: 1rem;}
+        .section-title {
+            font-size: 2rem; font-weight: 700;
+            background: linear-gradient(135deg, var(--cyan), var(--magenta));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
+        
+        .product-card {
+            background: white; border-radius: 1rem; overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); transition: all 0.3s ease;
+        }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+        .product-image {
+            height: 200px; background: linear-gradient(135deg, #f0f9ff, #fdf2f8);
+            display: flex; align-items: center; justify-content: center;
+            color: #9ca3af; font-size: 3rem; background-size: contain;
+            background-position: center; background-repeat: no-repeat;
+            cursor: pointer;
+        }
+        .product-info { padding: 1.5rem; }
+        .product-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .product-price { font-size: 1.5rem; font-weight: 700; color: var(--success); margin-bottom: 1rem; }
+        .product-description { color: #4b5563; margin-bottom: 1rem; font-size: 0.9rem; }
+        .product-vendor { display: flex; align-items: center; gap: 0.5rem; color: #6b7280; font-size: 0.9rem; margin-top: 1rem; }
+        .product-vendor a { color: inherit; text-decoration: none; transition: color 0.2s; }
+        .product-vendor a:hover { color: var(--cyan); text-decoration: underline; }
+        .product-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+        .action-btn {
+            flex: 1; padding: 0.5rem; border-radius: 0.5rem;
+            background: var(--light); border: none; cursor: pointer; transition: all 0.3s;
+        }
+        .action-btn:hover { background: var(--cyan); color: white; }
+        
+        .form-container {
+            background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            padding: 2rem; max-width: 600px; margin: 0 auto; border-top: 5px solid var(--magenta);
+            position: relative;
+        }
+        .form-title { font-size: 1.8rem; margin-bottom: 1.5rem; color: var(--magenta); text-align: center; }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--black); }
+        .form-control {
+            width: 100%; padding: 0.75rem 1rem; border: 1px solid #ddd;
+            border-radius: 0.5rem; font-size: 1rem; transition: all 0.2s;
+        }
+        .form-control:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2); }
+        .form-control[readonly] { background-color: #f3f4f6; cursor: not-allowed; }
+        .form-footer { display: flex; justify-content: center; gap: 1rem; margin-top: 1.5rem; }
+        
+        .footer {
+            background: linear-gradient(135deg, var(--cyan) 0%, var(--magenta) 100%); color: white;
+            text-align: center; padding: 2rem; margin-top: auto;
+        }
+        
+        .login-modal, .global-loading {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); z-index: 2000;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .login-modal { display: none; }
+        .login-box {
+            background: white; border-radius: 1.5rem; padding: 2rem;
+            width: 90%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            animation: modalAppear 0.4s ease; position: relative;
+        }
+        .close-modal-btn {
+            position: absolute; top: 1rem; right: 1rem; background: none; border: none;
+            font-size: 1.2rem; color: #9ca3af; cursor: pointer; transition: all 0.2s ease;
+        }
+        .close-modal-btn:hover { color: #1f2937; transform: scale(1.1); }
+        @keyframes modalAppear { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .login-header h2 {
+            font-size: 1.8rem; margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--cyan), var(--magenta));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .login-message { margin: 1rem 0; padding: 0.75rem; border-radius: 0.5rem; text-align: center; display: none; }
+        .login-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .login-error { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+        
+        .product-image-upload {
+            border: 2px dashed var(--gray); border-radius: 0.5rem; padding: 2rem; text-align: center;
+            cursor: pointer; transition: all 0.3s; position: relative; min-height: 150px;
+            display: flex; align-items: center; justify-content: center; flex-direction: column;
+        }
+        .preview-image { max-width: 100%; max-height: 200px; border-radius: 0.5rem; }
+        
+        .toast {
+            position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+            padding: 1rem 2rem; border-radius: 0.5rem; color: white; font-weight: 500;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 3000; animation: slideIn 0.3s ease-out;
+        }
+        .toast-success { background-color: var(--success); }
+        .toast-error { background-color: var(--error); }
+        @keyframes slideIn { from { bottom: -100px; opacity: 0; } to { bottom: 2rem; opacity: 1; } }
+        .fade-out { animation: fadeOut 0.5s ease-out forwards; }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        
+        .edit-btn-container {
+            position: absolute; top: 1.5rem; right: 1.5rem;
+            background: var(--light); border: 1px solid var(--gray); color: var(--black);
+            width: 40px; height: 40px; border-radius: 50%;
+            font-size: 1rem; cursor: pointer; transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .edit-btn-container:hover { background: var(--cyan); color: white; transform: scale(1.1); }
+        body[data-theme="dark"] .edit-btn-container { background: #4b5563; border-color: #6b7280; }
+        
+        .vendor-page-header {
+            display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+            gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid var(--cyan); padding-bottom: 1rem;
+        }
+        .vendor-page-header .btn { padding: 0.75rem 1.5rem; font-size: 1rem; }
+    </style>
+
+    <style>
+        /* --- ESTILOS RESPONSIVE Y MEJORAS --- */
+        .hamburger-menu {
+            display: none; /* Oculto por defecto en escritorio */
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 1001; /* Encima de la navegación */
+        }
+        
+        @media (max-width: 768px) {
+            .hamburger-menu {
+                display: block;
+            }
+            .nav-container {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100vh;
+                background: rgba(31, 41, 55, 0.95);
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                gap: 2rem;
+            }
+            .nav-container.active {
+                display: flex; /* Se muestra al hacer clic en la hamburguesa */
+            }
+            .nav-link {
+                font-size: 1.5rem;
+            }
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            .hero p {
+                font-size: 1.1rem;
+            }
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            .products-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+            }
+            .header-actions {
+                justify-content: center;
+            }
+        }
+        /* --- FIN ESTILOS RESPONSIVE --- */
+
+        /* --- OTROS ESTILOS GLOBALES --- */
+        nav a.active {
+            background: linear-gradient(135deg, #06b6d4, #c026d3); color: white !important;
+            border-radius: 0.5rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        nav a { transition: all 0.3s ease; padding: 0.5rem 1rem; display: inline-block; }
+
+        /* --- THEME STYLES --- */
+        body[data-theme="dark"] {
+            --black: #f9fafb; --light: #1f2937; --gray: #374151;
+            background: linear-gradient(135deg, #1e293b, #111827); color: #e5e7eb;
+        }
+        body[data-theme="dark"] .profile-card, body[data-theme="dark"] .form-container,
+        body[data-theme="dark"] .product-card, body[data-theme="dark"] .login-box,
+        body[data-theme="dark"] .dropdown-menu { background-color: #374151; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        body[data-theme="dark"] .hero p, body[data-theme="dark"] .profile-info p,
+        body[data-theme="dark"] .product-description, body[data-theme="dark"] .product-vendor { color: #9ca3af; }
+        body[data-theme="dark"] .form-control { background-color: #4b5563; border-color: #6b7280; color: white; }
+        body[data-theme="dark"] .form-control::placeholder { color: #9ca3af; }
+        body[data-theme="dark"] .form-control[readonly] { background-color: #374151; }
+        body[data-theme="dark"] .dropdown-menu a:hover { background: #4b5563; }
+
+        .theme-toggle {
+            position: fixed; bottom: 20px; right: 20px; z-index: 3001;
+            width: 50px; height: 50px; border-radius: 50%;
+            background: var(--light); color: var(--black); border: 2px solid var(--gray);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.2rem; transition: all 0.3s ease; overflow: hidden;
+        }
+        .theme-toggle:hover { transform: scale(1.1) rotate(15deg); }
+        .theme-toggle .fa-sun { display: none; }
+        .theme-toggle .fa-moon { display: block; }
+        body[data-theme="dark"] .theme-toggle .fa-sun { display: block; }
+        body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
+
+        /* --- CHATBOT STYLES --- */
+        .chatbot-floating { position: fixed; bottom: 20px; left: 20px; z-index: 3000; }
+        .chatbot-toggle {
+            background: linear-gradient(135deg, var(--cyan, #06b6d4), var(--magenta, #c026d3));
+            border: none; color: white; padding: 1rem; border-radius: 50%;
+            width: 60px; height: 60px; font-size: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            cursor: pointer; transition: transform 0.3s ease; display: flex;
+            align-items: center; justify-content: center; z-index: 3001;
+        }
+        .chatbot-container-floating {
+            width: 360px; height: 520px; background: white; border-radius: 16px;
+            overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            transform-origin: bottom left; transform: scale(0.9); opacity: 0;
+            transition: opacity 0.25s ease; display: none; visibility: hidden; pointer-events: none;
+        }
+        .chatbot-container-floating.visible { display: block; visibility: visible; pointer-events: auto; opacity: 1; }
+        .chatbot-iframe-floating { width: 100%; height: calc(100% - 54px); border: none; display: block; }
+        .chatbot-header-floating {
+            background: linear-gradient(135deg, var(--cyan, #06b6d4), var(--magenta, #c026d3));
+            color: white; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .chatbot-header-floating h3 { font-size: 1rem; font-weight: 700; }
+        .close-chatbot-btn { background: none; border: none; color: white; font-size: 1.15rem; cursor: pointer; }
+        @media (max-width: 480px) {
+            .chatbot-container-floating { width: 92vw; height: 70vh; }
+            .chatbot-floating { bottom: 12px; left: 12px; }
+        }
+
+        /* LIGHTBOX STYLES */
+        .image-lightbox {
+            display: none; position: fixed; z-index: 4000; left: 0; top: 0;
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.85);
+            justify-content: center; align-items: center; animation: fadeIn 0.3s ease;
+        }
+        .lightbox-content { max-width: 90vw; max-height: 85vh; }
+        .lightbox-close {
+            position: absolute; top: 20px; right: 35px; color: #fff;
+            font-size: 40px; font-weight: bold; transition: 0.3s; cursor: pointer;
+        }
+        .lightbox-close:hover { color: #bbb; }
+
+        /* ESTILOS PARA EDICIÓN DE PERFIL */
+        .profile-card.edit-mode .detail-item p,
+        .profile-card.edit-mode .profile-info h2 { display: none; }
+        .profile-card.edit-mode .detail-item .editable,
+        .profile-card.edit-mode .profile-info .editable { display: block; }
+        .editable { display: none; width: 100%; }
+
+        #profilePicModal .login-box { max-width: 600px; }
+        .avatar-selection {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 1rem; margin-top: 1.5rem;
+        }
+        .avatar-item {
+            width: 80px; height: 80px; border-radius: 50%;
+            cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: 3px solid transparent;
+        }
+        .avatar-item:hover { transform: scale(1.1); box-shadow: 0 0 10px var(--cyan); }
+        .avatar-item img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover;}
+        
+        /* --- Estilos para los botones de acción del header --- */
+        .header-actions {
+            display: flex;
+            flex-wrap: wrap; /* Permite que los botones pasen a la siguiente línea si no caben */
+            gap: 0.75rem;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .btn-small {
+            font-size: 0.9rem !important;
+            padding: 0.75rem 1.25rem !important; /* Hacemos el padding más pequeño */
+            gap: 0.5rem;
+        }
+
+        .header-actions label.btn {
+            cursor: pointer;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <a href="#" class="logo" onclick="showSection('home')">
+            <i class="fas fa-store"></i>
+            <span>Feria Virtual</span>
+        </a>
+        <nav class="nav-container" id="navContainer">
+            <a href="#" class="nav-link" onclick="showSection('home')">
+                <i class="fas fa-home"></i>
+                <span>Inicio</span>
+            </a>
+            <a href="#" class="nav-link" onclick="showSection('products')">
+                <i class="fas fa-shopping-bag"></i>
+                <span>Productos</span>
+            </a>
+            <a href="#" class="nav-link" onclick="showSection('profile')" id="profileLink" style="display: none;">
+                <i class="fas fa-user"></i>
+                <span>Mi Perfil</span>
+            </a>
+            <a href="#" class="nav-link" onclick="showSection('my-store')" id="storeLink" style="display: none;">
+                <i class="fas fa-store"></i>
+                <span>Mi Puesto</span>
+            </a>
+            <div id="authContainer">
+                <a href="#" class="nav-link" onclick="showLogin()">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Iniciar sesión</span>
+                </a>
+            </div>
+        </nav>
+        <button class="hamburger-menu" id="hamburgerMenu">
+            <i class="fas fa-bars"></i>
+        </button>
+    </header>
+
+    <main>
+        <section id="home" class="section active-section">
+            <div class="hero">
+                <h1>Conecta tu pequeño negocio con el mundo</h1>
+                <p>Una feria virtual donde los comerciantes pueden mostrar sus productos y los clientes pueden descubrir tesoros locales</p>
+                <div class="buttons">
+                    <button class="btn btn-primary" onclick="showSection('register')">
+                        <i class="fas fa-store"></i> Registrar mi puesto
+                    </button>
+                    <button class="btn btn-secondary" onclick="showSection('products')">
+                        <i class="fas fa-search"></i> Explorar productos
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="products" class="section">
+            <div class="products-header">
+                <h2 class="section-title">Productos Destacados</h2>
+            </div>
+            <div class="products-grid" id="productsGrid"></div>
+        </section>
+
+        <section id="vendor-page" class="section">
+            <div class="vendor-page-header">
+                <h2 class="section-title">Puesto: <span id="vendorPageTitle"></span></h2>
+                <div class="vendor-actions" style="display: flex; gap: 1rem;">
+                    <a href="#" id="vendorWhatsappBtn" class="btn btn-whatsapp" style="display: none;" target="_blank" rel="noopener noreferrer">
+                        <i class="fab fa-whatsapp"></i> Chatear
+                    </a>
+                    <button class="btn btn-secondary" onclick="showSection('products')">
+                        <i class="fas fa-arrow-left"></i> Volver
+                    </button>
+                </div>
+            </div>
+            <div class="products-grid" id="vendorProductsGrid"></div>
+        </section>
+
+        <section id="profile" class="section">
+            <h2 class="section-title">Mi Perfil</h2>
+            <div class="profile-container">
+                <div class="profile-card" id="profileCard">
+                    <button id="editProfileBtn" class="edit-btn-container" onclick="toggleProfileEditMode(true)">
+                        <i class="fas fa-pencil-alt"></i>
+                    </button>
+                    <div class="profile-header">
+                        <div class="profile-pic" id="profilePicContainer" onclick="if(document.getElementById('profileCard').classList.contains('edit-mode')) showProfilePicModal();">
+                            <i class="fas fa-user"></i>
+                            <div class="profile-pic-edit-overlay">
+                                <i class="fas fa-camera"></i>
+                            </div>
+                        </div>
+                        <div class="profile-info">
+                            <h2 id="userName">Nombre del Comerciante</h2>
+                            <input type="text" id="userNameInput" class="form-control editable">
+                            <p id="userEmail">correo@ejemplo.com</p>
+                        </div>
+                    </div>
+                    <div class="profile-details">
+                        <div class="detail-item">
+                            <h3>Información de contacto</h3>
+                            <p><i class="fas fa-phone"></i> <span id="userPhone"></span></p>
+                            <input type="text" id="userPhoneInput" class="form-control editable" placeholder="Ej: 5491112345678">
+                        </div>
+                        <div class="detail-item">
+                            <h3>Mi negocio</h3>
+                            <p><i class="fas fa-store"></i> <span id="userBusiness"></span></p>
+                        </div>
+                        <div class="detail-item">
+                            <h3>Estadísticas</h3>
+                            <p><i class="fas fa-box"></i> <span id="userProducts">0</span> productos publicados</p>
+                        </div>
+                        <div class="detail-item">
+                            <h3>Miembro desde</h3>
+                            <p><i class="fas fa-calendar"></i> <span id="userSince"></span></p>
+                        </div>
+                    </div>
+                    <div id="profileFormFooter" class="form-footer" style="display: none;">
+                        <button class="btn btn-secondary" onclick="toggleProfileEditMode(false)">Cancelar</button>
+                        <button class="btn btn-primary" onclick="saveProfileInfo()">Guardar Cambios</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="my-store" class="section">
+            <h2 class="section-title">Gestión de mi Puesto</h2>
+            <div class="form-container" id="storeFormContainer">
+                <button id="editStoreBtn" class="edit-btn-container" onclick="toggleStoreEditMode(true)">
+                    <i class="fas fa-pencil-alt"></i>
+                </button>
+                <h3 class="form-title">Información del Puesto</h3>
+                <div class="form-group">
+                    <label for="storeName">Nombre del puesto</label>
+                    <input type="text" id="storeName" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="storeDescription">Descripción</label>
+                    <textarea id="storeDescription" class="form-control" rows="3" readonly></textarea>
+                </div>
+                <div id="storeFormFooter" class="form-footer" style="display: none;">
+                    <button class="btn btn-secondary" onclick="toggleStoreEditMode(false)">Cancelar</button>
+                    <button class="btn btn-primary" onclick="saveStoreInfo()">Guardar Cambios</button>
+                </div>
+            </div>
+            <div class="products-header" style="margin-top: 3rem;">
+                <h2 class="section-title">Mis Productos</h2>
+                <div class="header-actions">
+                    <input type="file" id="importJsonInput" accept=".json" onchange="handleJsonImport(event)" style="display: none;">
+                    <button class="btn btn-small btn-secondary" onclick="exportCatalogToJSON()">
+                        <i class="fas fa-download"></i> Exportar JSON
+                    </button>
+                    <label for="importJsonInput" class="btn btn-small btn-secondary">
+                        <i class="fas fa-upload"></i> Importar JSON
+                    </label>
+                    <button class="btn btn-primary" onclick="showProductModal()"><i class="fas fa-plus"></i> Nuevo Producto</button>
+                </div>
+            </div>
+            <div class="products-grid" id="myProductsGrid"></div>
+        </section>
+
+        <section id="register" class="section">
+            <h2 class="section-title">Registro de Comerciante</h2>
+            <div class="form-container">
+                <h3 class="form-title">Crea tu cuenta de comerciante</h3>
+                <div id="registerMessage" class="login-message"></div>
+                <div class="form-group">
+                    <label for="regName">Nombre completo</label>
+                    <input type="text" id="regName" class="form-control" placeholder="Tu nombre">
+                </div>
+                <div class="form-group">
+                    <label for="regEmail">Correo electrónico</label>
+                    <input type="email" id="regEmail" class="form-control" placeholder="tu@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">Contraseña</label>
+                    <input type="password" id="regPassword" class="form-control" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="form-group">
+                    <label for="regBusiness">Nombre del negocio</label>
+                    <input type="text" id="regBusiness" class="form-control" placeholder="Ej: Artesanías El Sol">
+                </div>
+                <div class="form-group">
+                    <label for="regPhone">Teléfono de contacto (con cód. de país)</label>
+                    <input type="text" id="regPhone" class="form-control" placeholder="Ej: 5491112345678">
+                </div>
+                <div class="form-group">
+                    <label for="regDescription">Descripción del negocio</label>
+                    <textarea id="regDescription" class="form-control" rows="3" placeholder="Qué vendes, tu historia, etc."></textarea>
+                </div>
+                <div class="form-footer">
+                    <button class="btn btn-secondary" onclick="showSection('home')">Cancelar</button>
+                    <button class="btn btn-primary" onclick="registerMerchant()">Registrarme</button>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Modals and other fixed elements -->
+    <div class="login-modal" id="loginModal">
+        <div class="login-box">
+            <button type="button" class="close-modal-btn" onclick="hideLogin()"><i class="fas fa-times"></i></button>
+            <div class="login-header">
+                <h2>Acceso Comerciantes</h2>
+                <p>Ingresa para gestionar tu puesto</p>
+            </div>
+            <div id="loginMessage" class="login-message"></div>
+            <div class="form-group">
+                <label for="loginEmail">Correo Electrónico</label>
+                <input type="email" id="loginEmail" class="form-control" placeholder="tu@email.com">
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Contraseña</label>
+                <input type="password" id="loginPassword" class="form-control" placeholder="Tu contraseña">
+            </div>
+            <button class="btn btn-primary" style="width: 100%;" onclick="login()"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</button>
+        </div>
+    </div>
+
+    <div class="login-modal" id="profilePicModal">
+        <div class="login-box">
+            <button type="button" class="close-modal-btn" onclick="hideModal('profilePicModal')"><i class="fas fa-times"></i></button>
+            <div class="login-header">
+                <h2>Actualizar foto de perfil</h2>
+            </div>
+            <div class="form-group">
+                <label>Subir una foto</label>
+                <div class="product-image-upload" id="profilePicUploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Haz clic o arrastra una imagen aquí</p>
+                </div>
+                <input type="file" id="profilePicInput" accept="image/*" style="display: none;">
+            </div>
+            <div class="form-group">
+                <label>O elige un avatar</label>
+                <div class="avatar-selection" id="avatarSelection"></div>
+            </div>
+            <div class="form-footer">
+                <button class="btn btn-secondary" onclick="hideModal('profilePicModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveProfilePic()">Guardar Foto</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="login-modal" id="productModal">
+        <div class="login-box">
+            <button type="button" class="close-modal-btn" onclick="hideModal('productModal')"><i class="fas fa-times"></i></button>
+            <div class="login-header">
+                <h2 id="productModalTitle">Agregar Nuevo Producto</h2>
+            </div>
+            <div id="productModalMessage" class="login-message"></div>
+            <div class="form-group">
+                <label for="productName">Nombre del Producto</label>
+                <input type="text" id="productName" class="form-control" placeholder="Ej: Tazas Artesanales">
+            </div>
+            <div class="form-group">
+                <label for="productPrice">Precio ($)</label>
+                <input type="number" id="productPrice" class="form-control" placeholder="1500">
+            </div>
+            <div class="form-group">
+                <label for="productDescription">Descripción</label>
+                <textarea id="productDescription" class="form-control" rows="3" placeholder="Describe tu producto"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Imagen del Producto</label>
+                <div class="product-image-upload" id="productImageUploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Haz clic o arrastra una imagen aquí</p>
+                </div>
+                <input type="file" id="productImageInput" accept="image/*" style="display: none;">
+            </div>
+            <div class="form-footer">
+                <button class="btn btn-secondary" onclick="hideModal('productModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveProduct()">Guardar Producto</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>Únete a la comunidad de pequeños comerciantes que ya están creciendo con Feria Virtual</p>
+        <p class="copyright">&copy; 2025 Feria Virtual. Todos los derechos reservados.</p>
+    </footer>
+
+    <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema">
+        <i class="fas fa-moon"></i>
+        <i class="fas fa-sun"></i>
+    </button>
+    
+    <div class="chatbot-floating" id="chatbotFloatingContainer" aria-live="polite">
+        <div class="chatbot-container-floating" id="chatbotContainer" aria-hidden="true">
+            <div class="chatbot-header-floating">
+                <h3>Asistente de marketing</h3>
+                <button class="close-chatbot-btn" type="button" onclick="toggleChatbot()" aria-label="Cerrar chat">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <iframe class="chatbot-iframe-floating" src="https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/13/17/20250813172155-WZV5LKVX.json" loading="lazy" allow="microphone; geolocation; fullscreen" title="Chat Asistente de marketing"></iframe>
+        </div>
+        <button class="chatbot-toggle" id="chatbotToggleBtn" type="button" onclick="toggleChatbot()" aria-expanded="false" aria-controls="chatbotContainer">
+            <i class="fas fa-comment-dots"></i>
+        </button>
+    </div>
+
+    <div id="imageLightbox" class="image-lightbox" onclick="hideImageLightbox()">
+        <span class="lightbox-close" onclick="hideImageLightbox()">&times;</span>
+        <img class="lightbox-content" id="lightboxImg">
+    </div>
+
+    <!-- Scripts movidos al final y con 'defer' para carga no bloqueante -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.1/dist/browser-image-compression.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+
+<script>
+    // Se deja este script aquí, pero se ejecutará después de que el HTML esté listo
+    // gracias al evento 'DOMContentLoaded'.
+    document.addEventListener('DOMContentLoaded', () => {
+
+    // Configuración de Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAlqGoYrHkASbhmE2aBKIOXqkkNBBEEiGU",
+      authDomain: "feria-online-ec7c6.firebaseapp.com",
+      projectId: "feria-online-ec7c6",
+      storageBucket: "feria-online-ec7c6.firebasestorage.app",
+      messagingSenderId: "1001881267179",
+      appId: "1:1001881267179:web:fc5ac0fd940964537887ae",
+      measurementId: "G-GQZZQMNVPH"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    
+    // --- VARIABLES GLOBALES ---
+    let currentUser = null;
+    let isMerchant = false;
+    let currentMerchantData = null;
+
+    let selectedProductFile = null;
+    let selectedProfilePicFile = null;
+    let selectedAvatarUrl = null;
+
+    const profileLink = document.getElementById('profileLink');
+    const storeLink = document.getElementById('storeLink');
+    const authContainer = document.getElementById('authContainer');
+    
+    // --- NAVEGACIÓN Y VISIBILIDAD DE SECCIONES ---
+    window.showSection = function(sectionId) {
+        document.querySelectorAll('.section').forEach(section => section.classList.remove('active-section'));
+        const targetSection = document.getElementById(sectionId);
+        if (targetSection) targetSection.classList.add('active-section');
+        
+        // Cierra el menú móvil si está abierto al cambiar de sección
+        document.getElementById('navContainer').classList.remove('active');
+        
+        if (sectionId === 'products') loadProducts();
+        if (sectionId === 'my-store' && isMerchant) loadMyProducts();
+    }
+    
+    window.showLogin = function() { document.getElementById('loginModal').style.display = 'flex'; }
+    window.hideLogin = function() { document.getElementById('loginModal').style.display = 'none'; }
+    window.hideModal = function(modalId) { document.getElementById(modalId).style.display = 'none'; }
+
+    window.showProductModal = function(productId = null) {
+        const modal = document.getElementById('productModal');
+        const title = document.getElementById('productModalTitle');
+        resetProductForm();
+        modal.style.display = 'flex';
+        
+        if (productId) {
+            title.textContent = 'Editar Producto';
+            modal.dataset.productId = productId;
+            loadProductForEdit(productId);
+        } else {
+            title.textContent = 'Agregar Nuevo Producto';
+            delete modal.dataset.productId;
+        }
+    }
+
+    // --- CARGA DE DATOS (PRODUCTOS) ---
+    async function loadProducts(containerId = 'productsGrid', filter = {}) {
+        const productsGrid = document.getElementById(containerId);
+        productsGrid.innerHTML = `<div>Cargando productos...</div>`;
+        try {
+            let query = db.collection('products').where('published', '==', true);
+            if (filter.vendorId) {
+                query = query.where('vendorId', '==', filter.vendorId);
+            }
+            const snapshot = await query.orderBy('createdAt', 'desc').get();
+            productsGrid.innerHTML = '';
+            if (snapshot.empty) {
+                productsGrid.innerHTML = `<div>No hay productos para mostrar.</div>`;
+                return;
+            }
+            snapshot.forEach(doc => renderProductCard(productsGrid, { id: doc.id, ...doc.data() }));
+        } catch (error) {
+            console.error("Error loading products:", error);
+            productsGrid.innerHTML = `<div>Error al cargar productos.</div>`;
+        }
+    }
+
+    async function loadMyProducts() {
+        if (!currentUser) return;
+        const productsGrid = document.getElementById('myProductsGrid');
+        productsGrid.innerHTML = `<div>Cargando tus productos...</div>`;
+        try {
+            const snapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).orderBy('createdAt', 'desc').get();
+            productsGrid.innerHTML = '';
+            if (snapshot.empty) {
+                productsGrid.innerHTML = '<div>Aún no has agregado productos.</div>';
+                return;
+            }
+            snapshot.forEach(doc => renderMyProductCard(productsGrid, { id: doc.id, ...doc.data() }));
+        } catch (error) { console.error("Error loading user products:", error); }
+    }
+    
+    // --- AUTENTICACIÓN Y REGISTRO ---
+    window.registerMerchant = async function() {
+        const name = document.getElementById('regName').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const password = document.getElementById('regPassword').value;
+        const business = document.getElementById('regBusiness').value.trim();
+        const phone = document.getElementById('regPhone').value.trim();
+        const description = document.getElementById('regDescription').value.trim();
+        const msgEl = document.getElementById('registerMessage');
+        
+        if (!name || !email || !password || !business) return showMessage(msgEl, 'Por favor completa todos los campos requeridos.', 'error');
+        if (password.length < 6) return showMessage(msgEl, 'La contraseña debe tener al menos 6 caracteres.', 'error');
+
+        try {
+            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            const user = userCredential.user;
+            await db.collection('merchants').doc(user.uid).set({
+                name, email, business, phone, description,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            showMessage(msgEl, '¡Registro exitoso! Redirigiendo...', 'success');
+        } catch (error) { showMessage(msgEl, 'Error en el registro.', 'error'); }
+    }
+
+    window.login = async function() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const msgEl = document.getElementById('loginMessage');
+        if (!email || !password) return showMessage(msgEl, 'Por favor completa todos los campos.', 'error');
+
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+            showMessage(msgEl, '¡Bienvenido!', 'success');
+            setTimeout(() => {
+                hideLogin();
+                showSection('profile');
+            }, 1000);
+        } catch (error) { showMessage(msgEl, 'Correo o contraseña incorrectos.', 'error'); }
+    }
+
+    window.logout = function() { auth.signOut(); }
+
+    // --- GESTIÓN DE PERFIL Y PUESTO ---
+    async function updateUserProfile(userId) {
+        try {
+            const doc = await db.collection('merchants').doc(userId).get();
+            if (!doc.exists) return;
+
+            currentMerchantData = doc.data();
+            const productsSnapshot = await db.collection('products').where('vendorId', '==', userId).get();
+            
+            document.getElementById('userName').textContent = currentMerchantData.name;
+            document.getElementById('userEmail').textContent = currentMerchantData.email;
+            document.getElementById('userPhone').textContent = currentMerchantData.phone || 'No especificado';
+            document.getElementById('userBusiness').textContent = currentMerchantData.business;
+            document.getElementById('userProducts').textContent = `${productsSnapshot.size} productos publicados`;
+            const createdAt = currentMerchantData.createdAt?.toDate();
+            document.getElementById('userSince').textContent = createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A';
+            
+            const profilePicContainer = document.getElementById('profilePicContainer');
+            if (currentMerchantData.profilePic) {
+                profilePicContainer.innerHTML = `<img src="${currentMerchantData.profilePic}" alt="Foto de perfil" loading="lazy"><div class="profile-pic-edit-overlay"><i class="fas fa-camera"></i></div>`;
+            } else {
+                 profilePicContainer.innerHTML = `<i class="fas fa-user"></i><div class="profile-pic-edit-overlay"><i class="fas fa-camera"></i></div>`;
+            }
+
+            document.getElementById('storeName').value = currentMerchantData.business;
+            document.getElementById('storeDescription').value = currentMerchantData.description;
+            
+        } catch (error) { console.error("Error loading profile:", error); }
+    }
+    
+    // --- GESTIÓN DE PRODUCTOS ---
+    function setupImageUpload(areaId, inputId, fileVariableSetter) {
+        const uploadArea = document.getElementById(areaId);
+        const fileInput = document.getElementById(inputId);
+        uploadArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                fileVariableSetter(file);
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    uploadArea.innerHTML = `<img src="${event.target.result}" class="preview-image" loading="lazy">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    async function loadProductForEdit(productId) {
+        try {
+            const doc = await db.collection('products').doc(productId).get();
+            if (doc.exists) {
+                const product = doc.data();
+                document.getElementById('productName').value = product.name;
+                document.getElementById('productPrice').value = product.price;
+                document.getElementById('productDescription').value = product.description;
+                if (product.imageBase64) {
+                    document.getElementById('productImageUploadArea').innerHTML = `<img src="${product.imageBase64}" class="preview-image">`;
+                    document.getElementById('productImageUploadArea').dataset.existingImage = product.imageBase64;
+                }
+            }
+        } catch (error) { console.error("Error loading product for edit:", error); } 
+    }
+
+    window.saveProduct = async function() {
+        const isEditing = !!document.getElementById('productModal').dataset.productId;
+        const productData = { name: document.getElementById('productName').value, price: parseFloat(document.getElementById('productPrice').value), description: document.getElementById('productDescription').value, vendorId: currentUser.uid, vendorName: document.getElementById('userBusiness').textContent };
+        
+        let imageBase64 = document.getElementById('productImageUploadArea').dataset.existingImage || null;
+        if (selectedProductFile) {
+            const compressedFile = await imageCompression(selectedProductFile, { maxSizeMB: 0.5, maxWidthOrHeight: 800 });
+            imageBase64 = await new Promise(resolve => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.readAsDataURL(compressedFile);
+            });
+        }
+        productData.imageBase64 = imageBase64;
+
+        const docRef = isEditing ? db.collection('products').doc(document.getElementById('productModal').dataset.productId) : db.collection('products').doc();
+        if (!isEditing) productData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        productData.published = true;
+        await docRef.set(productData, { merge: true });
+        
+        showToast('Producto guardado.', 'success');
+        hideModal('productModal');
+        loadMyProducts();
+    }
+
+    function resetProductForm() {
+        document.getElementById('productName').value = '';
+        document.getElementById('productPrice').value = '';
+        document.getElementById('productDescription').value = '';
+        document.getElementById('productImageUploadArea').innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic o arrastra una imagen aquí</p>';
+        document.getElementById('productImageInput').value = '';
+        selectedProductFile = null;
+    }
+
+    // --- RENDERIZADO DE ELEMENTOS ---
+    function renderProductCard(container, product) {
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+            <div class="product-image" ${product.imageBase64 ? `style="background-image: url('${product.imageBase64}')" onclick="showImageLightbox('${product.imageBase64}')"` : ''}>
+                ${!product.imageBase64 ? '<i class="fas fa-shopping-bag"></i>' : ''}
+            </div>
+            <div class="product-info">
+                <h3 class="product-title">${product.name}</h3>
+                <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
+                <p class="product-description">${product.description || ''}</p>
+                <div class="product-vendor">
+                    <i class="fas fa-store"></i>
+                    <a href="#" onclick="event.preventDefault(); showVendorPage('${product.vendorId}', '${product.vendorName}')">${product.vendorName || ''}</a>
+                </div>
+            </div>`;
+        container.appendChild(card);
+    }
+
+    function renderMyProductCard(container, product) {
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+            <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}')"` : ''}></div>
+            <div class="product-info">
+                <h3 class="product-title">${product.name}</h3>
+                <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
+                <div class="product-actions">
+                    <button class="action-btn" onclick="showProductModal('${product.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="action-btn" onclick="deleteProduct('${product.id}')"><i class="fas fa-trash"></i></button>
+                    <button class="action-btn" onclick="toggleProductStatus('${product.id}', ${!product.published})"><i class="fas fa-eye${product.published ? '' : '-slash'}"></i></button>
+                </div>
+            </div>`;
+        container.appendChild(card);
+    }
+    
+    window.deleteProduct = async function(id) { if (confirm('¿Eliminar producto?')) { await db.collection('products').doc(id).delete(); loadMyProducts(); } }
+    window.toggleProductStatus = async function(id, status) { await db.collection('products').doc(id).update({ published: status }); loadMyProducts(); }
+    
+    window.showVendorPage = async function(vendorId, vendorName) {
+        showSection('vendor-page');
+        document.getElementById('vendorPageTitle').textContent = vendorName;
+        const whatsappBtn = document.getElementById('vendorWhatsappBtn');
+        whatsappBtn.style.display = 'none';
+
+        try {
+            const doc = await db.collection('merchants').doc(vendorId).get();
+            if (doc.exists && doc.data().phone) {
+                const phone = doc.data().phone.replace(/[^0-9]/g, '');
+                if(phone) {
+                    whatsappBtn.href = `https://wa.me/${phone}`;
+                    whatsappBtn.style.display = 'inline-flex';
+                }
+            }
+        } catch (error) { console.error("Error fetching vendor phone:", error); }
+        
+        loadProducts('vendorProductsGrid', { vendorId: vendorId });
+    }
+
+    window.toggleStoreEditMode = function(isEditing) {
+        document.getElementById('storeName').readOnly = !isEditing;
+        document.getElementById('storeDescription').readOnly = !isEditing;
+        document.getElementById('editStoreBtn').style.display = isEditing ? 'none' : 'block';
+        document.getElementById('storeFormFooter').style.display = isEditing ? 'flex' : 'none';
+        
+        if (!isEditing && currentMerchantData) {
+            document.getElementById('storeName').value = currentMerchantData.business;
+            document.getElementById('storeDescription').value = currentMerchantData.description;
+        }
+    }
+
+    window.saveStoreInfo = async function() {
+        const newData = { business: document.getElementById('storeName').value, description: document.getElementById('storeDescription').value };
+        await db.collection('merchants').doc(currentUser.uid).update(newData);
+        await updateUserProfile(currentUser.uid); 
+        toggleStoreEditMode(false);
+        showToast('Información del puesto actualizada.', 'success');
+    }
+
+    window.toggleProfileEditMode = function(isEditing) {
+        const card = document.getElementById('profileCard');
+        card.classList.toggle('edit-mode', isEditing);
+        document.getElementById('editProfileBtn').style.display = isEditing ? 'none' : 'block';
+        document.getElementById('profileFormFooter').style.display = isEditing ? 'flex' : 'none';
+
+        if (isEditing) {
+            document.getElementById('userNameInput').value = document.getElementById('userName').textContent;
+            const currentPhone = document.getElementById('userPhone').textContent;
+            document.getElementById('userPhoneInput').value = currentPhone === 'No especificado' ? '' : currentPhone;
+        }
+    }
+    
+    window.saveProfileInfo = async function() {
+        const newData = {
+            name: document.getElementById('userNameInput').value.trim(),
+            phone: document.getElementById('userPhoneInput').value.trim()
+        };
+        await db.collection('merchants').doc(currentUser.uid).update(newData);
+        await updateUserProfile(currentUser.uid);
+        toggleProfileEditMode(false);
+        showToast('Perfil actualizado.', 'success');
+    }
+
+    window.showProfilePicModal = function() {
+        document.getElementById('profilePicModal').style.display = 'flex';
+        selectedProfilePicFile = null;
+        selectedAvatarUrl = null;
+        document.getElementById('profilePicUploadArea').innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic para subir</p>';
+    }
+
+    window.saveProfilePic = async function() {
+        let picUrl = null;
+        if (selectedProfilePicFile) {
+            const compressedFile = await imageCompression(selectedProfilePicFile, { maxSizeMB: 0.2, maxWidthOrHeight: 400 });
+            picUrl = await new Promise(resolve => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.readAsDataURL(compressedFile);
+            });
+        } else if (selectedAvatarUrl) {
+            picUrl = selectedAvatarUrl;
+        }
+        
+        if(picUrl) {
+            await db.collection('merchants').doc(currentUser.uid).update({ profilePic: picUrl });
+            await updateUserProfile(currentUser.uid);
+            hideModal('profilePicModal');
+            showToast('Foto de perfil actualizada.', 'success');
+        } else {
+            showToast('No seleccionaste ninguna imagen.', 'error');
+        }
+    }
+
+    function populateAvatars() {
+        const container = document.getElementById('avatarSelection');
+        container.innerHTML = '';
+        const avatars = ['male', 'female', 'human', 'identicon', 'bottts', 'avataaars', 'jdenticon', 'micah'];
+        avatars.forEach(seed => {
+            const avatarUrl = `https://api.dicebear.com/8.x/pixel-art/svg?seed=${seed}&radius=50`;
+            const avatarItem = document.createElement('div');
+            avatarItem.className = 'avatar-item';
+            avatarItem.innerHTML = `<img src="${avatarUrl}" alt="Avatar ${seed}" loading="lazy">`;
+            avatarItem.onclick = () => {
+                selectedAvatarUrl = avatarUrl;
+                selectedProfilePicFile = null;
+                document.getElementById('profilePicUploadArea').innerHTML = `<img src="${avatarUrl}" class="preview-image">`;
+                document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
+                avatarItem.style.borderColor = 'var(--cyan)';
+            };
+            container.appendChild(avatarItem);
+        });
+    }
+
+    // --- FUNCIONES DE IMPORTACIÓN Y EXPORTACIÓN ---
+    window.exportCatalogToJSON = async function() {
+        if (!currentUser) {
+            showToast('Debes iniciar sesión para exportar tu catálogo.', 'error');
+            return;
+        }
+        showToast('Preparando la exportación...', 'success');
+        try {
+            const snapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).get();
+            if (snapshot.empty) {
+                showToast('No tienes productos para exportar.', 'error');
+                return;
+            }
+            const productsToExport = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    name: data.name,
+                    price: data.price,
+                    description: data.description,
+                    imageBase64: data.imageBase64 || null,
+                    published: data.published
+                };
+            });
+            const jsonString = JSON.stringify(productsToExport, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `catalogo-feria-virtual-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Catálogo exportado exitosamente.', 'success');
+        } catch (error) {
+            console.error("Error exportando a JSON:", error);
+            showToast('Hubo un error al exportar el catálogo.', 'error');
+        }
+    }
+
+    window.handleJsonImport = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const products = JSON.parse(e.target.result);
+                if (confirm(`¿Estás seguro de que deseas importar ${products.length} productos a tu catálogo? Esta acción no se puede deshacer.`)) {
+                    importCatalogFromJSON(products);
+                }
+            } catch (error) {
+                console.error("Error al parsear el archivo JSON:", error);
+                showToast('El archivo seleccionado no es un JSON válido.', 'error');
+            } finally {
+                event.target.value = '';
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    async function importCatalogFromJSON(products) {
+        if (!Array.isArray(products) || products.length === 0) {
+            showToast('El archivo no contiene productos para importar.', 'error');
+            return;
+        }
+        showToast(`Importando ${products.length} productos...`, 'success');
+        try {
+            let importedCount = 0;
+            const importPromises = products.map(product => {
+                if (!product.name) return Promise.resolve();
+                const newProductData = {
+                    name: product.name,
+                    price: product.price || 0,
+                    description: product.description || '',
+                    imageBase64: product.imageBase64 || null,
+                    published: typeof product.published === 'boolean' ? product.published : true,
+                    vendorId: currentUser.uid,
+                    vendorName: currentMerchantData.business,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                importedCount++;
+                return db.collection('products').add(newProductData);
+            });
+            await Promise.all(importPromises);
+            showToast(`${importedCount} productos importados correctamente.`, 'success');
+            loadMyProducts();
+            updateUserProfile(currentUser.uid);
+        } catch (error) {
+            console.error("Error durante la importación masiva:", error);
+            showToast('Ocurrió un error durante la importación.', 'error');
+        }
+    }
+
+    // --- UTILIDADES Y FUNCIONES AUXILIARES ---
+    function updateAuthUI() {
+        if (isMerchant && currentUser) {
+            authContainer.innerHTML = `
+                <div class="user-dropdown">
+                    <div class="nav-link" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'block' ? 'none' : 'block'">
+                        <i class="fas fa-user-circle"></i><span>Mi Cuenta</span>
+                    </div>
+                    <div class="dropdown-menu">
+                        <a href="#" onclick="showSection('profile')"><i class="fas fa-user"></i> Mi Perfil</a>
+                        <a href="#" onclick="showSection('my-store')"><i class="fas fa-store"></i> Mi Puesto</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                    </div>
+                </div>`;
+            profileLink.style.display = 'flex';
+            storeLink.style.display = 'flex';
+        } else {
+            authContainer.innerHTML = `<a href="#" class="nav-link" onclick="showLogin()"><i class="fas fa-sign-in-alt"></i><span>Iniciar sesión</span></a>`;
+            profileLink.style.display = 'none';
+            storeLink.style.display = 'none';
+        }
+    }
+    
+    function showMessage(element, message, type) { element.textContent = message; element.className = `login-message login-${type}`; element.style.display = 'block'; }
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('fade-out');
+            toast.addEventListener('animationend', () => toast.remove());
+        }, 3000);
+    }
+
+    window.showImageLightbox = function(imageBase64) {
+        const lightboxImg = document.getElementById('lightboxImg');
+        lightboxImg.src = imageBase64;
+        lightboxImg.loading = 'lazy'; // Carga perezosa también para el lightbox
+        document.getElementById('imageLightbox').style.display = 'flex';
+    }
+    window.hideImageLightbox = function() { document.getElementById('imageLightbox').style.display = 'none'; }
+    
+    window.toggleChatbot = function toggleChatbot() {
+        const ctn = document.getElementById('chatbotContainer');
+        const isOpen = ctn.classList.toggle('visible');
+        if (typeof gsap !== 'undefined') {
+            gsap.to(ctn, { scale: isOpen ? 1 : 0.9, opacity: isOpen ? 1 : 0, duration: 0.3 });
+        } else {
+             ctn.style.opacity = isOpen ? '1' : '0';
+        }
+    };
+    
+    // --- INICIALIZACIÓN DE LA APLICACIÓN ---
+    function initializeApp() {
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                const merchantDoc = await db.collection('merchants').doc(user.uid).get();
+                if (merchantDoc.exists) {
+                    currentUser = user; isMerchant = true;
+                    await updateUserProfile(user.uid);
+                    showSection('profile');
+                } else { isMerchant = false; currentUser = null; currentMerchantData = null; }
+            } else {
+                currentUser = null; isMerchant = false; currentMerchantData = null;
+                showSection('home');
+            }
+            updateAuthUI();
+        });
+
+        // Setup menú hamburguesa
+        const hamburger = document.getElementById('hamburgerMenu');
+        const navContainer = document.getElementById('navContainer');
+        hamburger.addEventListener('click', () => {
+            navContainer.classList.toggle('active');
+        });
+        
+        setupImageUpload('productImageUploadArea', 'productImageInput', (file) => selectedProductFile = file);
+        setupImageUpload('profilePicUploadArea', 'profilePicInput', (file) => {
+            selectedProfilePicFile = file;
+            selectedAvatarUrl = null;
+            document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
+        });
+
+        loadProducts();
+        populateAvatars();
+
+        const themeToggle = document.getElementById('themeToggle');
+        const applyTheme = (theme) => { document.body.dataset.theme = theme; localStorage.setItem('theme', theme); };
+        themeToggle.addEventListener('click', () => applyTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
+        applyTheme(localStorage.getItem('theme') || 'light');
+    }
+
+    initializeApp();
+
+    }); // Fin del 'DOMContentLoaded'
+</script>
+</body>
+</html>
