@@ -276,7 +276,8 @@ function renderMyProductCard(container, product) {
     const card = document.createElement('div');
     card.className = 'product-card';
     card.innerHTML = `
-<div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}' })"` : ''}></div>        <div class="product-info">
+        <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}')"` : ''}></div>
+        <div class="product-info">
             <h3 class="product-title">${product.name}</h3>
             <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
             <div class="product-actions">
