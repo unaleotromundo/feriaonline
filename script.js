@@ -818,9 +818,9 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
                 // 5. Construir el mensaje pre-armado usando los datos que ya tenemos
                 const productName = encodeURIComponent(productData.name || 'un producto');
                 const productPrice = productData.price ? `$${parseFloat(productData.price).toFixed(2)}` : 'precio no especificado';
-// Usamos encodeURI en lugar de encodeURIComponent
-const baseMessage = `Hola, vi tu producto "${productData.name}" en Feria Virtual. ¿Me podrías dar más información? Precio: ${productPrice}.`;
-const message = encodeURI(baseMessage);const message = encodeURIComponent(baseMessage);
+// Construimos el mensaje SIN codificar todo, solo la parte variable
+const baseMessage = `Hola, vi tu producto "${productName}" en Feria Virtual. ¿Me podrías dar más información? Precio: ${productPrice}.`;
+const message = encodeURIComponent(baseMessage);
                 // 6. Armar el enlace de WhatsApp
                 whatsappBtn.href = `https://wa.me/${phone}?text=${message}`;
 
