@@ -578,3 +578,59 @@ body[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
 body[data-theme="dark"] .product-selection-item {
     border-color: #4b5563;
 }
+/* --- ESTILOS PARA EL BOTÓN MÁGICO DE WHATSAPP EN EL LIGHTBOX --- */
+.lightbox-whatsapp-btn {
+    /* POSICIONAMIENTO ABSOLUTO RESPECTO AL VIEWPORT, NO AL LIGHTBOX */
+    position: fixed !important;
+    bottom: 30px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+
+    /* ESTILO */
+    background-color: var(--whatsapp) !important;
+    color: white !important;
+    padding: 14px 28px !important;
+    border-radius: 50px !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    font-size: 1.1rem !important;
+    box-shadow: 0 8px 25px rgba(37, 211, 102, 0.6) !important;
+    
+    /* APILAMIENTO: ¡QUE NADA LO TAPÉ! */
+    z-index: 999999 !important; /* Máximo nivel posible */
+
+    /* ANIMACIONES */
+    display: none !important;
+    animation: pulse 2s infinite, fadeInUp 0.6s ease forwards !important;
+    gap: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    /* CURSOR Y EFECTOS */
+    cursor: pointer !important;
+    border: none !important;
+    outline: none !important;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
+    70% { box-shadow: 0 0 0 12px rgba(37, 211, 102, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+/* Versión oscura */
+body[data-theme="dark"] .lightbox-whatsapp-btn {
+    background-color: #128C7E !important;
+}
