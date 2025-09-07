@@ -792,8 +792,8 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-window.showImageLightbox = async function(imageBase64, productData = null) {
-    // 1. Mostrar el lightbox con la imagen
+window.showImageLightbox = async function(imageBase64) {
+    // 1. Mostrar el lightbox
     document.getElementById('lightboxImg').src = imageBase64;
     const lightbox = document.getElementById('imageLightbox');
     lightbox.style.display = 'flex';
@@ -803,35 +803,39 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
     whatsappBtn.style.display = 'none';
     whatsappBtn.href = '#'; // Reset link
 
-    // 3. Si NO se pasó productData, salimos (no podemos armar el enlace)
-    if (!productData || !productData.vendorId) {
-        console.warn("No se recibió información del producto para el botón de WhatsApp.");
-        return;
-    }
-
     try {
-        // 4. Obtener el teléfono del vendedor usando el vendorId que ya tenemos
-        const vendorDoc = await db.collection('merchants').doc(productData.vendorId).get();
-        if (vendorDoc.exists && vendorDoc.data().phone) {
-            const phone = vendorDoc.data().phone.replace(/[^0-9]/g, '');
-            if (phone) {
-                // 5. Construir el mensaje pre-armado usando los datos que ya tenemos
-                const productName = encodeURIComponent(productData.name || 'un producto');
-                const productPrice = productData.price ? `$${parseFloat(productData.price).toFixed(2)}` : 'precio no especificado';
-                const message = encodeURIComponent(`Hola, vi tu producto "${productName}" en Feria Virtual. ¿Me podrías dar más información? Precio: ${productPrice}.`);
+        // 3. Buscar el producto que tiene esta imagen
+        // NOTA: Esto asume que la imagenBase64 es única por producto. Es lo más común.
+        // Si un vendedor sube la misma imagen para dos productos, tomará el primero.
+        const snapshot = await db.collection('products').where('imageBase64', '==', imageBase64).limit(1).get();
+        
+        if (!snapshot.empty) {
+            const product = snapshot.docs[0].data();
+            const vendorId = product.vendorId;
 
-                // 6. Armar el enlace de WhatsApp
-                whatsappBtn.href = `https://wa.me/${phone}?text=${message}`;
+            // 4. Obtener el teléfono del vendedor
+            const vendorDoc = await db.collection('merchants').doc(vendorId).get();
+            if (vendorDoc.exists && vendorDoc.data().phone) {
+                const phone = vendorDoc.data().phone.replace(/[^0-9]/g, '');
+                if (phone) {
+                    // 5. Construir el mensaje pre-armado
+                    const productName = encodeURIComponent(product.name || 'un producto');
+                    const productPrice = product.price ? `$${product.price.toFixed(2)}` : 'precio no especificado';
+                    const message = encodeURIComponent(`Hola, vi tu producto "${productName}" en Feria Virtual. ¿Me podrías dar más información? Precio: ${productPrice}.`);
 
-                // 7. Mostrar el botón con un pequeño delay para el efecto "mágico"
-                setTimeout(() => {
-                    whatsappBtn.style.display = 'flex';
-                }, 500);
+                    // 6. Armar el enlace de WhatsApp
+                    whatsappBtn.href = `https://wa.me/${phone}?text=${message}`;
+
+                    // 7. Mostrar el botón con un pequeño delay para el efecto "mágico"
+                    setTimeout(() => {
+                        whatsappBtn.style.display = 'flex';
+                    }, 500);
+                }
             }
         }
     } catch (error) {
         console.error("Error al preparar el botón de WhatsApp:", error);
-        // Si hay error, simplemente no mostramos el botón.
+        // Si hay error, simplemente no mostramos el botón. La imagen se ve igual.
     }
 }
 window.hideImageLightbox = function() { document.getElementById('imageLightbox').style.display = 'none'; }
