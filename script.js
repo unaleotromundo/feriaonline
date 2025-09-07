@@ -97,8 +97,14 @@ window.registerMerchant = async function() {
     const phone = document.getElementById('regPhone').value.trim();
     const description = document.getElementById('regDescription').value.trim();
     const msgEl = document.getElementById('registerMessage');
+    const registerBtn = document.querySelector('#register .btn-primary'); // Selecciono el botón "Registrarme"
+
     if (!name || !email || !password || !business) return showMessage(msgEl, 'Por favor completa todos los campos requeridos.', 'error');
     if (password.length < 6) return showMessage(msgEl, 'La contraseña debe tener al menos 6 caracteres.', 'error');
+
+    // --- INICIO DE LA CARGA ---
+    startButtonLoading(registerBtn, 'Registrando...');
+
     try {
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
@@ -107,14 +113,29 @@ window.registerMerchant = async function() {
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         showMessage(msgEl, '¡Registro exitoso! Redirigiendo...', 'success');
-    } catch (error) { showMessage(msgEl, 'Error en el registro.', 'error'); }
+        setTimeout(() => {
+            hideLogin();
+            showSection('profile');
+        }, 1000);
+    } catch (error) {
+        showMessage(msgEl, 'Error en el registro.', 'error');
+    } finally {
+        // --- FIN DE LA CARGA (SIEMPRE se ejecuta, incluso si hay error) ---
+        stopButtonLoading(registerBtn);
+    }
 }
 
 window.login = async function() {
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
     const msgEl = document.getElementById('loginMessage');
+    const loginBtn = document.querySelector('#loginModal .btn-primary'); // El botón de login en el modal
+
     if (!email || !password) return showMessage(msgEl, 'Por favor completa todos los campos.', 'error');
+
+    // --- INICIO DE LA CARGA ---
+    startButtonLoading(loginBtn, 'Iniciando...');
+
     try {
         await auth.signInWithEmailAndPassword(email, password);
         showMessage(msgEl, '¡Bienvenido!', 'success');
@@ -122,7 +143,12 @@ window.login = async function() {
             hideLogin();
             showSection('profile');
         }, 1000);
-    } catch (error) { showMessage(msgEl, 'Correo o contraseña incorrectos.', 'error'); }
+    } catch (error) {
+        showMessage(msgEl, 'Correo o contraseña incorrectos.', 'error');
+    } finally {
+        // --- FIN DE LA CARGA ---
+        stopButtonLoading(loginBtn);
+    }
 }
 
 window.logout = function() { auth.signOut(); }
@@ -200,10 +226,22 @@ window.saveProduct = async function() {
     const docRef = isEditing ? db.collection('products').doc(document.getElementById('productModal').dataset.productId) : db.collection('products').doc();
     if (!isEditing) productData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
     productData.published = true;
-    await docRef.set(productData, { merge: true });
-    showToast('Producto guardado.', 'success');
-    hideModal('productModal');
-    loadMyProducts();
+    // --- INICIO DE LA CARGA ---
+    const saveBtn = document.querySelector('#productModal .btn-primary'); // El botón "Guardar Producto" en el modal
+    startButtonLoading(saveBtn, 'Guardando...');
+
+    try {
+        await docRef.set(productData, { merge: true });
+        showToast('Producto guardado.', 'success');
+        hideModal('productModal');
+        loadMyProducts();
+    } catch (error) {
+        console.error("Error saving product:", error);
+        showToast('Error al guardar el producto.', 'error');
+    } finally {
+        // --- FIN DE LA CARGA ---
+        stopButtonLoading(saveBtn);
+    }
 }
 
 function resetProductForm() {
@@ -245,14 +283,14 @@ function renderMyProductCard(container, product) {
             <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
             <div class="product-actions">
                 <button class="action-btn" onclick="showProductModal('${product.id}')"><i class="fas fa-edit"></i></button>
-                <button class="action-btn" onclick="deleteProduct('${product.id}')"><i class="fas fa-trash"></i></button>
+                <!-- BOTÓN DE ELIMINAR REMOVIDO POR PETICIÓN DEL USUARIO -->
                 <button class="action-btn" onclick="toggleProductStatus('${product.id}', ${!product.published})"><i class="fas fa-eye${product.published ? '' : '-slash'}"></i></button>
             </div>
         </div>`;
     container.appendChild(card);
 }
 
-window.deleteProduct = async function(id) { if (confirm('¿Eliminar producto?')) { await db.collection('products').doc(id).delete(); loadMyProducts(); showToast('Producto eliminado.'); } }
+// window.deleteProduct = async function(id) { if (confirm('¿Eliminar producto?')) { await db.collection('products').doc(id).delete(); loadMyProducts(); showToast('Producto eliminado.'); } }
 window.toggleProductStatus = async function(id, status) { await db.collection('products').doc(id).update({ published: status }); loadMyProducts(); }
 
 window.showVendorPage = async function(vendorId, vendorName) {
@@ -265,6 +303,7 @@ window.showVendorPage = async function(vendorId, vendorName) {
         if (doc.exists && doc.data().phone) {
             const phone = doc.data().phone.replace(/[^0-9]/g, '');
             if(phone) {
+                // --- CORRECCIÓN: Se eliminó el espacio en la URL ---
                 whatsappBtn.href = `https://wa.me/${phone}`;
                 whatsappBtn.style.display = 'inline-flex';
             }
@@ -286,10 +325,23 @@ window.toggleStoreEditMode = function(isEditing) {
 
 window.saveStoreInfo = async function() {
     const newData = { business: document.getElementById('storeName').value, description: document.getElementById('storeDescription').value };
-    await db.collection('merchants').doc(currentUser.uid).update(newData);
-    await updateUserProfile(currentUser.uid); 
-    toggleStoreEditMode(false);
-    showToast('Información del puesto actualizada.', 'success');
+
+    // --- INICIO DE LA CARGA ---
+    const saveBtn = document.querySelector('#storeFormFooter .btn-primary'); // El botón "Guardar Cambios" del puesto
+    startButtonLoading(saveBtn, 'Guardando...');
+
+    try {
+        await db.collection('merchants').doc(currentUser.uid).update(newData);
+        await updateUserProfile(currentUser.uid); 
+        toggleStoreEditMode(false);
+        showToast('Información del puesto actualizada.', 'success');
+    } catch (error) {
+        console.error("Error updating store info:", error);
+        showToast('Error al actualizar la información.', 'error');
+    } finally {
+        // --- FIN DE LA CARGA ---
+        stopButtonLoading(saveBtn);
+    }
 }
 
 window.toggleProfileEditMode = function(isEditing) {
@@ -309,10 +361,23 @@ window.saveProfileInfo = async function() {
         name: document.getElementById('userNameInput').value.trim(),
         phone: document.getElementById('userPhoneInput').value.trim()
     };
-    await db.collection('merchants').doc(currentUser.uid).update(newData);
-    await updateUserProfile(currentUser.uid);
-    toggleProfileEditMode(false);
-    showToast('Perfil actualizado.', 'success');
+
+    // --- INICIO DE LA CARGA ---
+    const saveBtn = document.querySelector('#profileFormFooter .btn-primary'); // El botón "Guardar Cambios" del perfil
+    startButtonLoading(saveBtn, 'Actualizando...');
+
+    try {
+        await db.collection('merchants').doc(currentUser.uid).update(newData);
+        await updateUserProfile(currentUser.uid);
+        toggleProfileEditMode(false);
+        showToast('Perfil actualizado.', 'success');
+    } catch (error) {
+        console.error("Error updating profile:", error);
+        showToast('Error al actualizar el perfil.', 'error');
+    } finally {
+        // --- FIN DE LA CARGA ---
+        stopButtonLoading(saveBtn);
+    }
 }
 
 window.showProfilePicModal = function() {
@@ -744,6 +809,33 @@ window.toggleChatbot = function toggleChatbot() {
          ctn.style.opacity = isOpen ? '1' : '0';
     }
 };
+
+// --- NUEVAS FUNCIONES UTILITARIAS PARA BLOQUEO DE BOTONES ---
+/**
+ * Activa el estado de carga en un botón.
+ * @param {HTMLButtonElement} button - El botón a bloquear.
+ * @param {string} [loadingText='Cargando...'] - Texto opcional a mostrar.
+ */
+function startButtonLoading(button, loadingText = 'Cargando...') {
+    if (!button) return;
+    // Guardamos el texto y el HTML original para restaurarlo después
+    button.dataset.originalText = button.innerHTML;
+    button.disabled = true; // ¡IMPORTANTE! Bloquea el botón
+    button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
+    button.style.opacity = '0.7'; // Opcional: da feedback visual de que está deshabilitado
+}
+
+/**
+ * Restaura un botón a su estado original después de la carga.
+ * @param {HTMLButtonElement} button - El botón a restaurar.
+ */
+function stopButtonLoading(button) {
+    if (!button) return;
+    button.disabled = false;
+    button.innerHTML = button.dataset.originalText || 'Guardar'; // Valor por defecto por si falla
+    button.style.opacity = '1';
+    delete button.dataset.originalText; // Limpiamos
+}
 
 // --- INICIALIZACIÓN DE LA APLICACIÓN ---
 function initializeApp() {
