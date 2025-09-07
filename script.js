@@ -257,8 +257,10 @@ function resetProductForm() {
 function renderProductCard(container, product) {
     const card = document.createElement('div');
     card.className = 'product-card';
+    // --- MODIFICACIÓN CLAVE: Pasamos el objeto 'product' completo a showImageLightbox ---
     card.innerHTML = `
-<div class="product-image" ${product.imageBase64 ? `style="background-image: url('${product.imageBase64}')" onclick="showImageLightbox('${product.imageBase64}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}' })"` : ''}>            ${!product.imageBase64 ? '<i class="fas fa-shopping-bag"></i>' : ''}
+        <div class="product-image" ${product.imageBase64 ? `style="background-image: url('${product.imageBase64}')" onclick="showImageLightbox('${product.imageBase64}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}' })"` : ''}>
+            ${!product.imageBase64 ? '<i class="fas fa-shopping-bag"></i>' : ''}
         </div>
         <div class="product-info">
             <h3 class="product-title">${product.name}</h3>
@@ -275,8 +277,9 @@ function renderProductCard(container, product) {
 function renderMyProductCard(container, product) {
     const card = document.createElement('div');
     card.className = 'product-card';
+    // --- MODIFICACIÓN CLAVE: Pasamos el objeto 'product' completo a showImageLightbox ---
     card.innerHTML = `
-        <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}')"` : ''}></div>
+        <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}' })"` : ''}></div>
         <div class="product-info">
             <h3 class="product-title">${product.name}</h3>
             <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
@@ -585,7 +588,7 @@ async function generatePdfWithJsPDF(themeKey) {
             const columnX = margin + (columnIndex * (columnWidth + gutter));
             if (product.imageBase64) {
                 try {
-                    const format = product.imageBase64.substring("data:image/".length, product.imageBase64.indexOf(";base64")).toUpperCase();
+                    const format = product.imageBase64.substring("image/".length, product.imageBase64.indexOf(";base64")).toUpperCase();
                     if (['JPG', 'JPEG', 'PNG'].includes(format)) {
                         const img = new Image();
                         img.src = product.imageBase64;
@@ -793,8 +796,9 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-window.showImageLightbox = async function(imageBase64) {
-    // 1. Mostrar el lightbox
+// --- NUEVA FUNCIÓN: Mostrar lightbox con datos del producto ---
+window.showImageLightbox = async function(imageBase64, productData = null) {
+    // 1. Mostrar el lightbox con la imagen
     document.getElementById('lightboxImg').src = imageBase64;
     const lightbox = document.getElementById('imageLightbox');
     lightbox.style.display = 'flex';
@@ -804,41 +808,39 @@ window.showImageLightbox = async function(imageBase64) {
     whatsappBtn.style.display = 'none';
     whatsappBtn.href = '#'; // Reset link
 
+    // 3. Si NO se pasó productData, salimos (no podemos armar el enlace)
+    if (!productData || !productData.vendorId) {
+        console.warn("No se recibió información del producto para el botón de WhatsApp.");
+        return;
+    }
+
     try {
-        // 3. Buscar el producto que tiene esta imagen
-        // NOTA: Esto asume que la imagenBase64 es única por producto. Es lo más común.
-        // Si un vendedor sube la misma imagen para dos productos, tomará el primero.
-        const snapshot = await db.collection('products').where('imageBase64', '==', imageBase64).limit(1).get();
-        
-        if (!snapshot.empty) {
-            const product = snapshot.docs[0].data();
-            const vendorId = product.vendorId;
+        // 4. Obtener el teléfono del vendedor usando el vendorId que ya tenemos
+        const vendorDoc = await db.collection('merchants').doc(productData.vendorId).get();
+        if (vendorDoc.exists && vendorDoc.data().phone) {
+            const phone = vendorDoc.data().phone.replace(/[^0-9]/g, '');
+            if (phone) {
+                // 5. Construir el mensaje pre-armado usando encodeURI para manejar caracteres como 'ñ' y tildes
+                const productName = productData.name || 'un producto';
+                const productPrice = productData.price ? `$${parseFloat(productData.price).toFixed(2)}` : 'precio no especificado';
+                const baseMessage = `Hola, vi tu producto "${productName}" en Feria Virtual. ¿Me podrías dar más información? Precio: ${productPrice}.`;
+                const message = encodeURI(baseMessage); // <-- SOLUCIÓN DEFINITIVA AQUÍ
 
-            // 4. Obtener el teléfono del vendedor
-            const vendorDoc = await db.collection('merchants').doc(vendorId).get();
-            if (vendorDoc.exists && vendorDoc.data().phone) {
-                const phone = vendorDoc.data().phone.replace(/[^0-9]/g, '');
-                if (phone) {
-                    // 5. Construir el mensaje pre-armado
-                    const productName = encodeURIComponent(product.name || 'un producto');
-                    const productPrice = product.price ? `$${product.price.toFixed(2)}` : 'precio no especificado';
-                    const message = encodeURIComponent(`Hola, vi tu producto "${productName}" en Feria Virtual. ¿Me podrías dar más información? Precio: ${productPrice}.`);
+                // 6. Armar el enlace de WhatsApp
+                whatsappBtn.href = `https://wa.me/${phone}?text=${message}`;
 
-                    // 6. Armar el enlace de WhatsApp
-                    whatsappBtn.href = `https://wa.me/${phone}?text=${message}`;
-
-                    // 7. Mostrar el botón con un pequeño delay para el efecto "mágico"
-                    setTimeout(() => {
-                        whatsappBtn.style.display = 'flex';
-                    }, 500);
-                }
+                // 7. Mostrar el botón con un pequeño delay para el efecto "mágico"
+                setTimeout(() => {
+                    whatsappBtn.style.display = 'flex';
+                }, 500);
             }
         }
     } catch (error) {
         console.error("Error al preparar el botón de WhatsApp:", error);
-        // Si hay error, simplemente no mostramos el botón. La imagen se ve igual.
+        // Si hay error, simplemente no mostramos el botón.
     }
 }
+
 window.hideImageLightbox = function() { document.getElementById('imageLightbox').style.display = 'none'; }
 
 window.toggleChatbot = function toggleChatbot() {
