@@ -1026,6 +1026,33 @@ function stopButtonLoading(button) {
 
 // --- INICIALIZACIÓN DE LA APLICACIÓN ---
 function initializeApp() {
+    // Mostramos el spinner de carga inicial
+    const initialLoadingOverlay = document.getElementById('initialLoadingOverlay');
+    const loadingMessageElement = document.getElementById('loadingMessage');
+
+    // Array de mensajes amigables
+    const loadingMessages = [
+        "Cargando Feria Virtual...",
+        "Estableciendo puestos...",
+        "Ordenando ropa...",
+        "Regando plantitas...",
+        "Acomodando productos...",
+        "Preparando ofertas...",
+        "Encendiendo las luces de la feria...",
+        "Alistando los carritos...",
+        "Poniendo precios justos...",
+        "¡Bienvenido! Un momento más..."
+    ];
+
+    // Función para cambiar el mensaje cada 3 segundos
+    let messageIndex = 0;
+    const messageInterval = setInterval(() => {
+        messageIndex = (messageIndex + 1) % loadingMessages.length;
+        if (loadingMessageElement) {
+            loadingMessageElement.textContent = loadingMessages[messageIndex];
+        }
+    }, 3000);
+
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             const merchantDoc = await db.collection('merchants').doc(user.uid).get();
@@ -1039,36 +1066,38 @@ function initializeApp() {
             showSection('home');
         }
         updateAuthUI();
+
+        // --- OCULTAMOS EL SPINNER DE CARGA INICIAL ---
+        // Limpiamos el intervalo de mensajes
+        clearInterval(messageInterval);
+        // Ocultamos el overlay
+        if (initialLoadingOverlay) {
+            initialLoadingOverlay.style.display = 'none';
+        }
     });
 
     // --- EVENT LISTENERS GLOBALES ---
     document.getElementById('hamburgerMenu').addEventListener('click', () => {
         document.getElementById('navContainer').classList.toggle('active');
     });
-    
     document.getElementById('create-catalog-btn').addEventListener('click', () => document.getElementById('catalog-options-modal').style.display = 'flex');
     document.getElementById('backup-btn').addEventListener('click', () => document.getElementById('backup-options-modal').style.display = 'flex');
-    
     document.getElementById('generate-pdf-btn').addEventListener('click', () => {
         hideModal('catalog-options-modal');
         showExportModal('pdf');
     });
     document.getElementById('generate-jpg-btn').addEventListener('click', loadUserProductsForSelection);
-
     document.getElementById('json-import-input').addEventListener('change', handleJsonImport);
-
     setupImageUpload('productImageUploadArea', 'productImageInput', (file) => selectedProductFile = file);
     setupImageUpload('profilePicUploadArea', 'profilePicInput', (file) => {
         selectedProfilePicFile = file;
         selectedAvatarUrl = null;
         document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
     });
-    
     const themeToggle = document.getElementById('themeToggle');
     const applyTheme = (theme) => { document.body.dataset.theme = theme; localStorage.setItem('theme', theme); };
     themeToggle.addEventListener('click', () => applyTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
     applyTheme(localStorage.getItem('theme') || 'light');
-    
     loadProducts();
     populateAvatars();
 }

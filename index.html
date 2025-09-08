@@ -9,6 +9,13 @@
     <!-- Iconos de Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+<!-- Spinner de Carga Inicial -->
+<div id="initialLoadingOverlay" class="global-loading" style="display: flex;">
+    <div class="loading-box">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p id="loadingMessage">Cargando Feria Virtual...</p>
+    </div>
+</div>
 <body>
     <header class="header">
         <a href="#" class="logo" onclick="showSection('home')">
