@@ -796,48 +796,141 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-// --- NUEVA FUNCIÓN: Mostrar lightbox con datos del producto ---
+// --- NUEVA FUNCIÓN: Mostrar lightbox con navegación entre productos del mismo vendedor ---
+let currentVendorProducts = []; // Array global para los productos del vendedor actual
+let currentProductIndex = 0; // Índice del producto actual en el array
+
 window.showImageLightbox = async function(imageBase64, productData = null) {
-    // 1. Mostrar el lightbox con la imagen
-    document.getElementById('lightboxImg').src = imageBase64;
-    const lightbox = document.getElementById('imageLightbox');
-    lightbox.style.display = 'flex';
-
-    // 2. Ocultar el botón por si estaba visible de antes
-    const whatsappBtn = document.getElementById('lightboxWhatsappBtn');
-    whatsappBtn.style.display = 'none';
-    whatsappBtn.href = '#'; // Reset link
-
-    // 3. Si NO se pasó productData, salimos (no podemos armar el enlace)
     if (!productData || !productData.vendorId) {
-        console.warn("No se recibió información del producto para el botón de WhatsApp.");
+        console.warn("No se recibió información del producto.");
         return;
     }
 
     try {
-        // 4. Obtener el teléfono del vendedor usando el vendorId que ya tenemos
-        const vendorDoc = await db.collection('merchants').doc(productData.vendorId).get();
-        if (vendorDoc.exists && vendorDoc.data().phone) {
-            const phone = vendorDoc.data().phone.replace(/[^0-9]/g, '');
-            if (phone) {
-                // 5. Construir el mensaje pre-armado usando encodeURI para manejar caracteres como 'ñ' y tildes
-                const productName = productData.name || 'un producto';
-                const productPrice = productData.price ? `$${parseFloat(productData.price).toFixed(2)}` : 'precio no especificado';
-                const baseMessage = `Hola, vi tu producto "${productName}" en Feria Virtual. ¿Me podrías dar más información? Precio: ${productPrice}.`;
-                const message = encodeURI(baseMessage); // <-- SOLUCIÓN DEFINITIVA AQUÍ
+        // 1. Cargar TODOS los productos del mismo vendedor
+        const snapshot = await db.collection('products')
+            .where('vendorId', '==', productData.vendorId)
+            .where('published', '==', true)
+            .orderBy('createdAt', 'desc')
+            .get();
 
-                // 6. Armar el enlace de WhatsApp
-                whatsappBtn.href = `https://wa.me/${phone}?text=${message}`;
+        currentVendorProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                // 7. Mostrar el botón con un pequeño delay para el efecto "mágico"
-                setTimeout(() => {
+        // 2. Encontrar el índice del producto actual
+        currentProductIndex = currentVendorProducts.findIndex(p => p.imageBase64 === imageBase64);
+        if (currentProductIndex === -1) {
+            currentProductIndex = 0; // Si no lo encuentra, empieza por el primero
+        }
+
+        // 3. Mostrar el lightbox y el producto actual
+        showCurrentProductInLightbox();
+
+        // 4. Configurar los eventos de swipe
+        setupSwipeGestures();
+
+    } catch (error) {
+        console.error("Error al cargar productos del vendedor:", error);
+        showToast('Error al cargar productos.', 'error');
+    }
+}
+
+/**
+ * Muestra el producto actual en el lightbox y actualiza el botón de WhatsApp.
+ */
+function showCurrentProductInLightbox() {
+    const product = currentVendorProducts[currentProductIndex];
+    if (!product) return;
+
+    // Mostrar la imagen
+    document.getElementById('lightboxImg').src = product.imageBase64 || '';
+    const lightbox = document.getElementById('imageLightbox');
+    lightbox.style.display = 'flex';
+
+    // Actualizar el botón de WhatsApp
+    const whatsappBtn = document.getElementById('lightboxWhatsappBtn');
+    whatsappBtn.style.display = 'none';
+    whatsappBtn.href = '#';
+
+    if (product.vendorId) {
+        db.collection('merchants').doc(product.vendorId).get().then(vendorDoc => {
+            if (vendorDoc.exists && vendorDoc.data().phone) {
+                const phone = vendorDoc.data().phone.replace(/[^0-9]/g, '');
+                if (phone) {
+                    const productName = product.name || 'un producto';
+                    const productPrice = product.price ? `$${parseFloat(product.price).toFixed(2)}` : 'precio no especificado';
+                    const baseMessage = `Hola, vi tu producto "${productName}" en Feria Virtual. ¿Me podrías dar más información? Precio: ${productPrice}.`;
+                    const message = encodeURI(baseMessage);
+                    whatsappBtn.href = `https://wa.me/${phone}?text=${message}`;
                     whatsappBtn.style.display = 'flex';
-                }, 500);
+                }
+            }
+        }).catch(error => {
+            console.error("Error al obtener teléfono del vendedor:", error);
+        });
+    }
+}
+
+/**
+ * Configura los eventos táctiles y de mouse para navegar entre productos.
+ */
+function setupSwipeGestures() {
+    const lightboxImg = document.getElementById('lightboxImg');
+    let startX = 0;
+    let endX = 0;
+
+    // Evento para touch (móviles)
+    lightboxImg.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+    }, { passive: true });
+
+    lightboxImg.addEventListener('touchend', (e) => {
+        endX = e.changedTouches[0].clientX;
+        handleSwipe();
+    }, { passive: true });
+
+    // Evento para mouse (desktop)
+    lightboxImg.addEventListener('mousedown', (e) => {
+        startX = e.clientX;
+    });
+
+    lightboxImg.addEventListener('mouseup', (e) => {
+        endX = e.clientX;
+        handleSwipe();
+    });
+
+    function handleSwipe() {
+        const diff = startX - endX;
+        const threshold = 50; // Umbral mínimo para considerar un swipe
+
+        if (Math.abs(diff) > threshold) {
+            if (diff > 0) {
+                // Swipe a la izquierda -> Siguiente producto
+                nextProduct();
+            } else {
+                // Swipe a la derecha -> Producto anterior
+                prevProduct();
             }
         }
-    } catch (error) {
-        console.error("Error al preparar el botón de WhatsApp:", error);
-        // Si hay error, simplemente no mostramos el botón.
+    }
+}
+
+/**
+ * Muestra el producto anterior.
+ */
+function prevProduct() {
+    if (currentVendorProducts.length > 1) {
+        currentProductIndex = (currentProductIndex - 1 + currentVendorProducts.length) % currentVendorProducts.length;
+        showCurrentProductInLightbox();
+    }
+}
+
+/**
+ * Muestra el siguiente producto.
+ */
+function nextProduct() {
+    if (currentVendorProducts.length > 1) {
+        currentProductIndex = (currentProductIndex + 1) % currentVendorProducts.length;
+        showCurrentProductInLightbox();
     }
 }
 

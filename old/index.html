@@ -373,11 +373,14 @@
         </button>
     </div>
 
-    <div id="imageLightbox" class="image-lightbox" onclick="hideImageLightbox()">
-        <span class="lightbox-close" onclick="hideImageLightbox()">&times;</span>
-        <img class="lightbox-content" id="lightboxImg">
-    </div>
-
+<div id="imageLightbox" class="image-lightbox">
+    <span class="lightbox-close" onclick="hideImageLightbox()">&times;</span>
+    <img class="lightbox-content" id="lightboxImg">
+    <!-- === NUEVO BOTÓN MAGICO === -->
+    <a id="lightboxWhatsappBtn" class="lightbox-whatsapp-btn" target="_blank" rel="noopener noreferrer">
+        <i class="fab fa-whatsapp"></i> 💬 Hablar con el vendedor
+    </a>
+</div>
     <div id="globalLoadingOverlay" class="global-loading">
         <div class="loading-box">
             <i class="fas fa-spinner fa-spin"></i>
