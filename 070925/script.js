@@ -796,25 +796,6 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-/**
- * Muestra el overlay de carga global con un mensaje personalizado.
- * @param {string} message - Mensaje a mostrar.
- */
-function showGlobalLoadingOverlay(message = 'Cargando...') {
-    const overlay = document.getElementById('globalLoadingOverlay');
-    const messageEl = overlay.querySelector('p');
-    if (messageEl) messageEl.textContent = message;
-    overlay.style.display = 'flex';
-}
-
-/**
- * Oculta el overlay de carga global.
- */
-function hideGlobalLoadingOverlay() {
-    const overlay = document.getElementById('globalLoadingOverlay');
-    overlay.style.display = 'none';
-}
-
 // --- NUEVA FUNCIÓN: Mostrar lightbox con navegación entre productos del mismo vendedor ---
 let currentVendorProducts = []; // Array global para los productos del vendedor actual
 let currentProductIndex = 0; // Índice del producto actual en el array
@@ -824,9 +805,6 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
         console.warn("No se recibió información del producto.");
         return;
     }
-
-    // --- MOSTRAR INDICADOR DE CARGA ---
-    showGlobalLoadingOverlay('Cargando productos del vendedor...');
 
     try {
         // 1. Cargar TODOS los productos del mismo vendedor
@@ -853,9 +831,6 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
     } catch (error) {
         console.error("Error al cargar productos del vendedor:", error);
         showToast('Error al cargar productos.', 'error');
-    } finally {
-        // --- OCULTAR INDICADOR DE CARGA ---
-        hideGlobalLoadingOverlay();
     }
 }
 
