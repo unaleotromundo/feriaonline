@@ -257,9 +257,9 @@ function resetProductForm() {
 function renderProductCard(container, product) {
     const card = document.createElement('div');
     card.className = 'product-card';
-    // --- MODIFICACIÓN CLAVE: Pasamos el objeto 'product' completo a showImageLightbox ---
+    // --- PASAMOS EL ID DEL PRODUCTO A showImageLightbox ---
     card.innerHTML = `
-        <div class="product-image" ${product.imageBase64 ? `style="background-image: url('${product.imageBase64}')" onclick="showImageLightbox('${product.imageBase64}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}' })"` : ''}>
+        <div class="product-image" ${product.imageBase64 ? `style="background-image: url('${product.imageBase64}')" onclick="showImageLightbox('${product.imageBase64}', { id: '${product.id}', name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}' })"` : ''}>
             ${!product.imageBase64 ? '<i class="fas fa-shopping-bag"></i>' : ''}
         </div>
         <div class="product-info">
@@ -277,9 +277,9 @@ function renderProductCard(container, product) {
 function renderMyProductCard(container, product) {
     const card = document.createElement('div');
     card.className = 'product-card';
-    // --- MODIFICACIÓN CLAVE: Pasamos el objeto 'product' completo a showImageLightbox ---
+    // --- PASAMOS EL ID DEL PRODUCTO A showImageLightbox ---
     card.innerHTML = `
-        <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}' })"` : ''}></div>
+        <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}', { id: '${product.id}', name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}' })"` : ''}></div>
         <div class="product-info">
             <h3 class="product-title">${product.name}</h3>
             <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
@@ -829,19 +829,45 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
     showGlobalLoadingOverlay('Cargando productos del vendedor...');
 
     try {
-        // 1. Cargar TODOS los productos del mismo vendedor
-        const snapshot = await db.collection('products')
-            .where('vendorId', '==', productData.vendorId)
-            .where('published', '==', true)
-            .orderBy('createdAt', 'desc')
-            .get();
+        // 1. Cargar TODOS los productos del mismo vendedor (con caché)
+        if (!window.vendorProductCache) {
+            window.vendorProductCache = {}; // Creamos un objeto global para caché
+        }
 
-        currentVendorProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let shouldFetch = true;
+        if (window.vendorProductCache[productData.vendorId]) {
+            // Verificamos si la caché tiene menos de 5 minutos (300000 ms)
+            const cacheAge = Date.now() - window.vendorProductCache[productData.vendorId].timestamp;
+            if (cacheAge < 300000) {
+                shouldFetch = false;
+                currentVendorProducts = window.vendorProductCache[productData.vendorId].products;
+            }
+        }
 
-        // 2. Encontrar el índice del producto actual
-        currentProductIndex = currentVendorProducts.findIndex(p => p.imageBase64 === imageBase64);
+        if (shouldFetch) {
+            const snapshot = await db.collection('products')
+                .where('vendorId', '==', productData.vendorId)
+                .where('published', '==', true)
+                .orderBy('createdAt', 'desc')
+                .get();
+
+            currentVendorProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Guardamos en caché
+            window.vendorProductCache[productData.vendorId] = {
+                products: currentVendorProducts,
+                timestamp: Date.now()
+            };
+        }
+
+        // 2. Encontrar el índice del producto actual usando el ID (¡MÁS SEGURO!)
+        currentProductIndex = currentVendorProducts.findIndex(p => p.id === productData.id);
         if (currentProductIndex === -1) {
-            currentProductIndex = 0; // Si no lo encuentra, empieza por el primero
+            // Si no lo encuentra por ID, intenta por imagen como fallback
+            currentProductIndex = currentVendorProducts.findIndex(p => p.imageBase64 === imageBase64);
+            if (currentProductIndex === -1) {
+                currentProductIndex = 0; // Si no lo encuentra, empieza por el primero
+            }
         }
 
         // 3. Mostrar el lightbox y el producto actual
