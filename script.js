@@ -826,7 +826,7 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
     }
 
     // --- MOSTRAR INDICADOR DE CARGA ---
-    showGlobalLoadingOverlay('Cargando productos del vendedor...');
+    showGlobalLoadingOverlay('Cargando.. si te deslizas hacia los lados podrás ver más productos del vendedor...');
 
     try {
         // 1. Cargar TODOS los productos del mismo vendedor (con caché)
