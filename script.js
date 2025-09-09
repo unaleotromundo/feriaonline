@@ -24,6 +24,16 @@ const profileLink = document.getElementById('profileLink');
 const storeLink = document.getElementById('storeLink');
 const authContainer = document.getElementById('authContainer');
 
+// --- CACHÉ EN MEMORIA ---
+let dataCache = {
+    products: {
+        all: { data: null, timestamp: 0 },
+        byVendor: {}
+    },
+    merchants: {}
+};
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos en milisegundos
+
 // --- MENSAJES PARA SPINNER DE CARGA INICIAL (APP) ---
 const appLoadingMessages = [
     "Cargando Feria Virtual...",
@@ -87,20 +97,42 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
     showGlobalLoadingOverlay('productos');
 
     try {
-        let query = db.collection('products').where('published', '==', true);
-        if (filter.vendorId) {
-            query = query.where('vendorId', '==', filter.vendorId);
+        let products = [];
+        const cacheKey = filter.vendorId || 'all';
+        const cache = dataCache.products.byVendor[cacheKey] || dataCache.products.all;
+
+        const isCacheValid = cache.data && (Date.now() - cache.timestamp < CACHE_DURATION);
+
+        if (isCacheValid) {
+            // Usamos los datos en caché
+            products = cache.data;
+        } else {
+            // Vamos a Firestore porque la caché está vieja o no existe
+            let query = db.collection('products').where('published', '==', true);
+            if (filter.vendorId) {
+                query = query.where('vendorId', '==', filter.vendorId);
+            }
+            const snapshot = await query.orderBy('createdAt', 'desc').get();
+            products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Guardamos en caché
+            if (filter.vendorId) {
+                dataCache.products.byVendor[cacheKey] = { data: products, timestamp: Date.now() };
+            } else {
+                dataCache.products.all = { data: products, timestamp: Date.now() };
+            }
         }
-        const snapshot = await query.orderBy('createdAt', 'desc').get();
+
         // --- OCULTAMOS EL SPINNER ---
         hideGlobalLoadingOverlay();
 
+        // Renderizamos los productos
         productsGrid.innerHTML = '';
-        if (snapshot.empty) {
+        if (products.length === 0) {
             productsGrid.innerHTML = `<div>No hay productos para mostrar.</div>`;
             return;
         }
-        snapshot.forEach(doc => renderProductCard(productsGrid, { id: doc.id, ...doc.data() }));
+        products.forEach(product => renderProductCard(productsGrid, product));
     } catch (error) {
         console.error("Error loading products:", error);
         // --- OCULTAMOS EL SPINNER EN CASO DE ERROR ---
@@ -113,19 +145,32 @@ async function loadMyProducts() {
     if (!currentUser) return;
     const productsGrid = document.getElementById('myProductsGrid');
     // --- MOSTRAMOS EL SPINNER CON MENSAJE ALEATORIO DE PRODUCTOS ---
-    showGlobalLoadingOverlay('productos');
+    showGlobalLoadingOverlay('Ordenando tus productos...');
 
     try {
-        const snapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).orderBy('createdAt', 'desc').get();
+        const cacheKey = currentUser.uid;
+        const cache = dataCache.products.byVendor[cacheKey];
+        const isCacheValid = cache && (Date.now() - cache.timestamp < CACHE_DURATION);
+
+        let products = [];
+        if (isCacheValid) {
+            products = cache.data;
+        } else {
+            const snapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).orderBy('createdAt', 'desc').get();
+            products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Guardamos en caché
+            dataCache.products.byVendor[cacheKey] = { data: products, timestamp: Date.now() };
+        }
+
         // --- OCULTAMOS EL SPINNER ---
         hideGlobalLoadingOverlay();
 
         productsGrid.innerHTML = '';
-        if (snapshot.empty) {
+        if (products.length === 0) {
             productsGrid.innerHTML = '<div>Aún no has agregado productos.</div>';
             return;
         }
-        snapshot.forEach(doc => renderMyProductCard(productsGrid, { id: doc.id, ...doc.data() }));
+        products.forEach(product => renderMyProductCard(productsGrid, product));
     } catch (error) {
         console.error("Error loading user products:", error);
         // --- OCULTAMOS EL SPINNER EN CASO DE ERROR ---
@@ -281,6 +326,9 @@ window.saveProduct = async function() {
 
     try {
         await docRef.set(productData, { merge: true });
+        // --- INVALIDAR LA CACHÉ ---
+        dataCache.products.byVendor[currentUser.uid] = null;
+        dataCache.products.all = null;
         showToast('Producto guardado.', 'success');
         hideModal('productModal');
         loadMyProducts();
@@ -342,7 +390,13 @@ function renderMyProductCard(container, product) {
 }
 
 // window.deleteProduct = async function(id) { if (confirm('¿Eliminar producto?')) { await db.collection('products').doc(id).delete(); loadMyProducts(); showToast('Producto eliminado.'); } }
-window.toggleProductStatus = async function(id, status) { await db.collection('products').doc(id).update({ published: status }); loadMyProducts(); }
+window.toggleProductStatus = async function(id, status) {
+    await db.collection('products').doc(id).update({ published: status });
+    // --- INVALIDAR LA CACHÉ ---
+    dataCache.products.byVendor[currentUser.uid] = null;
+    dataCache.products.all = null;
+    loadMyProducts();
+}
 
 window.showVendorPage = async function(vendorId, vendorName) {
     showSection('vendor-page');
@@ -541,6 +595,9 @@ async function importCatalogFromJSON(products) {
             return db.collection('products').add(newProductData);
         });
         await Promise.all(importPromises);
+        // --- INVALIDAR LA CACHÉ ---
+        dataCache.products.byVendor[currentUser.uid] = null;
+        dataCache.products.all = null;
         showToast(`${products.length} productos importados correctamente.`, 'success');
         loadMyProducts();
         updateUserProfile(currentUser.uid);
@@ -948,7 +1005,8 @@ function showCurrentProductInLightbox() {
     // Actualizar el botón de WhatsApp
     const whatsappBtn = document.getElementById('lightboxWhatsappBtn');
     whatsappBtn.style.display = 'none';
-    whatsappBtn.href = '#';
+    whatsappBtn.href = '#'; // Evita que el enlace haga algo por defecto
+
     if (product.vendorId) {
         db.collection('merchants').doc(product.vendorId).get().then(vendorDoc => {
             if (vendorDoc.exists && vendorDoc.data().phone) {
@@ -958,13 +1016,34 @@ function showCurrentProductInLightbox() {
                     const productPrice = product.price ? `$${parseFloat(product.price).toFixed(2)}` : 'precio no especificado';
                     const baseMessage = `Hola, vi tu producto "${productName}" en Feria Virtual. ¿Me podrías dar más información? Precio: ${productPrice}.`;
                     const message = encodeURI(baseMessage);
-                    whatsappBtn.href = `https://wa.me/${phone}?text=${message}`;
+                    const whatsappUrl = `https://wa.me/${phone}?text=${message}`;
+
+                    // --- ¡ACÁ ESTÁ LA MAGIA! ---
+                    // En lugar de cambiar el href, asignamos un evento de clic que abre en nueva pestaña
+                    whatsappBtn.onclick = function(event) {
+                        event.preventDefault(); // Evita cualquier comportamiento predeterminado
+                        window.open(whatsappUrl, '_blank'); // Abre en nueva pestaña
+                    };
+
                     whatsappBtn.style.display = 'flex';
                 }
             }
         }).catch(error => {
             console.error("Error al obtener teléfono del vendedor:", error);
+            // --- IMPORTANTE: Aún si falla, NO ocultamos el botón, lo dejamos visible pero inactivo ---
+            whatsappBtn.style.display = 'flex';
+            whatsappBtn.onclick = function(event) {
+                event.preventDefault();
+                showToast('No se pudo cargar el contacto del vendedor. Inténtalo más tarde.', 'error');
+            };
         });
+    } else {
+        // Si no hay vendorId, mostramos un mensaje de error al hacer clic
+        whatsappBtn.style.display = 'flex';
+        whatsappBtn.onclick = function(event) {
+            event.preventDefault();
+            showToast('Información del vendedor no disponible.', 'error');
+        };
     }
 }
 
@@ -1079,61 +1158,4 @@ function initializeApp() {
     // --- MOSTRAMOS EL SPINNER CON MENSAJE DE TIPO 'app' ---
     showGlobalLoadingOverlay('app');
 
-    // Función para cambiar el mensaje cada 3 segundos
-    let messageInterval;
-    if (loadingMessageElement) {
-        let messageIndex = 0;
-        messageInterval = setInterval(() => {
-            messageIndex = (messageIndex + 1) % appLoadingMessages.length;
-            loadingMessageElement.textContent = appLoadingMessages[messageIndex];
-        }, 3000);
-    }
-
-    auth.onAuthStateChanged(async (user) => {
-        if (user) {
-            const merchantDoc = await db.collection('merchants').doc(user.uid).get();
-            if (merchantDoc.exists) {
-                currentUser = user; isMerchant = true;
-                await updateUserProfile(user.uid);
-                showSection('profile');
-            } else { isMerchant = false; currentUser = null; currentMerchantData = null; }
-        } else {
-            currentUser = null; isMerchant = false; currentMerchantData = null;
-            showSection('home');
-        }
-        updateAuthUI();
-
-        // --- OCULTAMOS EL SPINNER DE CARGA INICIAL ---
-        clearInterval(messageInterval);
-        if (loadingOverlay) {
-            loadingOverlay.style.display = 'none';
-        }
-    });
-
-    // --- EVENT LISTENERS GLOBALES ---
-    document.getElementById('hamburgerMenu').addEventListener('click', () => {
-        document.getElementById('navContainer').classList.toggle('active');
-    });
-    document.getElementById('create-catalog-btn').addEventListener('click', () => document.getElementById('catalog-options-modal').style.display = 'flex');
-    document.getElementById('backup-btn').addEventListener('click', () => document.getElementById('backup-options-modal').style.display = 'flex');
-    document.getElementById('generate-pdf-btn').addEventListener('click', () => {
-        hideModal('catalog-options-modal');
-        showExportModal('pdf');
-    });
-    document.getElementById('generate-jpg-btn').addEventListener('click', loadUserProductsForSelection);
-    document.getElementById('json-import-input').addEventListener('change', handleJsonImport);
-    setupImageUpload('productImageUploadArea', 'productImageInput', (file) => selectedProductFile = file);
-    setupImageUpload('profilePicUploadArea', 'profilePicInput', (file) => {
-        selectedProfilePicFile = file;
-        selectedAvatarUrl = null;
-        document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
-    });
-    const themeToggle = document.getElementById('themeToggle');
-    const applyTheme = (theme) => { document.body.dataset.theme = theme; localStorage.setItem('theme', theme); };
-    themeToggle.addEventListener('click', () => applyTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
-    applyTheme(localStorage.getItem('theme') || 'light');
-    loadProducts();
-    populateAvatars();
-}
-
-initializeApp();
+    // Función para cambiar el mensaje cada 4 segundos
