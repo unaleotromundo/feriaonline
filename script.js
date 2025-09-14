@@ -306,9 +306,9 @@ function resetProductForm() {
 function renderProductCard(container, product) {
     const card = document.createElement('div');
     card.className = 'product-card';
-    // --- PASAMOS EL ID DEL PRODUCTO A showImageLightbox ---
+    // --- MODIFICACIÓN CLAVE: Pasamos el objeto 'product' completo a showImageLightbox ---
     card.innerHTML = `
-        <div class="product-image" ${product.imageBase64 ? `style="background-image: url('${product.imageBase64}')" onclick="showImageLightbox('${product.imageBase64}', { id: '${product.id}', name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}' })"` : ''}>
+        <div class="product-image" ${product.imageBase64 ? `style="background-image: url('${product.imageBase64}')" onclick="showImageLightbox('${product.imageBase64}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}' })"` : ''}>
             ${!product.imageBase64 ? '<i class="fas fa-shopping-bag"></i>' : ''}
         </div>
         <div class="product-info">
@@ -326,9 +326,9 @@ function renderProductCard(container, product) {
 function renderMyProductCard(container, product) {
     const card = document.createElement('div');
     card.className = 'product-card';
-    // --- PASAMOS EL ID DEL PRODUCTO A showImageLightbox ---
+    // --- MODIFICACIÓN CLAVE: Pasamos el objeto 'product' completo a showImageLightbox ---
     card.innerHTML = `
-        <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}', { id: '${product.id}', name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}' })"` : ''}></div>
+        <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}' })"` : ''}></div>
         <div class="product-info">
             <h3 class="product-title">${product.name}</h3>
             <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
@@ -882,6 +882,7 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
     showGlobalLoadingOverlay('Cargando.. si te deslizas hacia los lados podrás ver más productos del vendedor...');
 
     try {
+<<<<<<< HEAD
         // 1. Cargar TODOS los productos del mismo vendedor (con caché)
         if (!window.vendorProductCache) {
             window.vendorProductCache = {}; // Creamos un objeto global para caché
@@ -911,12 +912,21 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
 
         // 2. Encontrar el índice del producto actual usando el ID (¡MÁS SEGURO!)
         currentProductIndex = currentVendorProducts.findIndex(p => p.id === productData.id);
+=======
+        // 1. Cargar TODOS los productos del mismo vendedor
+        const snapshot = await db.collection('products')
+            .where('vendorId', '==', productData.vendorId)
+            .where('published', '==', true)
+            .orderBy('createdAt', 'desc')
+            .get();
+
+        currentVendorProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // 2. Encontrar el índice del producto actual
+        currentProductIndex = currentVendorProducts.findIndex(p => p.imageBase64 === imageBase64);
+>>>>>>> parent of 0571673 (aad)
         if (currentProductIndex === -1) {
-            // Si no lo encuentra por ID, intenta por imagen como fallback
-            currentProductIndex = currentVendorProducts.findIndex(p => p.imageBase64 === imageBase64);
-            if (currentProductIndex === -1) {
-                currentProductIndex = 0; // Si no lo encuentra, empieza por el primero
-            }
+            currentProductIndex = 0; // Si no lo encuentra, empieza por el primero
         }
 
         // 3. Mostrar el lightbox y el producto actual
