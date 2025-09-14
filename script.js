@@ -1,5 +1,4 @@
 // Feria Virtual - Lógica de la Aplicación
-
 // Configuración de Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyAlqGoYrHkASbhmE2aBKIOXqkkNBBEEiGU",
@@ -10,7 +9,6 @@ const firebaseConfig = {
     appId: "1:1001881267179:web:fc5ac0fd940964537887ae",
     measurementId: "G-GQZZQMNVPH"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
@@ -26,6 +24,44 @@ const profileLink = document.getElementById('profileLink');
 const storeLink = document.getElementById('storeLink');
 const authContainer = document.getElementById('authContainer');
 
+// --- CACHÉ EN MEMORIA ---
+let dataCache = {
+    products: {
+        all: { data: null, timestamp: 0 },
+        byVendor: {}
+    },
+    merchants: {}
+};
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos en milisegundos
+
+// --- MENSAJES PARA SPINNER DE CARGA INICIAL (APP) ---
+const appLoadingMessages = [
+    "Cargando Feria Virtual...",
+    "Estableciendo puestos...",
+    "Ordenando ropa...",
+    "Regando plantitas...",
+    "Encendiendo las luces de la feria...",
+    "Preparando el café para los vendedores...",
+    "Alistando los carritos...",
+    "Poniendo precios justos...",
+    "¡Bienvenido! Un momentito más...",
+    "Conectando con la nube..."
+];
+
+// --- MENSAJES PARA SPINNER DE CARGA DE PRODUCTOS ---
+const productLoadingMessages = [
+    "Ordenando las góndolas...",
+    "Encendiendo las luces del local...",
+    "Acomodando los productos más lindos...",
+    "Puliendo los precios...",
+    "Revisando el stock...",
+    "Poniendo carteles bonitos...",
+    "Alistando las ofertas del día...",
+    "Sacando brillo a los productos...",
+    "Preparando todo para vos...",
+    "¡Casi listo! Un momentito más..."
+];
+
 // --- NAVEGACIÓN Y VISIBILIDAD DE SECCIONES ---
 window.showSection = function(sectionId) {
     document.querySelectorAll('.section').forEach(section => section.classList.remove('active-section'));
@@ -35,9 +71,11 @@ window.showSection = function(sectionId) {
     if (sectionId === 'products') loadProducts();
     if (sectionId === 'my-store' && isMerchant) loadMyProducts();
 }
+
 window.showLogin = function() { document.getElementById('loginModal').style.display = 'flex'; }
 window.hideLogin = function() { document.getElementById('loginModal').style.display = 'none'; }
 window.hideModal = function(modalId) { document.getElementById(modalId).style.display = 'none'; }
+
 window.showProductModal = function(productId = null) {
     const modal = document.getElementById('productModal');
     const title = document.getElementById('productModalTitle');
@@ -55,21 +93,50 @@ window.showProductModal = function(productId = null) {
 
 async function loadProducts(containerId = 'productsGrid', filter = {}) {
     const productsGrid = document.getElementById(containerId);
-    productsGrid.innerHTML = `<div>Cargando productos...</div>`;
+    // --- MOSTRAMOS EL SPINNER CON MENSAJE ALEATORIO DE PRODUCTOS ---
+    showGlobalLoadingOverlay('productos');
+
     try {
-        let query = db.collection('products').where('published', '==', true);
-        if (filter.vendorId) {
-            query = query.where('vendorId', '==', filter.vendorId);
+        let products = [];
+        const cacheKey = filter.vendorId || 'all';
+        const cache = dataCache.products.byVendor[cacheKey] || dataCache.products.all;
+
+        const isCacheValid = cache.data && (Date.now() - cache.timestamp < CACHE_DURATION);
+
+        if (isCacheValid) {
+            // Usamos los datos en caché
+            products = cache.data;
+        } else {
+            // Vamos a Firestore porque la caché está vieja o no existe
+            let query = db.collection('products').where('published', '==', true);
+            if (filter.vendorId) {
+                query = query.where('vendorId', '==', filter.vendorId);
+            }
+            const snapshot = await query.orderBy('createdAt', 'desc').get();
+            products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Guardamos en caché
+            if (filter.vendorId) {
+                dataCache.products.byVendor[cacheKey] = { data: products, timestamp: Date.now() };
+            } else {
+                dataCache.products.all = { data: products, timestamp: Date.now() };
+            }
         }
-        const snapshot = await query.orderBy('createdAt', 'desc').get();
+
+        // --- OCULTAMOS EL SPINNER ---
+        hideGlobalLoadingOverlay();
+
+        // Renderizamos los productos
         productsGrid.innerHTML = '';
-        if (snapshot.empty) {
+        if (products.length === 0) {
             productsGrid.innerHTML = `<div>No hay productos para mostrar.</div>`;
             return;
         }
-        snapshot.forEach(doc => renderProductCard(productsGrid, { id: doc.id, ...doc.data() }));
+        products.forEach(product => renderProductCard(productsGrid, product));
     } catch (error) {
         console.error("Error loading products:", error);
+        // --- OCULTAMOS EL SPINNER EN CASO DE ERROR ---
+        hideGlobalLoadingOverlay();
         productsGrid.innerHTML = `<div>Error al cargar productos.</div>`;
     }
 }
@@ -77,16 +144,38 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
 async function loadMyProducts() {
     if (!currentUser) return;
     const productsGrid = document.getElementById('myProductsGrid');
-    productsGrid.innerHTML = `<div>Cargando tus productos...</div>`;
+    // --- MOSTRAMOS EL SPINNER CON MENSAJE ALEATORIO DE PRODUCTOS ---
+    showGlobalLoadingOverlay('Ordenando tus productos...');
+
     try {
-        const snapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).orderBy('createdAt', 'desc').get();
+        const cacheKey = currentUser.uid;
+        const cache = dataCache.products.byVendor[cacheKey];
+        const isCacheValid = cache && (Date.now() - cache.timestamp < CACHE_DURATION);
+
+        let products = [];
+        if (isCacheValid) {
+            products = cache.data;
+        } else {
+            const snapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).orderBy('createdAt', 'desc').get();
+            products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Guardamos en caché
+            dataCache.products.byVendor[cacheKey] = { data: products, timestamp: Date.now() };
+        }
+
+        // --- OCULTAMOS EL SPINNER ---
+        hideGlobalLoadingOverlay();
+
         productsGrid.innerHTML = '';
-        if (snapshot.empty) {
+        if (products.length === 0) {
             productsGrid.innerHTML = '<div>Aún no has agregado productos.</div>';
             return;
         }
-        snapshot.forEach(doc => renderMyProductCard(productsGrid, { id: doc.id, ...doc.data() }));
-    } catch (error) { console.error("Error loading user products:", error); }
+        products.forEach(product => renderMyProductCard(productsGrid, product));
+    } catch (error) {
+        console.error("Error loading user products:", error);
+        // --- OCULTAMOS EL SPINNER EN CASO DE ERROR ---
+        hideGlobalLoadingOverlay();
+    }
 }
 
 window.registerMerchant = async function() {
@@ -166,12 +255,14 @@ async function updateUserProfile(userId) {
         document.getElementById('userProducts').textContent = `${productsSnapshot.size} productos publicados`;
         const createdAt = currentMerchantData.createdAt?.toDate();
         document.getElementById('userSince').textContent = createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A';
+
         const profilePicContainer = document.getElementById('profilePicContainer');
         if (currentMerchantData.profilePic) {
             profilePicContainer.innerHTML = `<img src="${currentMerchantData.profilePic}" alt="Foto de perfil" loading="lazy"><div class="profile-pic-edit-overlay"><i class="fas fa-camera"></i></div>`;
         } else {
              profilePicContainer.innerHTML = `<i class="fas fa-user"></i><div class="profile-pic-edit-overlay"><i class="fas fa-camera"></i></div>`;
         }
+
         document.getElementById('storeName').value = currentMerchantData.business;
         document.getElementById('storeDescription').value = currentMerchantData.description;
     } catch (error) { console.error("Error loading profile:", error); }
@@ -207,12 +298,13 @@ async function loadProductForEdit(productId) {
                 document.getElementById('productImageUploadArea').dataset.existingImage = product.imageBase64;
             }
         }
-    } catch (error) { console.error("Error loading product for edit:", error); } 
+    } catch (error) { console.error("Error loading product for edit:", error); }
 }
 
 window.saveProduct = async function() {
     const isEditing = !!document.getElementById('productModal').dataset.productId;
     const productData = { name: document.getElementById('productName').value, price: parseFloat(document.getElementById('productPrice').value), description: document.getElementById('productDescription').value, vendorId: currentUser.uid, vendorName: document.getElementById('userBusiness').textContent };
+
     let imageBase64 = document.getElementById('productImageUploadArea').dataset.existingImage || null;
     if (selectedProductFile) {
         const compressedFile = await imageCompression(selectedProductFile, { maxSizeMB: 0.5, maxWidthOrHeight: 800 });
@@ -223,15 +315,20 @@ window.saveProduct = async function() {
         });
     }
     productData.imageBase64 = imageBase64;
+
     const docRef = isEditing ? db.collection('products').doc(document.getElementById('productModal').dataset.productId) : db.collection('products').doc();
     if (!isEditing) productData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
     productData.published = true;
+
     // --- INICIO DE LA CARGA ---
     const saveBtn = document.querySelector('#productModal .btn-primary'); // El botón "Guardar Producto" en el modal
     startButtonLoading(saveBtn, 'Guardando...');
 
     try {
         await docRef.set(productData, { merge: true });
+        // --- INVALIDAR LA CACHÉ ---
+        dataCache.products.byVendor[currentUser.uid] = null;
+        dataCache.products.all = null;
         showToast('Producto guardado.', 'success');
         hideModal('productModal');
         loadMyProducts();
@@ -257,9 +354,9 @@ function resetProductForm() {
 function renderProductCard(container, product) {
     const card = document.createElement('div');
     card.className = 'product-card';
-    // --- MODIFICACIÓN CLAVE: Pasamos el objeto 'product' completo a showImageLightbox ---
+    // --- PASAMOS EL ID DEL PRODUCTO A showImageLightbox ---
     card.innerHTML = `
-        <div class="product-image" ${product.imageBase64 ? `style="background-image: url('${product.imageBase64}')" onclick="showImageLightbox('${product.imageBase64}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}' })"` : ''}>
+        <div class="product-image" ${product.imageBase64 ? `style="background-image: url('${product.imageBase64}')" onclick="showImageLightbox('${product.imageBase64}', { id: '${product.id}', name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}' })"` : ''}>
             ${!product.imageBase64 ? '<i class="fas fa-shopping-bag"></i>' : ''}
         </div>
         <div class="product-info">
@@ -277,9 +374,9 @@ function renderProductCard(container, product) {
 function renderMyProductCard(container, product) {
     const card = document.createElement('div');
     card.className = 'product-card';
-    // --- MODIFICACIÓN CLAVE: Pasamos el objeto 'product' completo a showImageLightbox ---
+    // --- PASAMOS EL ID DEL PRODUCTO A showImageLightbox ---
     card.innerHTML = `
-        <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}' })"` : ''}></div>
+        <div class="product-image" style="${product.imageBase64 ? `background-image: url('${product.imageBase64}')` : ''}" ${product.imageBase64 ? `onclick="showImageLightbox('${product.imageBase64}', { id: '${product.id}', name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}' })"` : ''}></div>
         <div class="product-info">
             <h3 class="product-title">${product.name}</h3>
             <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
@@ -293,7 +390,13 @@ function renderMyProductCard(container, product) {
 }
 
 // window.deleteProduct = async function(id) { if (confirm('¿Eliminar producto?')) { await db.collection('products').doc(id).delete(); loadMyProducts(); showToast('Producto eliminado.'); } }
-window.toggleProductStatus = async function(id, status) { await db.collection('products').doc(id).update({ published: status }); loadMyProducts(); }
+window.toggleProductStatus = async function(id, status) {
+    await db.collection('products').doc(id).update({ published: status });
+    // --- INVALIDAR LA CACHÉ ---
+    dataCache.products.byVendor[currentUser.uid] = null;
+    dataCache.products.all = null;
+    loadMyProducts();
+}
 
 window.showVendorPage = async function(vendorId, vendorName) {
     showSection('vendor-page');
@@ -327,14 +430,13 @@ window.toggleStoreEditMode = function(isEditing) {
 
 window.saveStoreInfo = async function() {
     const newData = { business: document.getElementById('storeName').value, description: document.getElementById('storeDescription').value };
-
     // --- INICIO DE LA CARGA ---
     const saveBtn = document.querySelector('#storeFormFooter .btn-primary'); // El botón "Guardar Cambios" del puesto
     startButtonLoading(saveBtn, 'Guardando...');
 
     try {
         await db.collection('merchants').doc(currentUser.uid).update(newData);
-        await updateUserProfile(currentUser.uid); 
+        await updateUserProfile(currentUser.uid);
         toggleStoreEditMode(false);
         showToast('Información del puesto actualizada.', 'success');
     } catch (error) {
@@ -363,7 +465,6 @@ window.saveProfileInfo = async function() {
         name: document.getElementById('userNameInput').value.trim(),
         phone: document.getElementById('userPhoneInput').value.trim()
     };
-
     // --- INICIO DE LA CARGA ---
     const saveBtn = document.querySelector('#profileFormFooter .btn-primary'); // El botón "Guardar Cambios" del perfil
     startButtonLoading(saveBtn, 'Actualizando...');
@@ -494,6 +595,9 @@ async function importCatalogFromJSON(products) {
             return db.collection('products').add(newProductData);
         });
         await Promise.all(importPromises);
+        // --- INVALIDAR LA CACHÉ ---
+        dataCache.products.byVendor[currentUser.uid] = null;
+        dataCache.products.all = null;
         showToast(`${products.length} productos importados correctamente.`, 'success');
         loadMyProducts();
         updateUserProfile(currentUser.uid);
@@ -504,7 +608,6 @@ async function importCatalogFromJSON(products) {
 }
 
 // --- GENERACIÓN DE CATÁLOGOS ---
-
 const PDF_THEMES = {
     naturaleza: { name: 'Naturaleza', icon: 'fa-leaf', headerColor: '#22c55e', accentColor: '#16a34a' },
     gastronomia: { name: 'Gastronomía', icon: 'fa-utensils', headerColor: '#f97316', accentColor: '#ea580c' },
@@ -520,9 +623,7 @@ window.showExportModal = function(exportType) {
     if (!currentUser) return showToast('Debes iniciar sesión para crear un catálogo.', 'error');
     const grid = document.getElementById('themeSelectionGrid');
     grid.innerHTML = '';
-    
     document.getElementById('exportModalTitle').textContent = `Elige un Diseño para tu Catálogo PDF`;
-    
     for (const key in PDF_THEMES) {
         const theme = PDF_THEMES[key];
         const card = document.createElement('div');
@@ -556,6 +657,7 @@ async function generatePdfWithJsPDF(themeKey) {
         const columnWidth = (contentWidth - (gutter * 2)) / 3;
         let currentY = margin;
         let columnIndex = 0;
+
         const addHeader = () => {
             currentY = margin;
             doc.setFontSize(28); doc.setTextColor(theme.headerColor);
@@ -569,14 +671,17 @@ async function generatePdfWithJsPDF(themeKey) {
             doc.line(margin, currentY, pageWidth - margin, currentY);
             currentY += 10;
         };
+
         const addFooter = (pageNumber) => {
             const footerY = pageHeight - 10;
             doc.setFontSize(9); doc.setTextColor('#999');
             doc.text(`Catálogo de ${currentMerchantData.business} | Página ${pageNumber}`, pageWidth / 2, footerY, { align: 'center' });
         };
+
         addHeader();
         let pageCount = 1;
         addFooter(pageCount);
+
         for (const product of products) {
             const productBlockHeight = 140;
             if (columnIndex > 2) { columnIndex = 0; currentY += productBlockHeight; }
@@ -615,7 +720,6 @@ async function generatePdfWithJsPDF(themeKey) {
             columnIndex++;
         }
         doc.save(`catalogo-${currentMerchantData.business.replace(/\s+/g, '-')}.pdf`);
-
     } catch (error) {
         console.error("Error generando PDF:", error);
         showToast("Hubo un error al generar el catálogo.", "error");
@@ -625,7 +729,6 @@ async function generatePdfWithJsPDF(themeKey) {
 }
 
 // === NUEVAS FUNCIONES PARA FICHA DE PRODUCTO (JPG) ===
-
 async function getProductsByVendor(vendorId) {
     const snapshot = await db.collection('products').where('vendorId', '==', vendorId).orderBy('createdAt', 'desc').get();
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -637,7 +740,6 @@ async function loadUserProductsForSelection() {
     const container = document.getElementById('product-selection-list');
     container.innerHTML = '<p>Cargando tus productos...</p>';
     document.getElementById('select-product-modal').style.display = 'flex';
-
     try {
         const products = await getProductsByVendor(currentUser.uid);
         container.innerHTML = '';
@@ -672,7 +774,6 @@ async function generateProductJPG(product) {
     showToast('Generando ficha de producto...', 'success');
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-
     const canvasWidth = 800, canvasHeight = 800;
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
@@ -680,7 +781,6 @@ async function generateProductJPG(product) {
     // Fondo y membretado
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-    
     const themeCyan = getComputedStyle(document.documentElement).getPropertyValue('--cyan').trim();
     ctx.fillStyle = themeCyan || '#06b6d4';
     ctx.fillRect(0, 0, canvasWidth, 100);
@@ -693,14 +793,12 @@ async function generateProductJPG(product) {
     const productImage = new Image();
     productImage.crossOrigin = "anonymous";
     productImage.src = product.imageBase64 || 'https://placehold.co/700x400/e2e8f0/a0aec0?text=Producto+sin+imagen';
-
     productImage.onload = () => {
         // --- INICIO DE LA LÓGICA DE ESCALADO PROPORCIONAL ---
         const boxX = 50, boxY = 120, boxWidth = 700, boxHeight = 400;
         const imgRatio = productImage.width / productImage.height;
         const boxRatio = boxWidth / boxHeight;
         let finalWidth, finalHeight;
-
         if (imgRatio > boxRatio) {
             finalWidth = boxWidth;
             finalHeight = finalWidth / imgRatio;
@@ -708,10 +806,8 @@ async function generateProductJPG(product) {
             finalHeight = boxHeight;
             finalWidth = finalHeight * imgRatio;
         }
-        
         const finalX = boxX + (boxWidth - finalWidth) / 2;
         const finalY = boxY + (boxHeight - finalHeight) / 2;
-        
         ctx.drawImage(productImage, finalX, finalY, finalWidth, finalHeight);
         // --- FIN DE LA LÓGICA DE ESCALADO ---
 
@@ -739,7 +835,6 @@ async function generateProductJPG(product) {
         link.download = `ficha-${product.name.replace(/\s+/g, '-')}.jpg`;
         link.click();
     };
-
     productImage.onerror = () => showToast("Error al cargar la imagen del producto.", "error");
 }
 
@@ -785,6 +880,7 @@ function updateAuthUI() {
 }
 
 function showMessage(element, message, type) { element.textContent = message; element.className = `login-message login-${type}`; element.style.display = 'block'; }
+
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
@@ -794,6 +890,39 @@ function showToast(message, type = 'success') {
         toast.classList.add('fade-out');
         toast.addEventListener('animationend', () => toast.remove());
     }, 3000);
+}
+
+/**
+ * Muestra el overlay de carga global con un mensaje personalizado o aleatorio según el tipo.
+ * @param {string} message - Mensaje a mostrar. Si es 'app' o 'productos', se usa un mensaje aleatorio de la lista correspondiente.
+ */
+function showGlobalLoadingOverlay(message = 'Cargando...') {
+    const overlay = document.getElementById('globalLoadingOverlay');
+    const messageEl = overlay.querySelector('p');
+
+    // Si el mensaje es 'app', elegimos uno aleatorio de la lista de app
+    if (message === 'app') {
+        const randomIndex = Math.floor(Math.random() * appLoadingMessages.length);
+        message = appLoadingMessages[randomIndex];
+    }
+    // Si el mensaje es 'productos', elegimos uno aleatorio de la lista de productos
+    else if (message === 'productos') {
+        const randomIndex = Math.floor(Math.random() * productLoadingMessages.length);
+        message = productLoadingMessages[randomIndex];
+    }
+
+    if (messageEl) {
+        messageEl.textContent = message;
+    }
+    overlay.style.display = 'flex';
+}
+
+/**
+ * Oculta el overlay de carga global.
+ */
+function hideGlobalLoadingOverlay() {
+    const overlay = document.getElementById('globalLoadingOverlay');
+    overlay.style.display = 'none';
 }
 
 // --- NUEVA FUNCIÓN: Mostrar lightbox con navegación entre productos del mismo vendedor ---
@@ -806,20 +935,45 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
         return;
     }
 
+    // --- MOSTRAR INDICADOR DE CARGA ---
+    showGlobalLoadingOverlay('Cargando.. si te deslizas hacia los lados podrás ver más productos del vendedor...');
+
     try {
-        // 1. Cargar TODOS los productos del mismo vendedor
-        const snapshot = await db.collection('products')
-            .where('vendorId', '==', productData.vendorId)
-            .where('published', '==', true)
-            .orderBy('createdAt', 'desc')
-            .get();
+        // 1. Cargar TODOS los productos del mismo vendedor (con caché)
+        if (!window.vendorProductCache) {
+            window.vendorProductCache = {}; // Creamos un objeto global para caché
+        }
+        let shouldFetch = true;
+        if (window.vendorProductCache[productData.vendorId]) {
+            // Verificamos si la caché tiene menos de 5 minutos (300000 ms)
+            const cacheAge = Date.now() - window.vendorProductCache[productData.vendorId].timestamp;
+            if (cacheAge < 300000) {
+                shouldFetch = false;
+                currentVendorProducts = window.vendorProductCache[productData.vendorId].products;
+            }
+        }
+        if (shouldFetch) {
+            const snapshot = await db.collection('products')
+                .where('vendorId', '==', productData.vendorId)
+                .where('published', '==', true)
+                .orderBy('createdAt', 'desc')
+                .get();
+            currentVendorProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Guardamos en caché
+            window.vendorProductCache[productData.vendorId] = {
+                products: currentVendorProducts,
+                timestamp: Date.now()
+            };
+        }
 
-        currentVendorProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        // 2. Encontrar el índice del producto actual
-        currentProductIndex = currentVendorProducts.findIndex(p => p.imageBase64 === imageBase64);
+        // 2. Encontrar el índice del producto actual usando el ID (¡MÁS SEGURO!)
+        currentProductIndex = currentVendorProducts.findIndex(p => p.id === productData.id);
         if (currentProductIndex === -1) {
-            currentProductIndex = 0; // Si no lo encuentra, empieza por el primero
+            // Si no lo encuentra por ID, intenta por imagen como fallback
+            currentProductIndex = currentVendorProducts.findIndex(p => p.imageBase64 === imageBase64);
+            if (currentProductIndex === -1) {
+                currentProductIndex = 0; // Si no lo encuentra, empieza por el primero
+            }
         }
 
         // 3. Mostrar el lightbox y el producto actual
@@ -827,10 +981,12 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
 
         // 4. Configurar los eventos de swipe
         setupSwipeGestures();
-
     } catch (error) {
         console.error("Error al cargar productos del vendedor:", error);
         showToast('Error al cargar productos.', 'error');
+    } finally {
+        // --- OCULTAR INDICADOR DE CARGA ---
+        hideGlobalLoadingOverlay();
     }
 }
 
@@ -849,7 +1005,7 @@ function showCurrentProductInLightbox() {
     // Actualizar el botón de WhatsApp
     const whatsappBtn = document.getElementById('lightboxWhatsappBtn');
     whatsappBtn.style.display = 'none';
-    whatsappBtn.href = '#';
+    whatsappBtn.href = '#'; // Evita que el enlace haga algo por defecto
 
     if (product.vendorId) {
         db.collection('merchants').doc(product.vendorId).get().then(vendorDoc => {
@@ -860,13 +1016,34 @@ function showCurrentProductInLightbox() {
                     const productPrice = product.price ? `$${parseFloat(product.price).toFixed(2)}` : 'precio no especificado';
                     const baseMessage = `Hola, vi tu producto "${productName}" en Feria Virtual. ¿Me podrías dar más información? Precio: ${productPrice}.`;
                     const message = encodeURI(baseMessage);
-                    whatsappBtn.href = `https://wa.me/${phone}?text=${message}`;
+                    const whatsappUrl = `https://wa.me/${phone}?text=${message}`;
+
+                    // --- ¡ACÁ ESTÁ LA MAGIA! ---
+                    // En lugar de cambiar el href, asignamos un evento de clic que abre en nueva pestaña
+                    whatsappBtn.onclick = function(event) {
+                        event.preventDefault(); // Evita cualquier comportamiento predeterminado
+                        window.open(whatsappUrl, '_blank'); // Abre en nueva pestaña
+                    };
+
                     whatsappBtn.style.display = 'flex';
                 }
             }
         }).catch(error => {
             console.error("Error al obtener teléfono del vendedor:", error);
+            // --- IMPORTANTE: Aún si falla, NO ocultamos el botón, lo dejamos visible pero inactivo ---
+            whatsappBtn.style.display = 'flex';
+            whatsappBtn.onclick = function(event) {
+                event.preventDefault();
+                showToast('No se pudo cargar el contacto del vendedor. Inténtalo más tarde.', 'error');
+            };
         });
+    } else {
+        // Si no hay vendorId, mostramos un mensaje de error al hacer clic
+        whatsappBtn.style.display = 'flex';
+        whatsappBtn.onclick = function(event) {
+            event.preventDefault();
+            showToast('Información del vendedor no disponible.', 'error');
+        };
     }
 }
 
@@ -901,7 +1078,6 @@ function setupSwipeGestures() {
     function handleSwipe() {
         const diff = startX - endX;
         const threshold = 50; // Umbral mínimo para considerar un swipe
-
         if (Math.abs(diff) > threshold) {
             if (diff > 0) {
                 // Swipe a la izquierda -> Siguiente producto
@@ -975,51 +1151,11 @@ function stopButtonLoading(button) {
 
 // --- INICIALIZACIÓN DE LA APLICACIÓN ---
 function initializeApp() {
-    auth.onAuthStateChanged(async (user) => {
-        if (user) {
-            const merchantDoc = await db.collection('merchants').doc(user.uid).get();
-            if (merchantDoc.exists) {
-                currentUser = user; isMerchant = true;
-                await updateUserProfile(user.uid);
-                showSection('profile');
-            } else { isMerchant = false; currentUser = null; currentMerchantData = null; }
-        } else {
-            currentUser = null; isMerchant = false; currentMerchantData = null;
-            showSection('home');
-        }
-        updateAuthUI();
-    });
+    // Referencias al overlay y al mensaje
+    const loadingOverlay = document.getElementById('globalLoadingOverlay');
+    const loadingMessageElement = document.getElementById('globalLoadingMessage');
 
-    // --- EVENT LISTENERS GLOBALES ---
-    document.getElementById('hamburgerMenu').addEventListener('click', () => {
-        document.getElementById('navContainer').classList.toggle('active');
-    });
-    
-    document.getElementById('create-catalog-btn').addEventListener('click', () => document.getElementById('catalog-options-modal').style.display = 'flex');
-    document.getElementById('backup-btn').addEventListener('click', () => document.getElementById('backup-options-modal').style.display = 'flex');
-    
-    document.getElementById('generate-pdf-btn').addEventListener('click', () => {
-        hideModal('catalog-options-modal');
-        showExportModal('pdf');
-    });
-    document.getElementById('generate-jpg-btn').addEventListener('click', loadUserProductsForSelection);
+    // --- MOSTRAMOS EL SPINNER CON MENSAJE DE TIPO 'app' ---
+    showGlobalLoadingOverlay('app');
 
-    document.getElementById('json-import-input').addEventListener('change', handleJsonImport);
-
-    setupImageUpload('productImageUploadArea', 'productImageInput', (file) => selectedProductFile = file);
-    setupImageUpload('profilePicUploadArea', 'profilePicInput', (file) => {
-        selectedProfilePicFile = file;
-        selectedAvatarUrl = null;
-        document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
-    });
-    
-    const themeToggle = document.getElementById('themeToggle');
-    const applyTheme = (theme) => { document.body.dataset.theme = theme; localStorage.setItem('theme', theme); };
-    themeToggle.addEventListener('click', () => applyTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
-    applyTheme(localStorage.getItem('theme') || 'light');
-    
-    loadProducts();
-    populateAvatars();
-}
-
-initializeApp();
+    // Función para cambiar el mensaje cada 4 segundos
