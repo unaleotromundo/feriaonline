@@ -1,3 +1,7 @@
+body[data-theme="dark"] #initial-loading-overlay,
+body[data-theme="dark"] #initial-loading-message {
+    color: #000000 !important;
+}
 /* Feria Virtual - Hoja de Estilos Principal */
 
 :root {

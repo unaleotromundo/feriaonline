@@ -1,3 +1,60 @@
+// Permitir navegación con flechas del teclado en el lightbox
+document.addEventListener('keydown', function(e) {
+    const lightbox = document.getElementById('imageLightbox');
+    if (lightbox && lightbox.style.display === 'flex') {
+        if (e.key === 'ArrowLeft') {
+            prevProduct();
+            e.preventDefault();
+        } else if (e.key === 'ArrowRight') {
+            nextProduct();
+            e.preventDefault();
+        }
+    }
+});
+function showInitialLoadingSpinner(message = 'Cargando datos...') {
+    let overlay = document.getElementById('initial-loading-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'initial-loading-overlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100vw';
+        overlay.style.height = '100vh';
+        overlay.style.background = 'rgba(255,255,255,0.85)';
+        overlay.style.zIndex = '9999';
+        overlay.style.display = 'flex';
+        overlay.style.flexDirection = 'column';
+        overlay.style.justifyContent = 'center';
+        overlay.style.alignItems = 'center';
+        overlay.innerHTML = `<div class="spinner" style="border: 8px solid #eee; border-top: 8px solid #2196f3; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite;"></div><div id="initial-loading-message" style="margin-top:20px;font-size:1.2em;"></div>`;
+        document.body.appendChild(overlay);
+        const style = document.createElement('style');
+        style.innerHTML = `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`;
+        document.head.appendChild(style);
+    } else {
+        overlay.style.display = 'flex';
+    }
+    // Mensajes animados
+    let msgIdx = 0;
+    const msgDiv = document.getElementById('initial-loading-message');
+    if (window._initialLoadingMsgInterval) clearInterval(window._initialLoadingMsgInterval);
+    function setMsg() {
+        msgDiv.textContent = appLoadingMessages[msgIdx % appLoadingMessages.length];
+        msgIdx++;
+    }
+    setMsg();
+    window._initialLoadingMsgInterval = setInterval(setMsg, 1800);
+}
+
+function hideInitialLoadingSpinner() {
+    const overlay = document.getElementById('initial-loading-overlay');
+    if (overlay) overlay.style.display = 'none';
+    if (window._initialLoadingMsgInterval) {
+        clearInterval(window._initialLoadingMsgInterval);
+        window._initialLoadingMsgInterval = null;
+    }
+}
 window.generateCatalogJPG = async function() {
     if (!currentUser) return showToast('Debes iniciar sesión para generar imágenes.', 'error');
     showGlobalLoadingOverlay('Generando imágenes del catálogo...');
@@ -1307,6 +1364,7 @@ function stopButtonLoading(button) {
 
 // --- INICIALIZACIÓN DE LA APLICACIÓN ---
 function initializeApp() {
+        showInitialLoadingSpinner('Cargando datos y autenticando...');
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             const merchantDoc = await db.collection('merchants').doc(user.uid).get();
@@ -1320,6 +1378,8 @@ function initializeApp() {
             showSection('home');
         }
         updateAuthUI();
+            // Ocultar spinner solo cuando usuario y datos estén listos
+            hideInitialLoadingSpinner();
     });
 
     // --- EVENT LISTENERS GLOBALES ---
