@@ -856,6 +856,14 @@ function wrapText(context, text, x, y, maxWidth, lineHeight) {
 }
 
 // --- UTILIDADES Y FUNCIONES AUXILIARES ---
+// Alias para el spinner global
+function showGlobalSpinner(message) {
+    showGlobalLoadingOverlay(message);
+}
+
+function hideGlobalSpinner() {
+    hideGlobalLoadingOverlay();
+}
 function updateAuthUI() {
     if (isMerchant && currentUser) {
         authContainer.innerHTML = `
