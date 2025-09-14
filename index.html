@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+<<<<<<< HEAD
     <!-- Spinner de Carga Global (se muestra al inicio) -->
     <div id="globalLoadingOverlay" class="global-loading" style="display: flex;">
         <div class="loading-box">
@@ -51,6 +52,41 @@
 <i class="fas fa-bars"></i>
 </button>
 </header>
+=======
+    <header class="header">
+        <a href="#" class="logo" onclick="showSection('home')">
+            <i class="fas fa-store"></i>
+            <span>Feria Virtual</span>
+        </a>
+        <nav class="nav-container" id="navContainer">
+            <a href="#" class="nav-link" onclick="showSection('home')">
+                <i class="fas fa-home"></i>
+                <span>Inicio</span>
+            </a>
+            <a href="#" class="nav-link" onclick="showSection('products')">
+                <i class="fas fa-shopping-bag"></i>
+                <span>Productos</span>
+            </a>
+            <a href="#" class="nav-link" onclick="showSection('profile')" id="profileLink" style="display: none;">
+                <i class="fas fa-user"></i>
+                <span>Mi Perfil</span>
+            </a>
+            <a href="#" class="nav-link" onclick="showSection('my-store')" id="storeLink" style="display: none;">
+                <i class="fas fa-store"></i>
+                <span>Mi Puesto</span>
+            </a>
+            <div id="authContainer">
+                <a href="#" class="nav-link" onclick="showLogin()">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Iniciar sesión</span>
+                </a>
+            </div>
+        </nav>
+        <button class="hamburger-menu" id="hamburgerMenu">
+            <i class="fas fa-bars"></i>
+        </button>
+    </header>
+>>>>>>> parent of aba8635 (asd)
 
 <main>
 <section id="home" class="section active-section">
@@ -408,6 +444,116 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
+<<<<<<< HEAD
 <!-- Lógica de la aplicación -->
 <script src="script.js" defer></script>
 </body>
+=======
+    <!-- === NUEVOS MODALES AÑADIDOS AQUÍ === -->
+    <div class="login-modal" id="catalog-options-modal">
+        <div class="login-box">
+            <button type="button" class="close-modal-btn" onclick="hideModal('catalog-options-modal')"><i class="fas fa-times"></i></button>
+            <div class="login-header">
+                <h2>Crear Catálogo</h2>
+                <p>Elige un formato para presentar tus productos.</p>
+            </div>
+            <div class="modal-options" style="display: flex; flex-direction: column; gap: 1rem;">
+                <button id="generate-pdf-btn" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-file-pdf"></i> Generar Catálogo PDF
+                </button>
+                <button id="generate-jpg-btn" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-file-image"></i> Crear Ficha de Producto (JPG)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="login-modal" id="backup-options-modal">
+        <div class="login-box">
+            <button type="button" class="close-modal-btn" onclick="hideModal('backup-options-modal')"><i class="fas fa-times"></i></button>
+            <div class="login-header">
+                <h2>Copia de Seguridad</h2>
+                <p>Exporta tus datos o importa un catálogo existente.</p>
+            </div>
+            <div class="modal-options" style="display: flex; flex-direction: column; gap: 1rem;">
+                <button onclick="exportCatalogToJSON()" class="btn btn-secondary" style="width: 100%;">
+                    <i class="fas fa-download"></i> Exportar a JSON
+                </button>
+                <label for="json-import-input" class="btn btn-secondary" style="width: 100%; text-align: center; box-sizing: border-box;">
+                    <i class="fas fa-upload"></i> Importar desde JSON
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="login-modal" id="select-product-modal">
+        <div class="login-box" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
+            <button type="button" class="close-modal-btn" onclick="hideModal('select-product-modal')"><i class="fas fa-times"></i></button>
+            <div class="login-header">
+                <h2>Crear Ficha de Producto</h2>
+                <p>Selecciona un producto para generar su ficha individual.</p>
+            </div>
+            <div id="product-selection-list" class="product-selection-grid">
+                <!-- Los productos se cargarán aquí con JavaScript -->
+            </div>
+        </div>
+    </div>
+    <!-- === FIN DE NUEVOS MODALES === -->
+
+    <footer class="footer">
+        <p>Únete a la comunidad de pequeños comerciantes que ya están creciendo con Feria Virtual</p>
+        <p class="copyright">&copy; 2025 Feria Virtual. Todos los derechos reservados.</p>
+    </footer>
+
+    <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema">
+        <i class="fas fa-moon"></i>
+        <i class="fas fa-sun"></i>
+    </button>
+    
+    <div class="chatbot-floating" id="chatbotFloatingContainer" aria-live="polite">
+        <div class="chatbot-container-floating" id="chatbotContainer" aria-hidden="true">
+            <div class="chatbot-header-floating">
+                <h3>Asistente de marketing</h3>
+                <button class="close-chatbot-btn" type="button" onclick="toggleChatbot()" aria-label="Cerrar chat">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <iframe class="chatbot-iframe-floating" src="https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/13/17/20250813172155-WZV5LKVX.json" loading="lazy" allow="microphone; geolocation; fullscreen" title="Chat Asistente de marketing"></iframe>
+        </div>
+        <button class="chatbot-toggle" id="chatbotToggleBtn" type="button" onclick="toggleChatbot()" aria-expanded="false" aria-controls="chatbotContainer">
+            <i class="fas fa-comment-dots"></i>
+        </button>
+    </div>
+
+    <div id="imageLightbox" class="image-lightbox">
+        <span class="lightbox-close" onclick="hideImageLightbox()">&times;</span>
+        <img class="lightbox-content" id="lightboxImg">
+        <!-- === BOTÓN DE WHATSAPP ESTILO LOGO === -->
+        <a id="lightboxWhatsappBtn" class="lightbox-whatsapp-btn" target="_blank" rel="noopener noreferrer">
+            <i class="fab fa-whatsapp"></i>
+        </a>
+    </div>
+
+    <!-- Spinner de Carga Global (se muestra al inicio) -->
+    <div id="globalLoadingOverlay" class="global-loading" style="display: flex;">
+        <div class="loading-box">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p id="globalLoadingMessage">Cargando Feria Virtual...</p>
+        </div>
+    </div>
+
+    <!-- Librerías Externas -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.1/dist/browser-image-compression.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- Lógica de la aplicación -->
+    <script src="script.js" defer></script>
+</body>
+</html>
+>>>>>>> parent of aba8635 (asd)
