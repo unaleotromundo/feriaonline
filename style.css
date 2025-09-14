@@ -164,6 +164,67 @@ body {
     text-align: center; padding: 2rem; margin-top: auto;
 }
 
+<<<<<<< HEAD
+=======
+/* --- SPINNER DE CARGA GLOBAL (INICIAL Y OTROS) --- */
+.global-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8); /* Fondo blanco casi sólido para bloquear la vista */
+    z-index: 999999; /* ¡El nivel más alto posible! */
+    justify-content: center;
+    align-items: center;
+    display: none; /* Se controla con JS */
+    backdrop-filter: blur(2px); /* Efecto de desenfoque sutil (opcional, moderno) */
+}
+
+.global-loading.visible {
+    display: flex;
+}
+
+.loading-box {
+    background: var(--light);
+    color: var(--black);
+    padding: 2.5rem 3rem;
+    border-radius: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: center;
+    min-width: 300px;
+    animation: fadeIn 0.4s ease;
+}
+
+.loading-box i {
+    font-size: 3rem;
+    color: var(--cyan);
+    animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Estilo para el tema oscuro */
+body[data-theme="dark"] .global-loading {
+    background: rgba(17, 24, 39, 0.98); /* Fondo oscuro para modo noche */
+}
+
+body[data-theme="dark"] .loading-box {
+    background-color: #374151;
+    color: #e5e7eb;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+}
+
+>>>>>>> parent of aba8635 (asd)
 .login-modal, .global-loading {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.7); z-index: 5000;

@@ -26,6 +26,37 @@ const profileLink = document.getElementById('profileLink');
 const storeLink = document.getElementById('storeLink');
 const authContainer = document.getElementById('authContainer');
 
+<<<<<<< HEAD
+=======
+// --- MENSAJES PARA SPINNER DE CARGA INICIAL (APP) ---
+const appLoadingMessages = [
+    "Cargando Feria Virtual...",
+    "Estableciendo puestos...",
+    "Ordenando ropa...",
+    "Regando plantitas...",
+    "Encendiendo las luces de la feria...",
+    "Preparando el café para los vendedores...",
+    "Alistando los carritos...",
+    "Poniendo precios justos...",
+    "¡Bienvenido! Un momentito más...",
+    "Conectando con la nube..."
+];
+
+// --- MENSAJES PARA SPINNER DE CARGA DE PRODUCTOS ---
+const productLoadingMessages = [
+    "Ordenando las góndolas...",
+    "Encendiendo las luces del local...",
+    "Acomodando los productos más lindos...",
+    "Puliendo los precios...",
+    "Revisando el stock...",
+    "Poniendo carteles bonitos...",
+    "Alistando las ofertas del día...",
+    "Sacando brillo a los productos...",
+    "Preparando todo para vos...",
+    "¡Casi listo! Un momentito más..."
+];
+
+>>>>>>> parent of aba8635 (asd)
 // --- NAVEGACIÓN Y VISIBILIDAD DE SECCIONES ---
 window.showSection = function(sectionId) {
     document.querySelectorAll('.section').forEach(section => section.classList.remove('active-section'));
@@ -62,6 +93,12 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
             query = query.where('vendorId', '==', filter.vendorId);
         }
         const snapshot = await query.orderBy('createdAt', 'desc').get();
+<<<<<<< HEAD
+=======
+        // --- OCULTAMOS EL SPINNER ---
+        hideGlobalLoadingOverlay();
+
+>>>>>>> parent of aba8635 (asd)
         productsGrid.innerHTML = '';
         if (snapshot.empty) {
             productsGrid.innerHTML = `<div>No hay productos para mostrar.</div>`;
@@ -77,16 +114,35 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
 async function loadMyProducts() {
     if (!currentUser) return;
     const productsGrid = document.getElementById('myProductsGrid');
+<<<<<<< HEAD
     productsGrid.innerHTML = `<div>Cargando tus productos...</div>`;
     try {
         const snapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).orderBy('createdAt', 'desc').get();
+=======
+    // --- MOSTRAMOS EL SPINNER CON MENSAJE ALEATORIO DE PRODUCTOS ---
+    showGlobalLoadingOverlay('productos');
+
+    try {
+        const snapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).orderBy('createdAt', 'desc').get();
+        // --- OCULTAMOS EL SPINNER ---
+        hideGlobalLoadingOverlay();
+
+>>>>>>> parent of aba8635 (asd)
         productsGrid.innerHTML = '';
         if (snapshot.empty) {
             productsGrid.innerHTML = '<div>Aún no has agregado productos.</div>';
             return;
         }
         snapshot.forEach(doc => renderMyProductCard(productsGrid, { id: doc.id, ...doc.data() }));
+<<<<<<< HEAD
     } catch (error) { console.error("Error loading user products:", error); }
+=======
+    } catch (error) {
+        console.error("Error loading user products:", error);
+        // --- OCULTAMOS EL SPINNER EN CASO DE ERROR ---
+        hideGlobalLoadingOverlay();
+    }
+>>>>>>> parent of aba8635 (asd)
 }
 
 window.registerMerchant = async function() {
@@ -901,7 +957,10 @@ function showCurrentProductInLightbox() {
     const whatsappBtn = document.getElementById('lightboxWhatsappBtn');
     whatsappBtn.style.display = 'none';
     whatsappBtn.href = '#';
+<<<<<<< HEAD
 
+=======
+>>>>>>> parent of aba8635 (asd)
     if (product.vendorId) {
         db.collection('merchants').doc(product.vendorId).get().then(vendorDoc => {
             if (vendorDoc.exists && vendorDoc.data().phone) {
@@ -1045,6 +1104,7 @@ function initializeApp() {
     ];
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     // Función para cambiar el mensaje cada 4 segundos
     let msgType = 'app';
     let intervalId = setInterval(() => {
@@ -1076,6 +1136,17 @@ window.addEventListener('DOMContentLoaded', initializeApp);
             loadingMessageElement.textContent = loadingMessages[messageIndex];
         }
     }, 3000);
+=======
+    // Función para cambiar el mensaje cada 3 segundos
+    let messageInterval;
+    if (loadingMessageElement) {
+        let messageIndex = 0;
+        messageInterval = setInterval(() => {
+            messageIndex = (messageIndex + 1) % appLoadingMessages.length;
+            loadingMessageElement.textContent = appLoadingMessages[messageIndex];
+        }, 3000);
+    }
+>>>>>>> parent of aba8635 (asd)
 
     auth.onAuthStateChanged(async (user) => {
         if (user) {
@@ -1092,11 +1163,17 @@ window.addEventListener('DOMContentLoaded', initializeApp);
         updateAuthUI();
 
         // --- OCULTAMOS EL SPINNER DE CARGA INICIAL ---
+<<<<<<< HEAD
         // Limpiamos el intervalo de mensajes
         clearInterval(messageInterval);
         // Ocultamos el overlay
         if (initialLoadingOverlay) {
             initialLoadingOverlay.style.display = 'none';
+=======
+        clearInterval(messageInterval);
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+>>>>>>> parent of aba8635 (asd)
         }
     });
 
@@ -1126,5 +1203,9 @@ window.addEventListener('DOMContentLoaded', initializeApp);
     populateAvatars();
 }
 
+<<<<<<< HEAD
+initializeApp();
+>>>>>>> parent of aba8635 (asd)
+=======
 initializeApp();
 >>>>>>> parent of aba8635 (asd)
