@@ -1115,6 +1115,7 @@ function stopButtonLoading(button) {
 
 // --- INICIALIZACIÓN DE LA APLICACIÓN ---
 function initializeApp() {
+<<<<<<< HEAD
     // Mostramos el spinner de carga inicial
     const initialLoadingOverlay = document.getElementById('initialLoadingOverlay');
     const loadingMessageElement = document.getElementById('loadingMessage');
@@ -1190,6 +1191,8 @@ window.addEventListener('DOMContentLoaded', initializeApp);
 =======
 >>>>>>> parent of aba8635 (asd)
 
+=======
+>>>>>>> parent of 5768b54 (zxczx)
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             const merchantDoc = await db.collection('merchants').doc(user.uid).get();
@@ -1203,6 +1206,7 @@ window.addEventListener('DOMContentLoaded', initializeApp);
             showSection('home');
         }
         updateAuthUI();
+<<<<<<< HEAD
 
         // --- OCULTAMOS EL SPINNER DE CARGA INICIAL ---
 <<<<<<< HEAD
@@ -1229,30 +1233,38 @@ window.addEventListener('DOMContentLoaded', initializeApp);
             loadingOverlay.style.display = 'none';
 >>>>>>> parent of aba8635 (asd)
         }
+=======
+>>>>>>> parent of 5768b54 (zxczx)
     });
 
     // --- EVENT LISTENERS GLOBALES ---
     document.getElementById('hamburgerMenu').addEventListener('click', () => {
         document.getElementById('navContainer').classList.toggle('active');
     });
+    
     document.getElementById('create-catalog-btn').addEventListener('click', () => document.getElementById('catalog-options-modal').style.display = 'flex');
     document.getElementById('backup-btn').addEventListener('click', () => document.getElementById('backup-options-modal').style.display = 'flex');
+    
     document.getElementById('generate-pdf-btn').addEventListener('click', () => {
         hideModal('catalog-options-modal');
         showExportModal('pdf');
     });
     document.getElementById('generate-jpg-btn').addEventListener('click', loadUserProductsForSelection);
+
     document.getElementById('json-import-input').addEventListener('change', handleJsonImport);
+
     setupImageUpload('productImageUploadArea', 'productImageInput', (file) => selectedProductFile = file);
     setupImageUpload('profilePicUploadArea', 'profilePicInput', (file) => {
         selectedProfilePicFile = file;
         selectedAvatarUrl = null;
         document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
     });
+    
     const themeToggle = document.getElementById('themeToggle');
     const applyTheme = (theme) => { document.body.dataset.theme = theme; localStorage.setItem('theme', theme); };
     themeToggle.addEventListener('click', () => applyTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
     applyTheme(localStorage.getItem('theme') || 'light');
+    
     loadProducts();
     populateAvatars();
 }
