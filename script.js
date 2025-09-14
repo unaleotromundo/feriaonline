@@ -1080,6 +1080,7 @@ function initializeApp() {
     showGlobalLoadingOverlay('app');
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     // Función para cambiar el mensaje cada 4 segundos
     let messageIndex = 0;
     const changeMessage = () => {
@@ -1103,6 +1104,8 @@ function initializeApp() {
 // Llamar a la inicialización cuando cargue el DOM
 document.addEventListener('DOMContentLoaded', initializeApp);
 =======
+=======
+>>>>>>> parent of aba8635 (asd)
     // Función para cambiar el mensaje cada 3 segundos
     let messageInterval;
     if (loadingMessageElement) {
@@ -1160,5 +1163,9 @@ document.addEventListener('DOMContentLoaded', initializeApp);
     populateAvatars();
 }
 
+<<<<<<< HEAD
+initializeApp();
+>>>>>>> parent of aba8635 (asd)
+=======
 initializeApp();
 >>>>>>> parent of aba8635 (asd)
