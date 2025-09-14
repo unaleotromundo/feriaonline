@@ -28,7 +28,10 @@ const authContainer = document.getElementById('authContainer');
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> parent of aba8635 (asd)
 =======
 >>>>>>> parent of aba8635 (asd)
 // --- MENSAJES PARA SPINNER DE CARGA INICIAL (APP) ---
@@ -98,6 +101,12 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
         const snapshot = await query.orderBy('createdAt', 'desc').get();
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+        // --- OCULTAMOS EL SPINNER ---
+        hideGlobalLoadingOverlay();
+
+>>>>>>> parent of aba8635 (asd)
 =======
         // --- OCULTAMOS EL SPINNER ---
         hideGlobalLoadingOverlay();
@@ -145,8 +154,11 @@ async function loadMyProducts() {
         snapshot.forEach(doc => renderMyProductCard(productsGrid, { id: doc.id, ...doc.data() }));
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     } catch (error) { console.error("Error loading user products:", error); }
 =======
+=======
+>>>>>>> parent of aba8635 (asd)
 =======
 >>>>>>> parent of aba8635 (asd)
     } catch (error) {
@@ -971,7 +983,10 @@ function showCurrentProductInLightbox() {
     whatsappBtn.href = '#';
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
+=======
+>>>>>>> parent of aba8635 (asd)
 =======
 >>>>>>> parent of aba8635 (asd)
 =======
@@ -1121,6 +1136,7 @@ function initializeApp() {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     // Función para cambiar el mensaje cada 4 segundos
     let msgType = 'app';
     let intervalId = setInterval(() => {
@@ -1155,6 +1171,8 @@ window.addEventListener('DOMContentLoaded', initializeApp);
 =======
 =======
 >>>>>>> parent of aba8635 (asd)
+=======
+>>>>>>> parent of aba8635 (asd)
     // Función para cambiar el mensaje cada 3 segundos
     let messageInterval;
     if (loadingMessageElement) {
@@ -1165,6 +1183,9 @@ window.addEventListener('DOMContentLoaded', initializeApp);
         }, 3000);
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> parent of aba8635 (asd)
+=======
 >>>>>>> parent of aba8635 (asd)
 =======
 >>>>>>> parent of aba8635 (asd)
@@ -1186,11 +1207,17 @@ window.addEventListener('DOMContentLoaded', initializeApp);
         // --- OCULTAMOS EL SPINNER DE CARGA INICIAL ---
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         // Limpiamos el intervalo de mensajes
         clearInterval(messageInterval);
         // Ocultamos el overlay
         if (initialLoadingOverlay) {
             initialLoadingOverlay.style.display = 'none';
+=======
+        clearInterval(messageInterval);
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+>>>>>>> parent of aba8635 (asd)
 =======
         clearInterval(messageInterval);
         if (loadingOverlay) {
@@ -1232,6 +1259,10 @@ window.addEventListener('DOMContentLoaded', initializeApp);
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+initializeApp();
+>>>>>>> parent of aba8635 (asd)
+=======
 initializeApp();
 >>>>>>> parent of aba8635 (asd)
 =======
