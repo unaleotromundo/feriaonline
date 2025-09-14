@@ -1159,3 +1159,24 @@ function initializeApp() {
     showGlobalLoadingOverlay('app');
 
     // Función para cambiar el mensaje cada 4 segundos
+    let msgType = 'app';
+    let intervalId = setInterval(() => {
+        showGlobalLoadingOverlay(msgType);
+        msgType = msgType === 'app' ? 'productos' : 'app';
+    }, 4000);
+
+    // Esperamos a que Firebase esté listo y autenticación
+    auth.onAuthStateChanged(async (user) => {
+        currentUser = user;
+        isMerchant = !!user;
+        if (user) {
+            await updateUserProfile(user.uid);
+        }
+        updateAuthUI();
+        hideGlobalLoadingOverlay();
+        clearInterval(intervalId);
+    });
+}
+
+// Inicializar la app al cargar la página
+window.addEventListener('DOMContentLoaded', initializeApp);

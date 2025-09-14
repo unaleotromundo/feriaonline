@@ -1,19 +1,12 @@
 // Feria Virtual - Lógica de la Aplicación
 
-// Configuración de Firebase
-const firebaseConfig = {
-    apiKey: "AIzaSyAlqGoYrHkASbhmE2aBKIOXqkkNBBEEiGU",
-    authDomain: "feria-online-ec7c6.firebaseapp.com",
-    projectId: "feria-online-ec7c6",
-    storageBucket: "feria-online-ec7c6.firebasestorage.app",
-    messagingSenderId: "1001881267179",
-    appId: "1:1001881267179:web:fc5ac0fd940964537887ae",
-    measurementId: "G-GQZZQMNVPH"
-};
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
+// Configuración de Supabase
+// Reemplaza la inicialización de Firebase por Supabase
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+const supabaseUrl = 'https://gkddymcuajakvghffava.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdrZGR5bWN1YWpha3ZnaGZmYXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NzUyNDksImV4cCI6MjA3MzQ1MTI0OX0.12aqVrRdAGaSq6eEm5xcwqkPpNyEdQdA77t8MeKhWKw';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // --- VARIABLES GLOBALES ---
 let currentUser = null;
@@ -57,17 +50,20 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
     const productsGrid = document.getElementById(containerId);
     productsGrid.innerHTML = `<div>Cargando productos...</div>`;
     try {
-        let query = db.collection('products').where('published', '==', true);
+        // Consulta de productos en Supabase
+        let query = supabase.from('products').select('*').eq('published', true);
         if (filter.vendorId) {
-            query = query.where('vendorId', '==', filter.vendorId);
+            query = query.eq('vendor_id', filter.vendorId);
         }
-        const snapshot = await query.orderBy('createdAt', 'desc').get();
+        // Ordenar por fecha de creación descendente
+        query = query.order('created_at', { ascending: false });
+        const { data, error } = await query;
         productsGrid.innerHTML = '';
-        if (snapshot.empty) {
+        if (error || !data || data.length === 0) {
             productsGrid.innerHTML = `<div>No hay productos para mostrar.</div>`;
             return;
         }
-        snapshot.forEach(doc => renderProductCard(productsGrid, { id: doc.id, ...doc.data() }));
+        data.forEach(product => renderProductCard(productsGrid, product));
     } catch (error) {
         console.error("Error loading products:", error);
         productsGrid.innerHTML = `<div>Error al cargar productos.</div>`;
@@ -79,13 +75,18 @@ async function loadMyProducts() {
     const productsGrid = document.getElementById('myProductsGrid');
     productsGrid.innerHTML = `<div>Cargando tus productos...</div>`;
     try {
-        const snapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).orderBy('createdAt', 'desc').get();
+        // Consulta de productos del usuario en Supabase
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('vendor_id', currentUser.id)
+            .order('created_at', { ascending: false });
         productsGrid.innerHTML = '';
-        if (snapshot.empty) {
+        if (error || !data || data.length === 0) {
             productsGrid.innerHTML = '<div>Aún no has agregado productos.</div>';
             return;
         }
-        snapshot.forEach(doc => renderMyProductCard(productsGrid, { id: doc.id, ...doc.data() }));
+        data.forEach(product => renderMyProductCard(productsGrid, product));
     } catch (error) { console.error("Error loading user products:", error); }
 }
 
@@ -106,21 +107,34 @@ window.registerMerchant = async function() {
     startButtonLoading(registerBtn, 'Registrando...');
 
     try {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-        await db.collection('merchants').doc(user.uid).set({
-            name, email, business, phone, description,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        // Registro de usuario con Supabase Auth
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password
         });
-        showMessage(msgEl, '¡Registro exitoso! Redirigiendo...', 'success');
+        if (error) throw error;
+        const user = data.user;
+        // Guardar datos del comerciante en Supabase DB
+        const { error: dbError } = await supabase.from('merchants').insert([
+            {
+                id: user.id,
+                name,
+                email,
+                business,
+                phone,
+                description,
+                created_at: new Date().toISOString()
+            }
+        ]);
+        if (dbError) throw dbError;
+        showMessage(msgEl, '¡Registro exitoso! Revisa tu correo para confirmar.', 'success');
         setTimeout(() => {
             hideLogin();
             showSection('profile');
         }, 1000);
     } catch (error) {
-        showMessage(msgEl, 'Error en el registro.', 'error');
+        showMessage(msgEl, 'Error en el registro: ' + error.message, 'error');
     } finally {
-        // --- FIN DE LA CARGA (SIEMPRE se ejecuta, incluso si hay error) ---
         stopButtonLoading(registerBtn);
     }
 }
@@ -137,35 +151,50 @@ window.login = async function() {
     startButtonLoading(loginBtn, 'Iniciando...');
 
     try {
-        await auth.signInWithEmailAndPassword(email, password);
+        // Inicio de sesión con Supabase Auth
+        const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+        if (error) throw error;
         showMessage(msgEl, '¡Bienvenido!', 'success');
         setTimeout(() => {
             hideLogin();
             showSection('profile');
         }, 1000);
     } catch (error) {
-        showMessage(msgEl, 'Correo o contraseña incorrectos.', 'error');
+        showMessage(msgEl, 'Correo o contraseña incorrectos: ' + error.message, 'error');
     } finally {
-        // --- FIN DE LA CARGA ---
         stopButtonLoading(loginBtn);
     }
 }
 
-window.logout = function() { auth.signOut(); }
+window.logout = async function() {
+    await supabase.auth.signOut();
+}
 
 async function updateUserProfile(userId) {
     try {
-        const doc = await db.collection('merchants').doc(userId).get();
-        if (!doc.exists) return;
-        currentMerchantData = doc.data();
-        const productsSnapshot = await db.collection('products').where('vendorId', '==', userId).get();
+        // Obtener datos del comerciante desde Supabase
+        const { data: merchantData, error: merchantError } = await supabase
+            .from('merchants')
+            .select('*')
+            .eq('id', userId)
+            .single();
+        if (merchantError || !merchantData) return;
+        currentMerchantData = merchantData;
+        // Obtener productos publicados por el usuario
+        const { data: products, error: productsError } = await supabase
+            .from('products')
+            .select('*')
+            .eq('vendor_id', userId);
         document.getElementById('userName').textContent = currentMerchantData.name;
         document.getElementById('userEmail').textContent = currentMerchantData.email;
         document.getElementById('userPhone').textContent = currentMerchantData.phone || 'No especificado';
         document.getElementById('userBusiness').textContent = currentMerchantData.business;
-        document.getElementById('userProducts').textContent = `${productsSnapshot.size} productos publicados`;
-        const createdAt = currentMerchantData.createdAt?.toDate();
-        document.getElementById('userSince').textContent = createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A';
+        document.getElementById('userProducts').textContent = `${products ? products.length : 0} productos publicados`;
+        const createdAt = currentMerchantData.created_at ? new Date(currentMerchantData.created_at) : null;
+        document.getElementById('userSince').textContent = createdAt ? createdAt.toLocaleDateString() : 'N/A';
         const profilePicContainer = document.getElementById('profilePicContainer');
         if (currentMerchantData.profilePic) {
             profilePicContainer.innerHTML = `<img src="${currentMerchantData.profilePic}" alt="Foto de perfil" loading="lazy"><div class="profile-pic-edit-overlay"><i class="fas fa-camera"></i></div>`;
@@ -196,23 +225,32 @@ function setupImageUpload(areaId, inputId, fileVariableSetter) {
 
 async function loadProductForEdit(productId) {
     try {
-        const doc = await db.collection('products').doc(productId).get();
-        if (doc.exists) {
-            const product = doc.data();
-            document.getElementById('productName').value = product.name;
-            document.getElementById('productPrice').value = product.price;
-            document.getElementById('productDescription').value = product.description;
-            if (product.imageBase64) {
-                document.getElementById('productImageUploadArea').innerHTML = `<img src="${product.imageBase64}" class="preview-image">`;
-                document.getElementById('productImageUploadArea').dataset.existingImage = product.imageBase64;
-            }
+        // Obtener producto desde Supabase
+        const { data: product, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('id', productId)
+            .single();
+        if (error || !product) return;
+        document.getElementById('productName').value = product.name;
+        document.getElementById('productPrice').value = product.price;
+        document.getElementById('productDescription').value = product.description;
+        if (product.imageBase64) {
+            document.getElementById('productImageUploadArea').innerHTML = `<img src="${product.imageBase64}" class="preview-image">`;
+            document.getElementById('productImageUploadArea').dataset.existingImage = product.imageBase64;
         }
     } catch (error) { console.error("Error loading product for edit:", error); } 
 }
 
 window.saveProduct = async function() {
     const isEditing = !!document.getElementById('productModal').dataset.productId;
-    const productData = { name: document.getElementById('productName').value, price: parseFloat(document.getElementById('productPrice').value), description: document.getElementById('productDescription').value, vendorId: currentUser.uid, vendorName: document.getElementById('userBusiness').textContent };
+    const productData = {
+        name: document.getElementById('productName').value,
+        price: parseFloat(document.getElementById('productPrice').value),
+        description: document.getElementById('productDescription').value,
+        vendor_id: currentUser.id,
+        vendorName: document.getElementById('userBusiness').textContent
+    };
     let imageBase64 = document.getElementById('productImageUploadArea').dataset.existingImage || null;
     if (selectedProductFile) {
         const compressedFile = await imageCompression(selectedProductFile, { maxSizeMB: 0.5, maxWidthOrHeight: 800 });
@@ -223,15 +261,26 @@ window.saveProduct = async function() {
         });
     }
     productData.imageBase64 = imageBase64;
-    const docRef = isEditing ? db.collection('products').doc(document.getElementById('productModal').dataset.productId) : db.collection('products').doc();
-    if (!isEditing) productData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    if (!isEditing) productData.created_at = new Date().toISOString();
     productData.published = true;
     // --- INICIO DE LA CARGA ---
-    const saveBtn = document.querySelector('#productModal .btn-primary'); // El botón "Guardar Producto" en el modal
+    const saveBtn = document.querySelector('#productModal .btn-primary');
     startButtonLoading(saveBtn, 'Guardando...');
 
     try {
-        await docRef.set(productData, { merge: true });
+        if (isEditing) {
+            const productId = document.getElementById('productModal').dataset.productId;
+            const { error } = await supabase
+                .from('products')
+                .update(productData)
+                .eq('id', productId);
+            if (error) throw error;
+        } else {
+            const { error } = await supabase
+                .from('products')
+                .insert([productData]);
+            if (error) throw error;
+        }
         showToast('Producto guardado.', 'success');
         hideModal('productModal');
         loadMyProducts();
@@ -239,7 +288,6 @@ window.saveProduct = async function() {
         console.error("Error saving product:", error);
         showToast('Error al guardar el producto.', 'error');
     } finally {
-        // --- FIN DE LA CARGA ---
         stopButtonLoading(saveBtn);
     }
 }
@@ -293,7 +341,14 @@ function renderMyProductCard(container, product) {
 }
 
 // window.deleteProduct = async function(id) { if (confirm('¿Eliminar producto?')) { await db.collection('products').doc(id).delete(); loadMyProducts(); showToast('Producto eliminado.'); } }
-window.toggleProductStatus = async function(id, status) { await db.collection('products').doc(id).update({ published: status }); loadMyProducts(); }
+window.toggleProductStatus = async function(id, status) {
+    const { error } = await supabase
+        .from('products')
+        .update({ published: status })
+        .eq('id', id);
+    if (error) console.error('Error actualizando estado del producto:', error);
+    loadMyProducts();
+}
 
 window.showVendorPage = async function(vendorId, vendorName) {
     showSection('vendor-page');
@@ -301,11 +356,16 @@ window.showVendorPage = async function(vendorId, vendorName) {
     const whatsappBtn = document.getElementById('vendorWhatsappBtn');
     whatsappBtn.style.display = 'none';
     try {
-        const doc = await db.collection('merchants').doc(vendorId).get();
-        if (doc.exists && doc.data().phone) {
-            const phone = doc.data().phone.replace(/[^0-9]/g, '');
+        // Obtener datos del comerciante desde Supabase
+        const { data: merchant, error } = await supabase
+            .from('merchants')
+            .select('phone')
+            .eq('id', vendorId)
+            .single();
+        if (error) throw error;
+        if (merchant && merchant.phone) {
+            const phone = merchant.phone.replace(/[^0-9]/g, '');
             if(phone) {
-                // --- CORRECCIÓN: Se eliminó el espacio en la URL ---
                 whatsappBtn.href = `https://wa.me/${phone}`;
                 whatsappBtn.style.display = 'inline-flex';
             }
@@ -333,15 +393,18 @@ window.saveStoreInfo = async function() {
     startButtonLoading(saveBtn, 'Guardando...');
 
     try {
-        await db.collection('merchants').doc(currentUser.uid).update(newData);
-        await updateUserProfile(currentUser.uid); 
+        const { error } = await supabase
+            .from('merchants')
+            .update(newData)
+            .eq('id', currentUser.id);
+        if (error) throw error;
+        await updateUserProfile(currentUser.id); 
         toggleStoreEditMode(false);
         showToast('Información del puesto actualizada.', 'success');
     } catch (error) {
         console.error("Error updating store info:", error);
         showToast('Error al actualizar la información.', 'error');
     } finally {
-        // --- FIN DE LA CARGA ---
         stopButtonLoading(saveBtn);
     }
 }
@@ -369,15 +432,18 @@ window.saveProfileInfo = async function() {
     startButtonLoading(saveBtn, 'Actualizando...');
 
     try {
-        await db.collection('merchants').doc(currentUser.uid).update(newData);
-        await updateUserProfile(currentUser.uid);
+        const { error } = await supabase
+            .from('merchants')
+            .update(newData)
+            .eq('id', currentUser.id);
+        if (error) throw error;
+        await updateUserProfile(currentUser.id);
         toggleProfileEditMode(false);
         showToast('Perfil actualizado.', 'success');
     } catch (error) {
         console.error("Error updating profile:", error);
         showToast('Error al actualizar el perfil.', 'error');
     } finally {
-        // --- FIN DE LA CARGA ---
         stopButtonLoading(saveBtn);
     }
 }
@@ -402,8 +468,15 @@ window.saveProfilePic = async function() {
         picUrl = selectedAvatarUrl;
     }
     if(picUrl) {
-        await db.collection('merchants').doc(currentUser.uid).update({ profilePic: picUrl });
-        await updateUserProfile(currentUser.uid);
+        const { error } = await supabase
+            .from('merchants')
+            .update({ profilePic: picUrl })
+            .eq('id', currentUser.id);
+        if (error) {
+            showToast('Error al actualizar la foto de perfil.', 'error');
+            return;
+        }
+        await updateUserProfile(currentUser.id);
         hideModal('profilePicModal');
         showToast('Foto de perfil actualizada.', 'success');
     } else {
@@ -882,16 +955,31 @@ function stopButtonLoading(button) {
 
 // --- INICIALIZACIÓN DE LA APLICACIÓN ---
 function initializeApp() {
-    auth.onAuthStateChanged(async (user) => {
+    // Verificar usuario autenticado con Supabase
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
         if (user) {
-            const merchantDoc = await db.collection('merchants').doc(user.uid).get();
-            if (merchantDoc.exists) {
-                currentUser = user; isMerchant = true;
-                await updateUserProfile(user.uid);
+            // Buscar datos del comerciante en Supabase
+            const { data: merchantData, error } = await supabase
+                .from('merchants')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+            if (merchantData) {
+                currentUser = user;
+                isMerchant = true;
+                currentMerchantData = merchantData;
+                await updateUserProfile(user.id);
                 showSection('profile');
-            } else { isMerchant = false; currentUser = null; currentMerchantData = null; }
+            } else {
+                isMerchant = false;
+                currentUser = null;
+                currentMerchantData = null;
+                showSection('home');
+            }
         } else {
-            currentUser = null; isMerchant = false; currentMerchantData = null;
+            currentUser = null;
+            isMerchant = false;
+            currentMerchantData = null;
             showSection('home');
         }
         updateAuthUI();
@@ -930,3 +1018,5 @@ function initializeApp() {
 }
 
 initializeApp();
+// Cierre de bloque faltante para evitar error de sintaxis
+}
