@@ -1685,21 +1685,8 @@ document.getElementById('loginPassword').addEventListener('keypress', function(e
         document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
     });
     const themeToggle = document.getElementById('themeToggle');
-/**
- * Aplica el tema (claro u oscuro) a toda la aplicación.
- * @param {string} theme - 'light' o 'dark'
- */
-const applyTheme = (theme) => {
-    document.body.dataset.theme = theme;
-    localStorage.setItem('theme', theme);
-    // Actualizar favicon dinámicamente (opcional)
-    const favicon = document.querySelector('link[rel="icon"]');
-    if (favicon) {
-        favicon.href = theme === 'dark' ? 'favicon-dark.ico' : 'favicon.ico';
-    }
-    // Actualizar título de la página (opcional, para accesibilidad)
-    document.title = theme === 'dark' ? 'Feria Virtual (Modo Oscuro)' : 'Feria Virtual (Modo Claro)';
-};    themeToggle.addEventListener('click', () => applyTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
+    const applyTheme = (theme) => { document.body.dataset.theme = theme; localStorage.setItem('theme', theme); };
+    themeToggle.addEventListener('click', () => applyTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
     applyTheme(localStorage.getItem('theme') || 'light');
     loadProducts();
     populateAvatars();
