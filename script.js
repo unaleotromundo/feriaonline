@@ -1058,21 +1058,7 @@ function showCurrentProductInLightbox() {
     }, 50);
     const lightbox = document.getElementById('imageLightbox');
     lightbox.style.display = 'flex';
-    // --- CONFIGURAR EL CARRITO FLOTANTE ---
-    const floatingCartBtn = document.createElement('div');
-    floatingCartBtn.className = 'floating-cart-btn';
-    floatingCartBtn.innerHTML = '<i class="fas fa-shopping-cart"></i>';
-    floatingCartBtn.title = 'Agregar al carrito';
-    floatingCartBtn.onclick = function(event) {
-        event.stopPropagation();
-        addToCartWithAnimation(this, product);
-    };
-    // Quitamos cualquier carrito flotante anterior
-    const existingCartBtn = document.querySelector('.floating-cart-btn');
-    if (existingCartBtn) existingCartBtn.remove();
-    // Añadimos el nuevo carrito flotante
-    lightbox.appendChild(floatingCartBtn);
-    // --- FIN DE LA CONFIGURACIÓN DEL CARRITO FLOTANTE ---
+
     // --- Configurar el botón "Ir al Puesto" ---
 // --- Configurar el botón "Ir al Puesto" ---
 const storeBtn = document.getElementById('lightboxStoreBtn');
