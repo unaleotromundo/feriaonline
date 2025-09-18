@@ -1706,24 +1706,40 @@ const applyTheme = (theme) => {
     applyTheme(localStorage.getItem('theme') || 'light');
     loadProducts();
     populateAvatars();
-    // --- NUEVO: EVENT LISTENER PARA CERRAR EL MENÚ HAMBURGUESA ---
-    document.getElementById('hamburgerMenu').addEventListener('click', function() {
-        document.getElementById('navContainer').classList.toggle('active');
-        document.getElementById('navOverlay').classList.toggle('active');
-    });
-    // Cerrar al hacer clic en el overlay
-    document.getElementById('navOverlay').addEventListener('click', function() {
-        document.getElementById('navContainer').classList.remove('active');
-        document.getElementById('navOverlay').classList.remove('active');
-    });
-    // Cerrar al hacer clic en cualquier enlace de navegación
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', function() {
-            document.getElementById('navContainer').classList.remove('active');
-            document.getElementById('navOverlay').classList.remove('active');
-        });
-    });
+// --- SOLUCIÓN: EVENT LISTENERS PARA EL MENÚ HAMBURGUESA ---
+const hamburgerMenu = document.getElementById('hamburgerMenu');
+const navContainer = document.getElementById('navContainer');
+const navOverlay = document.getElementById('navOverlay');
+const navLinks = document.querySelectorAll('.nav-link');
+
+// Función para abrir/cerrar el menú
+function toggleHamburgerMenu() {
+    navContainer.classList.toggle('active');
+    navOverlay.classList.toggle('active');
 }
+
+// Función para cerrar el menú
+function closeHamburgerMenu() {
+    navContainer.classList.remove('active');
+    navOverlay.classList.remove('active');
+}
+
+// Asignar evento al botón hamburguesa
+if (hamburgerMenu) {
+    hamburgerMenu.addEventListener('click', toggleHamburgerMenu);
+}
+
+// Asignar evento al overlay
+if (navOverlay) {
+    navOverlay.addEventListener('click', closeHamburgerMenu);
+}
+
+// Asignar evento a cada enlace de navegación
+if (navLinks.length > 0) {
+    navLinks.forEach(link => {
+        link.addEventListener('click', closeHamburgerMenu);
+    });
+}}
 /**
  * Actualiza la cantidad de un producto en el carrito.
  * @param {string} productId - El ID del producto.
