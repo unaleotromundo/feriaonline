@@ -1,3 +1,4 @@
+
 // Permitir navegación con flechas del teclado en el lightbox
 document.addEventListener('keydown', function(e) {
     const lightbox = document.getElementById('imageLightbox');
@@ -1706,40 +1707,56 @@ const applyTheme = (theme) => {
     applyTheme(localStorage.getItem('theme') || 'light');
     loadProducts();
     populateAvatars();
-// --- SOLUCIÓN: EVENT LISTENERS PARA EL MENÚ HAMBURGUESA ---
-const hamburgerMenu = document.getElementById('hamburgerMenu');
-const navContainer = document.getElementById('navContainer');
-const navOverlay = document.getElementById('navOverlay');
-const navLinks = document.querySelectorAll('.nav-link');
+// --- SOLUCIÓN DEFINITIVA: EVENT LISTENERS PARA EL MENÚ HAMBURGUESA ---
+// Esperamos a que el DOM esté completamente cargado
+document.addEventListener('DOMContentLoaded', function() {
+    const hamburgerMenu = document.getElementById('hamburgerMenu');
+    const navContainer = document.getElementById('navContainer');
+    const navOverlay = document.getElementById('navOverlay');
+    const navLinks = document.querySelectorAll('.nav-link');
 
-// Función para abrir/cerrar el menú
-function toggleHamburgerMenu() {
-    navContainer.classList.toggle('active');
-    navOverlay.classList.toggle('active');
+    // Función para abrir/cerrar el menú
+    function toggleHamburgerMenu() {
+        navContainer.classList.toggle('active');
+        navOverlay.classList.toggle('active');
+    }
+
+    // Función para cerrar el menú
+    function closeHamburgerMenu() {
+        navContainer.classList.remove('active');
+        navOverlay.classList.remove('active');
+    }
+
+    // Asignar evento al botón hamburguesa
+    if (hamburgerMenu) {
+        hamburgerMenu.addEventListener('click', toggleHamburgerMenu);
+    }
+
+    // Asignar evento al overlay
+    if (navOverlay) {
+        navOverlay.addEventListener('click', closeHamburgerMenu);
+    }
+
+    // Asignar evento a cada enlace de navegación
+    if (navLinks.length > 0) {
+        navLinks.forEach(link => {
+            // Guardamos la función original del onclick
+            const originalOnclick = link.getAttribute('onclick');
+            // Reemplazamos el onclick
+            link.onclick = function(event) {
+                // Primero, ejecutamos la función original (navegar a la sección)
+                if (originalOnclick) {
+                    new Function('event', originalOnclick).call(this, event);
+                }
+                // Luego, cerramos el menú
+                closeHamburgerMenu();
+                // Prevenimos el comportamiento por defecto (#) si es necesario
+                event.preventDefault();
+            };
+        });
+    }
+});
 }
-
-// Función para cerrar el menú
-function closeHamburgerMenu() {
-    navContainer.classList.remove('active');
-    navOverlay.classList.remove('active');
-}
-
-// Asignar evento al botón hamburguesa
-if (hamburgerMenu) {
-    hamburgerMenu.addEventListener('click', toggleHamburgerMenu);
-}
-
-// Asignar evento al overlay
-if (navOverlay) {
-    navOverlay.addEventListener('click', closeHamburgerMenu);
-}
-
-// Asignar evento a cada enlace de navegación
-if (navLinks.length > 0) {
-    navLinks.forEach(link => {
-        link.addEventListener('click', closeHamburgerMenu);
-    });
-}}
 /**
  * Actualiza la cantidad de un producto en el carrito.
  * @param {string} productId - El ID del producto.
