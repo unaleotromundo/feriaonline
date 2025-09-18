@@ -413,12 +413,6 @@ body[data-theme="dark"] .edit-btn-container { background: #4b5563; border-color:
     .product-selection-item p {
         font-size: 1rem; /* Texto más legible */
     }
-    /* === OCULTAR EL BOTÓN FLOTANTE DEL CARRITO EN CELULARES === */
-    /* El botón flotante puede superponerse y ser molesto en pantallas pequeñas.
-       En su lugar, confiamos en los botones grandes de abajo. */
-    .floating-cart-btn {
-        display: none !important;
-    }
     /* === HACER EL BOTÓN DE CERRAR MÁS GRANDE === */
     .lightbox-close {
         font-size: 35px; /* Más grande y fácil de tocar */
