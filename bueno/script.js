@@ -1545,12 +1545,15 @@ function updateCartUI() {
                     <div class="cart-item-details">
                         <h5 class="cart-item-title">${item.name || 'Producto sin nombre'}</h5>
                         <p class="cart-item-price">$${displayPrice.toFixed(2)} c/u</p>
-                        <div class="cart-item-quantity">
-                            <button onclick="updateCartItemQuantity('${item.id}', ${Math.max(1, item.quantity - 1)})" ${item.quantity <= 1 ? 'disabled' : ''}>-</button>
-                            <span>${item.quantity}</span>
-                            <button onclick="updateCartItemQuantity('${item.id}', ${item.quantity + 1})">+</button>
-                        </div>
-                    </div>
+<div class="cart-item-quantity">
+    <button onclick="updateCartItemQuantity('${item.id}', ${Math.max(1, item.quantity - 1)})" ${item.quantity <= 1 ? 'disabled' : ''}>-</button>
+    <span>${item.quantity}</span>
+    <button onclick="updateCartItemQuantity('${item.id}', ${item.quantity + 1})">+</button>
+    <!-- === NUEVO BOTÓN DE PAPELERA === -->
+    <button onclick="removeFromCart('${item.id}')" class="btn-trash" title="Eliminar producto">
+        <i class="fas fa-trash"></i>
+    </button>
+</div>                    </div>
                 </div>
             `;
         });
@@ -1560,7 +1563,7 @@ function updateCartUI() {
                 </div>
                 <div class="cart-vendor-actions">
                     <button class="btn btn-whatsapp" onclick="contactVendorViaWhatsApp('${vendor.vendorId}', ${JSON.stringify(vendor.items).replace(/"/g, '&quot;')})">
-                        <i class="fab fa-whatsapp"></i> Contactar por WhatsApp
+<i class="fab fa-whatsapp"></i> Contactar con ${vendor.vendorName}
                     </button>
                 </div>
             </div>

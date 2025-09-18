@@ -113,7 +113,7 @@ body {
 .profile-info h2 { font-size: 1.8rem; margin-bottom: 0.5rem; }
 .profile-info p { color: #4b5563; }
 .profile-details { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
-.detail-item { background: var(--light); padding: 1.5rem; border-radius: 0.8rem; }
+.detail-item { background: #ffc2e6; padding: 1.5rem; border-radius: 0.8rem; }
 .detail-item h3 { color: var(--cyan); margin-bottom: 0.5rem; }
 .products-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 2rem; gap: 1rem;}
 .section-title {
@@ -466,8 +466,8 @@ nav a.active {
 nav a { transition: all 0.3s ease; padding: 0.5rem 1rem; display: inline-block; }
 /* --- THEME STYLES --- */
 body[data-theme="dark"] {
-    --black: #f9fafb; --light: #1f2937; --gray: #374151;
-    background: linear-gradient(135deg, #1e293b, #111827); color: #e5e7eb;
+    --black: #0b2036; --light: #1f2937; --gray: #374151;
+    background: linear-gradient(135deg, #1e293b, #111827); color: #000000;
 }
 body[data-theme="dark"] .profile-card, body[data-theme="dark"] .form-container,
 body[data-theme="dark"] .product-card, body[data-theme="dark"] .login-box,
@@ -478,13 +478,46 @@ body[data-theme="dark"] .form-control { background-color: #4b5563; border-color:
 body[data-theme="dark"] .form-control::placeholder { color: #9ca3af; }
 body[data-theme="dark"] .form-control[readonly] { background-color: #374151; }
 body[data-theme="dark"] .dropdown-menu a:hover { background: #4b5563; }
+/* --- BOTÓN DE CAMBIO DE TEMA (NUEVA POSICIÓN: ESQUINA SUPERIOR IZQUIERDA) --- */
 .theme-toggle {
-    position: fixed; bottom: 20px; right: 20px; z-index: 3001;
-    width: 50px; height: 50px; border-radius: 50%;
-    background: var(--light); color: var(--black); border: 2px solid var(--gray);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer;
-    display: flex; justify-content: center; align-items: center;
-    font-size: 1.2rem; transition: all 0.3s ease; overflow: hidden;
+    position: fixed;
+    top: 70px;           /* Cambiado de 'bottom' a 'top' */
+    left: 20px;          /* Cambiado de 'right' a 'left' */
+    z-index: 3001;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--light);
+    color: #ff4000;
+    border: 2px solid var(--gray);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.theme-toggle:hover {
+    transform: scale(1.1) rotate(15deg);
+}
+
+.theme-toggle .fa-sun {
+    display: none;
+}
+
+.theme-toggle .fa-moon {
+    display: block;
+}
+
+body[data-theme="dark"] .theme-toggle .fa-sun {
+    display: block;
+}
+
+body[data-theme="dark"] .theme-toggle .fa-moon {
+    display: none;
 }
 .theme-toggle:hover { transform: scale(1.1) rotate(15deg); }
 .theme-toggle .fa-sun { display: none; }
@@ -1014,7 +1047,7 @@ body[data-theme="dark"] .lightbox-whatsapp-btn {
     flex: 1;
     padding: 1rem;
     overflow-y: auto;
-    background: #fafafa;
+    background: #5285f2;
 }
 .empty-cart-message {
     text-align: center;
@@ -1044,7 +1077,7 @@ body[data-theme="dark"] .lightbox-whatsapp-btn {
     font-size: 1.1rem;
     font-weight: 600;
     margin: 0;
-    color: var(--black);
+    color: #010b14;
 }
 .cart-vendor-total {
     font-weight: 700;
@@ -1217,7 +1250,7 @@ body[data-theme="dark"] .lightbox-whatsapp-btn {
 .empty-cart-message {
     text-align: center;
     padding: 2rem;
-    color: #888;
+    color: #000000;
     font-style: italic;
 }
 /* Footer informativo */
