@@ -1,3 +1,4 @@
+
 // Permitir navegación con flechas del teclado en el lightbox
 document.addEventListener('keydown', function(e) {
     const lightbox = document.getElementById('imageLightbox');
@@ -1057,21 +1058,7 @@ function showCurrentProductInLightbox() {
     }, 50);
     const lightbox = document.getElementById('imageLightbox');
     lightbox.style.display = 'flex';
-    // --- CONFIGURAR EL CARRITO FLOTANTE ---
-    const floatingCartBtn = document.createElement('div');
-    floatingCartBtn.className = 'floating-cart-btn';
-    floatingCartBtn.innerHTML = '<i class="fas fa-shopping-cart"></i>';
-    floatingCartBtn.title = 'Agregar al carrito';
-    floatingCartBtn.onclick = function(event) {
-        event.stopPropagation();
-        addToCartWithAnimation(this, product);
-    };
-    // Quitamos cualquier carrito flotante anterior
-    const existingCartBtn = document.querySelector('.floating-cart-btn');
-    if (existingCartBtn) existingCartBtn.remove();
-    // Añadimos el nuevo carrito flotante
-    lightbox.appendChild(floatingCartBtn);
-    // --- FIN DE LA CONFIGURACIÓN DEL CARRITO FLOTANTE ---
+
     // --- Configurar el botón "Ir al Puesto" ---
 // --- Configurar el botón "Ir al Puesto" ---
 const storeBtn = document.getElementById('lightboxStoreBtn');
@@ -1706,23 +1693,55 @@ const applyTheme = (theme) => {
     applyTheme(localStorage.getItem('theme') || 'light');
     loadProducts();
     populateAvatars();
-    // --- NUEVO: EVENT LISTENER PARA CERRAR EL MENÚ HAMBURGUESA ---
-    document.getElementById('hamburgerMenu').addEventListener('click', function() {
-        document.getElementById('navContainer').classList.toggle('active');
-        document.getElementById('navOverlay').classList.toggle('active');
-    });
-    // Cerrar al hacer clic en el overlay
-    document.getElementById('navOverlay').addEventListener('click', function() {
-        document.getElementById('navContainer').classList.remove('active');
-        document.getElementById('navOverlay').classList.remove('active');
-    });
-    // Cerrar al hacer clic en cualquier enlace de navegación
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', function() {
-            document.getElementById('navContainer').classList.remove('active');
-            document.getElementById('navOverlay').classList.remove('active');
+// --- SOLUCIÓN DEFINITIVA: EVENT LISTENERS PARA EL MENÚ HAMBURGUESA ---
+// Esperamos a que el DOM esté completamente cargado
+document.addEventListener('DOMContentLoaded', function() {
+    const hamburgerMenu = document.getElementById('hamburgerMenu');
+    const navContainer = document.getElementById('navContainer');
+    const navOverlay = document.getElementById('navOverlay');
+    const navLinks = document.querySelectorAll('.nav-link');
+
+    // Función para abrir/cerrar el menú
+    function toggleHamburgerMenu() {
+        navContainer.classList.toggle('active');
+        navOverlay.classList.toggle('active');
+    }
+
+    // Función para cerrar el menú
+    function closeHamburgerMenu() {
+        navContainer.classList.remove('active');
+        navOverlay.classList.remove('active');
+    }
+
+    // Asignar evento al botón hamburguesa
+    if (hamburgerMenu) {
+        hamburgerMenu.addEventListener('click', toggleHamburgerMenu);
+    }
+
+    // Asignar evento al overlay
+    if (navOverlay) {
+        navOverlay.addEventListener('click', closeHamburgerMenu);
+    }
+
+    // Asignar evento a cada enlace de navegación
+    if (navLinks.length > 0) {
+        navLinks.forEach(link => {
+            // Guardamos la función original del onclick
+            const originalOnclick = link.getAttribute('onclick');
+            // Reemplazamos el onclick
+            link.onclick = function(event) {
+                // Primero, ejecutamos la función original (navegar a la sección)
+                if (originalOnclick) {
+                    new Function('event', originalOnclick).call(this, event);
+                }
+                // Luego, cerramos el menú
+                closeHamburgerMenu();
+                // Prevenimos el comportamiento por defecto (#) si es necesario
+                event.preventDefault();
+            };
         });
-    });
+    }
+});
 }
 /**
  * Actualiza la cantidad de un producto en el carrito.

@@ -1626,4 +1626,229 @@ body[data-theme="dark"] .lightbox-whatsapp-circle-btn.expanded {
 }
 .cart-overlay.active {
     display: block;
+
+/* MEJORAS DE RESPONSIVIDAD ADICIONALES */
+
+/* 1. MEJORAS EN EL MENÚ HAMBURGUESA */
+@media (max-width: 768px) {
+  .nav-container {
+    padding-top: 80px; /* Espacio para no cubrir el header */
+  }
+  
+  .nav-link {
+    width: 80%;
+    text-align: center;
+    justify-content: center;
+    padding: 1.2rem 2rem;
+    font-size: 1.3rem;
+    margin: 0.5rem 0;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+  }
+  
+  .hamburger-menu {
+    position: relative;
+    z-index: 1003; /* Por encima del menú */
+  }
+}
+
+/* 2. MEJORAS EN CUADRÍCULAS DE PRODUCTOS */
+@media (max-width: 480px) {
+  .products-grid {
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+  }
+  
+  .product-card {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  
+  .product-image {
+    height: 180px;
+  }
+}
+
+/* 3. MEJORAS EN FORMULARIOS Y MODALES */
+@media (max-width: 576px) {
+  .form-container, 
+  .login-box {
+    padding: 1.5rem;
+    margin: 0.5rem;
+    width: calc(100% - 1rem);
+    border-radius: 12px;
+  }
+  
+  .form-group {
+    margin-bottom: 1.2rem;
+  }
+  
+  .form-control {
+    padding: 1rem;
+    font-size: 16px; /* Evita zoom en iOS */
+  }
+}
+
+/* 4. MEJORAS EN BOTONES E INTERACCIONES */
+@media (max-width: 768px) {
+  .btn {
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 1.5rem;
+  }
+  
+  /* Asegurar que los botones sean fácilmente clickeables */
+  .action-btn, 
+  .btn-add-to-cart-minimal {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* 5. MEJORAS TIPOGRÁFICAS */
+@media (max-width: 480px) {
+  .hero h1 {
+    font-size: 2rem;
+    line-height: 1.3;
+  }
+  
+  .hero p {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  
+  .section-title {
+    font-size: 1.7rem;
+  }
+}
+
+/* 6. MEJORAS ESPECÍFICAS PARA EL LIGHTBOX EN MÓVILES */
+@media (max-width: 768px) {
+  .lightbox-content {
+    max-width: 95vw;
+    max-height: 60vh; /* Más espacio para botones */
+  }
+  
+  .lightbox-button-container {
+    flex-direction: column;
+    width: 95%;
+    bottom: 15px;
+  }
+  
+  .lightbox-action-btn {
+    width: 100%;
+    padding: 1rem;
+  }
+}
+
+/* 7. MEJORAS PARA TABLETS */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+  
+  .hero h1 {
+    font-size: 2.2rem;
+  }
+}
+
+/* 8. PREVENCIÓN DE DESBORDAMIENTOS EN ELEMENTOS DE TEXTO */
+.product-title, 
+.product-description,
+.vendor-name-link {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* 9. MEJORA EN LA GESTIÓN DEL VIEWPORT PARA IOS */
+@viewport {
+  width: device-width;
+  zoom: 1;
+}
+
+/* 10. AJUSTES PARA DISPOSITIVOS CON NOTCH */
+/* Safe area insets para dispositivos modernos */
+.safe-area-padding {
+  padding-top: constant(safe-area-inset-top);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: constant(safe-area-inset-left);
+  padding-left: env(safe-area-inset-left);
+  padding-right: constant(safe-area-inset-right);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Aplicar safe areas al header y elementos fijos */
+.header,
+.chatbot-floating,
+.mobile-cart-badge,
+.theme-toggle {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.header {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* 11. MEJORAS EN EL CARRITO PARA MÓVILES */
+@media (max-width: 768px) {
+  .cart-panel {
+    width: 100vw;
+    right: -100vw;
+    border-radius: 0;
+  }
+  
+  .cart-vendor-block {
+    margin: 0.8rem;
+    padding: 1rem;
+  }
+  
+  .cart-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .cart-item-image {
+    width: 100%;
+    height: 120px;
+    margin-bottom: 0.8rem;
+  }
+}
+
+/* 12. OPTIMIZACIÓN DE IMÁGENES Y MEDIA */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 13. MEJORA EN LA EXPERIENCIA DE SCROLL */
+@media (max-width: 768px) {
+  .products-grid,
+  .cart-items {
+    -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+  }
+}
+
+/* 14. ESTADOS FOCUS MEJORADOS PARA NAVEGACIÓN POR TECLADO */
+.btn:focus,
+.nav-link:focus,
+.action-btn:focus {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+/* 15. ANIMACIONES OPTIMIZADAS PARA DISPOSITIVOS MÓVILES */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
