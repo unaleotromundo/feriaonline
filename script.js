@@ -1685,7 +1685,7 @@ const applyTheme = (theme) => {
     // Actualizar favicon dinámicamente (opcional)
     const favicon = document.querySelector('link[rel="icon"]');
     if (favicon) {
-        favicon.href = theme === 'dark' ? 'favicon-dark.ico' : 'favicon.ico';
+        favicon.href = theme === 'dark' ? 'favicon-dark.ico' : 'favicon.png';
     }
     // Actualizar título de la página (opcional, para accesibilidad)
     document.title = theme === 'dark' ? 'Feria Virtual (Modo Oscuro)' : 'Feria Virtual (Modo Claro)';
