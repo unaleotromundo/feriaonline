@@ -198,18 +198,10 @@ window.generatePdfWithJsPDF = async function() {
 }
 // Feria Virtual - Lógica de la Aplicación
 // Configuración de Firebase
-const firebaseConfig = {
-    apiKey: "AIzaSyAlqGoYrHkASbhmE2aBKIOXqkkNBBEEiGU",
-    authDomain: "feria-online-ec7c6.firebaseapp.com",
-    projectId: "feria-online-ec7c6",
-    storageBucket: "feria-online-ec7c6.firebasestorage.app",
-    messagingSenderId: "1001881267179",
-    appId: "1:1001881267179:web:fc5ac0fd940964537887ae",
-    measurementId: "G-GQZZQMNVPH"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
+// Feria Virtual - Lógica de la Aplicación
+// NOTE: Firebase removed in this copy. Use Supabase or other backend instead.
+const db = null; // TODO: replace with Supabase client or other DB wrapper
+const auth = null; // TODO: replace with Supabase auth client
 // --- VARIABLES GLOBALES ---
 let currentUser = null;
 let isMerchant = false;
@@ -354,7 +346,7 @@ window.registerMerchant = async function() {
         const user = userCredential.user;
         await db.collection('merchants').doc(user.uid).set({
             name, email, business, phone, description,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            createdAt: new Date()
         });
         showMessage(msgEl, '¡Registro exitoso! Redirigiendo...', 'success');
         setTimeout(() => {
@@ -459,7 +451,7 @@ window.saveProduct = async function() {
     }
     productData.imageBase64 = imageBase64;
     const docRef = isEditing ? db.collection('products').doc(document.getElementById('productModal').dataset.productId) : db.collection('products').doc();
-    if (!isEditing) productData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    if (!isEditing) productData.createdAt = new Date();
     productData.published = true;
     // --- INICIO DE LA CARGA ---
     const saveBtn = document.querySelector('#productModal .btn-primary'); // El botón "Guardar Producto" en el modal
@@ -748,7 +740,7 @@ async function importCatalogFromJSON(products) {
             const newProductData = {
                 name: product.name, price: product.price || 0, description: product.description || '', imageBase64: product.imageBase64 || null,
                 published: typeof product.published === 'boolean' ? product.published : true,
-                vendorId: currentUser.uid, vendorName: currentMerchantData.business, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                vendorId: currentUser.uid, vendorName: currentMerchantData.business, createdAt: new Date()
             };
             return db.collection('products').add(newProductData);
         });

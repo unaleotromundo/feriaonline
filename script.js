@@ -1,4 +1,3 @@
-
 // Permitir navegación con flechas del teclado en el lightbox
 document.addEventListener('keydown', function(e) {
     const lightbox = document.getElementById('imageLightbox');
@@ -12,6 +11,7 @@ document.addEventListener('keydown', function(e) {
         }
     }
 });
+
 /**
  * Cierra el modal, panel o lightbox activo cuando se presiona la tecla Esc.
  * Se verifica en orden de prioridad: Lightbox > Carrito > Cualquier Modal > Menú Hamburguesa.
@@ -25,6 +25,7 @@ function closeActiveModalOnEsc(event) {
             event.preventDefault();
             return;
         }
+
         // 2. Cerrar Panel del Carrito si está activo
         const cartPanel = document.getElementById('cartPanel');
         if (cartPanel && cartPanel.classList.contains('active')) {
@@ -32,6 +33,7 @@ function closeActiveModalOnEsc(event) {
             event.preventDefault();
             return;
         }
+
         // 3. Cerrar cualquier modal que esté visible (display: flex)
         const modals = document.querySelectorAll('.login-modal');
         for (let modal of modals) {
@@ -41,6 +43,7 @@ function closeActiveModalOnEsc(event) {
                 return;
             }
         }
+
         // 4. Cerrar el menú hamburguesa si está activo
         const navContainer = document.getElementById('navContainer');
         if (navContainer && navContainer.classList.contains('active')) {
@@ -51,6 +54,7 @@ function closeActiveModalOnEsc(event) {
         }
     }
 }
+
 function showInitialLoadingSpinner(message = 'Cargando datos...') {
     let overlay = document.getElementById('initial-loading-overlay');
     if (!overlay) {
@@ -86,6 +90,7 @@ function showInitialLoadingSpinner(message = 'Cargando datos...') {
     setMsg();
     window._initialLoadingMsgInterval = setInterval(setMsg, 1800);
 }
+
 function hideInitialLoadingSpinner() {
     const overlay = document.getElementById('initial-loading-overlay');
     if (overlay) overlay.style.display = 'none';
@@ -94,16 +99,18 @@ function hideInitialLoadingSpinner() {
         window._initialLoadingMsgInterval = null;
     }
 }
+
 window.generateCatalogJPG = async function() {
     if (!currentUser) return showToast('Debes iniciar sesión para generar imágenes.', 'error');
     showGlobalLoadingOverlay('Generando imágenes del catálogo...');
     try {
-        const snapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).get();
-        if (snapshot.empty) {
+        const { data: productsData, error } = await supabase.from('products').select('*').eq('vendor_id', currentUser.id);
+        if (error) throw error;
+        if (!productsData || productsData.length === 0) {
             hideGlobalLoadingOverlay();
             return showToast('No tienes productos para generar imágenes.', 'error');
         }
-        const products = snapshot.docs.map(doc => doc.data());
+        const products = productsData.map(r => normalizeProductRow(r));
         // Crear un contenedor temporal para renderizar productos
         const tempDiv = document.createElement('div');
         tempDiv.style.position = 'fixed';
@@ -153,16 +160,18 @@ window.generateCatalogJPG = async function() {
         hideGlobalLoadingOverlay();
     }
 }
+
 window.generatePdfWithJsPDF = async function() {
     if (!currentUser) return showToast('Debes iniciar sesión para generar el PDF.', 'error');
     showGlobalLoadingOverlay('Generando PDF del catálogo...');
     try {
-        const snapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).get();
-        if (snapshot.empty) {
+        const { data: productsData, error } = await supabase.from('products').select('*').eq('vendor_id', currentUser.id);
+        if (error) throw error;
+        if (!productsData || productsData.length === 0) {
             hideGlobalLoadingOverlay();
             return showToast('No tienes productos para generar el PDF.', 'error');
         }
-        const products = snapshot.docs.map(doc => doc.data());
+        const products = productsData.map(r => normalizeProductRow(r));
         const docPdf = new window.jspdf.jsPDF();
         docPdf.setFontSize(16);
         docPdf.text('Catálogo de Productos', 20, 20);
@@ -197,20 +206,13 @@ window.generatePdfWithJsPDF = async function() {
         hideGlobalLoadingOverlay();
     }
 }
+
 // Feria Virtual - Lógica de la Aplicación
-// Configuración de Firebase
-const firebaseConfig = {
-    apiKey: "AIzaSyAlqGoYrHkASbhmE2aBKIOXqkkNBBEEiGU",
-    authDomain: "feria-online-ec7c6.firebaseapp.com",
-    projectId: "feria-online-ec7c6",
-    storageBucket: "feria-online-ec7c6.firebasestorage.app",
-    messagingSenderId: "1001881267179",
-    appId: "1:1001881267179:web:fc5ac0fd940964537887ae",
-    measurementId: "G-GQZZQMNVPH"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
+// Configuración de Supabase (cliente UMD cargado desde index.html)
+const supabaseUrl = 'https://gkddymcuajakvghffava.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdrZGR5bWN1YWpha3ZnaGZmYXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NzUyNDksImV4cCI6MjA3MzQ1MTI0OX0.12aqVrRdAGaSq6eEm5xcwqkPpNyEdQdA77t8MeKhWKw';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+
 // --- VARIABLES GLOBALES ---
 let currentUser = null;
 let isMerchant = false;
@@ -221,6 +223,7 @@ let selectedAvatarUrl = null;
 const profileLink = document.getElementById('profileLink');
 const storeLink = document.getElementById('storeLink');
 const authContainer = document.getElementById('authContainer');
+
 // --- CACHÉ EN MEMORIA ---
 let dataCache = {
     products: {
@@ -229,7 +232,24 @@ let dataCache = {
     },
     merchants: {}
 };
+
+// Util: normaliza filas de la base (snake_case) a los campos camelCase usados en UI
+function normalizeProductRow(row) {
+    if (!row) return row;
+    return {
+        id: row.id,
+        name: row.name,
+        price: row.price,
+        description: row.description,
+        imageBase64: row.image_base64 || row.imageBase64 || null,
+        vendorId: row.vendor_id || row.vendorId,
+        vendorName: row.vendor_name || row.vendorName,
+        published: row.published,
+        createdAt: row.created_at || row.createdAt
+    };
+}
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos en milisegundos
+
 // --- MENSAJES PARA SPINNER DE CARGA INICIAL (APP) ---
 const appLoadingMessages = [
     "Cargando Feria Virtual...",
@@ -243,6 +263,7 @@ const appLoadingMessages = [
     "¡Bienvenido! Un momentito más...",
     "Conectando con la nube..."
 ];
+
 // --- MENSAJES PARA SPINNER DE CARGA DE PRODUCTOS ---
 const productLoadingMessages = [
     "Ordenando las góndolas...",
@@ -256,6 +277,7 @@ const productLoadingMessages = [
     "Preparando todo para vos...",
     "¡Casi listo! Un momentito más..."
 ];
+
 // --- NAVEGACIÓN Y VISIBILIDAD DE SECCIONES ---
 window.showSection = function(sectionId) {
     document.querySelectorAll('.section').forEach(section => section.classList.remove('active-section'));
@@ -266,8 +288,10 @@ window.showSection = function(sectionId) {
     if (sectionId === 'products') loadProducts();
     if (sectionId === 'my-store' && isMerchant) loadMyProducts();
 }
+
 window.showLogin = function() { document.getElementById('loginModal').style.display = 'flex'; }
 window.hideLogin = function() { document.getElementById('loginModal').style.display = 'none'; }
+
 // --- FUNCIÓN hideModal ACTUALIZADA ---
 window.hideModal = function(modalId) {
     const modal = document.getElementById(modalId);
@@ -276,6 +300,7 @@ window.hideModal = function(modalId) {
     document.getElementById('navContainer').classList.remove('active');
     document.getElementById('navOverlay').classList.remove('active');
 }
+
 window.showProductModal = function(productId = null) {
     const modal = document.getElementById('productModal');
     const title = document.getElementById('productModalTitle');
@@ -290,24 +315,26 @@ window.showProductModal = function(productId = null) {
         delete modal.dataset.productId;
     }
 }
+
 async function loadProducts(containerId = 'productsGrid', filter = {}) {
     const productsGrid = document.getElementById(containerId);
     // Mostrar el corredor animado
     showRunnerOverlay();
     try {
-        let query = db.collection('products').where('published', '==', true);
-        if (filter.vendorId) {
-            query = query.where('vendorId', '==', filter.vendorId);
-        }
-        const snapshot = await query.orderBy('createdAt', 'desc').get();
+        // Usar Supabase: las columnas en la BD están en snake_case
+        let q = supabase.from('products').select('*').eq('published', true);
+        if (filter.vendorId) q = q.eq('vendor_id', filter.vendorId);
+        q = q.order('created_at', { ascending: false });
+        const { data, error } = await q;
         // Ocultar el corredor
         hideRunnerOverlay();
         productsGrid.innerHTML = '';
-        if (snapshot.empty) {
+        if (error) throw error;
+        if (!data || data.length === 0) {
             productsGrid.innerHTML = `<div>No hay productos para mostrar.</div>`;
             return;
         }
-        snapshot.forEach(doc => renderProductCard(productsGrid, { id: doc.id, ...doc.data() }));
+        data.forEach(row => renderProductCard(productsGrid, normalizeProductRow(row)));
     } catch (error) {
         console.error("Error loading products:", error);
         // Asegurarse de ocultar el overlay incluso si hay error
@@ -315,14 +342,16 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
         productsGrid.innerHTML = `<div>Error al cargar productos.</div>`;
     }
 }
+
 async function loadMyProducts() {
     if (!currentUser) return;
     const productsGrid = document.getElementById('myProductsGrid');
     // Mostrar el corredor animado
     showRunnerOverlay();
     try {
-        const snapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).orderBy('createdAt', 'desc').get();
-        const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const { data, error } = await supabase.from('products').select('*').eq('vendor_id', currentUser.id).order('created_at', { ascending: false });
+        if (error) throw error;
+        const products = (data || []).map(r => normalizeProductRow(r));
         // Ocultar el corredor
         hideRunnerOverlay();
         productsGrid.innerHTML = '';
@@ -337,6 +366,7 @@ async function loadMyProducts() {
         hideRunnerOverlay();
     }
 }
+
 window.registerMerchant = async function() {
     const name = document.getElementById('regName').value.trim();
     const email = document.getElementById('regEmail').value.trim();
@@ -351,24 +381,27 @@ window.registerMerchant = async function() {
     // --- INICIO DE LA CARGA ---
     startButtonLoading(registerBtn, 'Registrando...');
     try {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-        await db.collection('merchants').doc(user.uid).set({
-            name, email, business, phone, description,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        showMessage(msgEl, '¡Registro exitoso! Redirigiendo...', 'success');
+        // Crear usuario en Supabase
+        const { data: signData, error: signError } = await supabase.auth.signUp({ email, password });
+        if (signError) throw signError;
+        const userId = signData?.user?.id;
+        // Insertar merchant en la tabla 'merchants' (usar id igual al userId)
+        const { error: insertError } = await supabase.from('merchants').insert([{ id: userId, name, email, business, phone, description, created_at: new Date().toISOString() }]);
+        if (insertError) throw insertError;
+        showMessage(msgEl, '¡Registro exitoso! Revisa tu correo para confirmar (si aplica).', 'success');
         setTimeout(() => {
             hideLogin();
             showSection('profile');
         }, 1000);
     } catch (error) {
+        console.error('Error en registro:', error);
         showMessage(msgEl, 'Error en el registro.', 'error');
     } finally {
         // --- FIN DE LA CARGA (SIEMPRE se ejecuta, incluso si hay error) ---
         stopButtonLoading(registerBtn);
     }
 }
+
 window.login = async function() {
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
@@ -378,36 +411,41 @@ window.login = async function() {
     // --- INICIO DE LA CARGA ---
     startButtonLoading(loginBtn, 'Iniciando...');
     try {
-        await auth.signInWithEmailAndPassword(email, password);
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
         showMessage(msgEl, '¡Bienvenido!', 'success');
         setTimeout(() => {
             hideLogin();
             showSection('profile');
         }, 1000);
     } catch (error) {
+        console.error('Error login:', error);
         showMessage(msgEl, 'Correo o contraseña incorrectos.', 'error');
     } finally {
         // --- FIN DE LA CARGA ---
         stopButtonLoading(loginBtn);
     }
 }
-window.logout = function() { auth.signOut(); }
+
+window.logout = async function() { await supabase.auth.signOut(); }
+
 async function updateUserProfile(userId) {
     try {
-        const doc = await db.collection('merchants').doc(userId).get();
-        if (!doc.exists) return;
-        currentMerchantData = doc.data();
-        const productsSnapshot = await db.collection('products').where('vendorId', '==', userId).get();
+        const { data: merchant, error: merchantError } = await supabase.from('merchants').select('*').eq('id', userId).single();
+        if (merchantError) throw merchantError;
+        currentMerchantData = merchant;
+        const { data: products, error: productsError } = await supabase.from('products').select('*').eq('vendor_id', userId);
+        if (productsError) throw productsError;
         document.getElementById('userName').textContent = currentMerchantData.name;
         document.getElementById('userEmail').textContent = currentMerchantData.email;
         document.getElementById('userPhone').textContent = currentMerchantData.phone || 'No especificado';
         document.getElementById('userBusiness').textContent = currentMerchantData.business;
-        document.getElementById('userProducts').textContent = `${productsSnapshot.size} productos publicados`;
-        const createdAt = currentMerchantData.createdAt?.toDate();
+        document.getElementById('userProducts').textContent = `${(products || []).length} productos publicados`;
+        const createdAt = currentMerchantData.created_at;
         document.getElementById('userSince').textContent = createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A';
         const profilePicContainer = document.getElementById('profilePicContainer');
-        if (currentMerchantData.profilePic) {
-            profilePicContainer.innerHTML = `<img src="${currentMerchantData.profilePic}" alt="Foto de perfil" loading="lazy"><div class="profile-pic-edit-overlay"><i class="fas fa-camera"></i></div>`;
+        if (currentMerchantData.profile_pic) {
+            profilePicContainer.innerHTML = `<img src="${currentMerchantData.profile_pic}" alt="Foto de perfil" loading="lazy"><div class="profile-pic-edit-overlay"><i class="fas fa-camera"></i></div>`;
         } else {
              profilePicContainer.innerHTML = `<i class="fas fa-user"></i><div class="profile-pic-edit-overlay"><i class="fas fa-camera"></i></div>`;
         }
@@ -415,6 +453,7 @@ async function updateUserProfile(userId) {
         document.getElementById('storeDescription').value = currentMerchantData.description;
     } catch (error) { console.error("Error loading profile:", error); }
 }
+
 function setupImageUpload(areaId, inputId, fileVariableSetter) {
     const uploadArea = document.getElementById(areaId);
     const fileInput = document.getElementById(inputId);
@@ -431,21 +470,22 @@ function setupImageUpload(areaId, inputId, fileVariableSetter) {
         }
     });
 }
+
 async function loadProductForEdit(productId) {
     try {
-        const doc = await db.collection('products').doc(productId).get();
-        if (doc.exists) {
-            const product = doc.data();
-            document.getElementById('productName').value = product.name;
-            document.getElementById('productPrice').value = product.price;
-            document.getElementById('productDescription').value = product.description;
-            if (product.imageBase64) {
-                document.getElementById('productImageUploadArea').innerHTML = `<img src="${product.imageBase64}" class="preview-image">`;
-                document.getElementById('productImageUploadArea').dataset.existingImage = product.imageBase64;
-            }
+        const { data: row, error } = await supabase.from('products').select('*').eq('id', productId).single();
+        if (error) throw error;
+        const product = normalizeProductRow(row);
+        document.getElementById('productName').value = product.name;
+        document.getElementById('productPrice').value = product.price;
+        document.getElementById('productDescription').value = product.description;
+        if (product.imageBase64) {
+            document.getElementById('productImageUploadArea').innerHTML = `<img src="${product.imageBase64}" class="preview-image">`;
+            document.getElementById('productImageUploadArea').dataset.existingImage = product.imageBase64;
         }
     } catch (error) { console.error("Error loading product for edit:", error); } 
 }
+
 window.saveProduct = async function() {
     const isEditing = !!document.getElementById('productModal').dataset.productId;
     const productData = { name: document.getElementById('productName').value, price: parseFloat(document.getElementById('productPrice').value), description: document.getElementById('productDescription').value, vendorId: currentUser.uid, vendorName: document.getElementById('userBusiness').textContent };
@@ -459,14 +499,28 @@ window.saveProduct = async function() {
         });
     }
     productData.imageBase64 = imageBase64;
-    const docRef = isEditing ? db.collection('products').doc(document.getElementById('productModal').dataset.productId) : db.collection('products').doc();
-    if (!isEditing) productData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-    productData.published = true;
+    const dbProduct = {
+        name: productData.name,
+        price: productData.price,
+        description: productData.description,
+        vendor_id: productData.vendorId,
+        vendor_name: productData.vendorName,
+        image_base64: productData.imageBase64,
+        published: true
+    };
+    if (!isEditing) dbProduct.created_at = new Date().toISOString();
     // --- INICIO DE LA CARGA ---
     const saveBtn = document.querySelector('#productModal .btn-primary'); // El botón "Guardar Producto" en el modal
     startButtonLoading(saveBtn, 'Guardando...');
     try {
-        await docRef.set(productData, { merge: true });
+        if (isEditing) {
+            const productId = document.getElementById('productModal').dataset.productId;
+            const { error } = await supabase.from('products').update(dbProduct).eq('id', productId);
+            if (error) throw error;
+        } else {
+            const { error } = await supabase.from('products').insert([dbProduct]);
+            if (error) throw error;
+        }
         showToast('Producto guardado.', 'success');
         hideModal('productModal');
         loadMyProducts();
@@ -478,6 +532,7 @@ window.saveProduct = async function() {
         stopButtonLoading(saveBtn);
     }
 }
+
 function resetProductForm() {
     document.getElementById('productName').value = '';
     document.getElementById('productPrice').value = '';
@@ -487,6 +542,7 @@ function resetProductForm() {
     delete document.getElementById('productImageUploadArea').dataset.existingImage;
     selectedProductFile = null;
 }
+
 function renderProductCard(container, product) {
     const card = document.createElement('div');
     card.className = 'product-card';
@@ -503,13 +559,19 @@ function renderProductCard(container, product) {
             <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
             <p class="product-description">${product.description || ''}</p>
             <div class="product-actions">
-<div class="product-vendor">
-    <i class="fas fa-store"></i>
-    <a href="#" class="vendor-name-link" onclick="event.preventDefault(); showVendorPage('${product.vendorId}', '${product.vendorName}')">${product.vendorName || ''}</a>
-        </div>
+                <div class="product-vendor">
+                    <i class="fas fa-store"></i>
+                    <a href="#" onclick="event.preventDefault(); showVendorPage('${product.vendorId}', '${product.vendorName}')">${product.vendorName || ''}</a>
+                    <!-- === BOTÓN DE CARRITO PEQUEÑO A LA DERECHA DEL NOMBRE === -->
+                    <button class="btn-add-to-cart-minimal" onclick="event.stopPropagation(); addToCartWithAnimation(this, ${JSON.stringify(product).replace(/"/g, '&quot;')})">
+                        <i class="fas fa-cart-plus"></i>
+                    </button>
+                </div>
+            </div>
         </div>`;
     container.appendChild(card);
 }
+
 function renderMyProductCard(container, product) {
     const card = document.createElement('div');
     card.className = 'product-card';
@@ -535,19 +597,26 @@ function renderMyProductCard(container, product) {
         </div>`;
     container.appendChild(card);
 }
-// window.deleteProduct = async function(id) { if (confirm('¿Eliminar producto?')) { await db.collection('products').doc(id).delete(); loadMyProducts(); showToast('Producto eliminado.'); } }
-window.toggleProductStatus = async function(id, status) { await db.collection('products').doc(id).update({ published: status }); loadMyProducts(); }
+
+// window.deleteProduct = async function(id) { if (confirm('¿Eliminar producto?')) { await supabase.from('products').delete().eq('id', id); loadMyProducts(); showToast('Producto eliminado.'); } }
+window.toggleProductStatus = async function(id, status) { 
+    try {
+        const { error } = await supabase.from('products').update({ published: status }).eq('id', id);
+        if (error) throw error;
+        loadMyProducts();
+    } catch (err) { console.error('Error toggling product status:', err); }
+}
+
 window.showVendorPage = async function(vendorId, vendorName) {
     showSection('vendor-page');
     document.getElementById('vendorPageTitle').textContent = vendorName;
     const whatsappBtn = document.getElementById('vendorWhatsappBtn');
     whatsappBtn.style.display = 'none';
     try {
-        const doc = await db.collection('merchants').doc(vendorId).get();
-        if (doc.exists && doc.data().phone) {
-            const phone = doc.data().phone.replace(/[^0-9]/g, '');
-            if(phone) {
-                // --- CORRECCIÓN: Se eliminó el espacio en la URL ---
+        const { data: merchant, error } = await supabase.from('merchants').select('*').eq('id', vendorId).single();
+        if (!error && merchant && merchant.phone) {
+            const phone = merchant.phone.replace(/[^0-9]/g, '');
+            if (phone) {
                 whatsappBtn.href = `https://wa.me/${phone}`;
                 whatsappBtn.style.display = 'inline-flex';
             }
@@ -558,11 +627,13 @@ if (whatsappBtnElement) {
     // Remover clase 'expanded' de cualquier botón de WhatsApp previo
     const allWhatsappBtns = document.querySelectorAll('.lightbox-action-btn.whatsapp-btn');
     allWhatsappBtns.forEach(btn => btn.classList.remove('expanded'));
+
     // Agregar evento 'click' para dispositivos táctiles
     whatsappBtnElement.addEventListener('click', function() {
         // Agregar la clase 'expanded' a este botón
         this.classList.add('expanded');
     });
+
     // Opcional: Si quieres que se contraiga al hacer clic fuera del botón, puedes agregar un listener al lightbox
     const lightbox = document.getElementById('imageLightbox');
     lightbox.addEventListener('click', function(e) {
@@ -576,6 +647,7 @@ if (whatsappBtnElement) {
     } catch (error) { console.error("Error fetching vendor phone:", error); }
     loadProducts('vendorProductsGrid', { vendorId: vendorId });
 }
+
 window.toggleStoreEditMode = function(isEditing) {
     document.getElementById('storeName').readOnly = !isEditing;
     document.getElementById('storeDescription').readOnly = !isEditing;
@@ -586,14 +658,16 @@ window.toggleStoreEditMode = function(isEditing) {
         document.getElementById('storeDescription').value = currentMerchantData.description;
     }
 }
+
 window.saveStoreInfo = async function() {
     const newData = { business: document.getElementById('storeName').value, description: document.getElementById('storeDescription').value };
     // --- INICIO DE LA CARGA ---
     const saveBtn = document.querySelector('#storeFormFooter .btn-primary'); // El botón "Guardar Cambios" del puesto
     startButtonLoading(saveBtn, 'Guardando...');
     try {
-        await db.collection('merchants').doc(currentUser.uid).update(newData);
-        await updateUserProfile(currentUser.uid); 
+        const { error } = await supabase.from('merchants').update(newData).eq('id', currentUser.id);
+        if (error) throw error;
+        await updateUserProfile(currentUser.id); 
         toggleStoreEditMode(false);
         showToast('Información del puesto actualizada.', 'success');
     } catch (error) {
@@ -604,6 +678,7 @@ window.saveStoreInfo = async function() {
         stopButtonLoading(saveBtn);
     }
 }
+
 window.toggleProfileEditMode = function(isEditing) {
     const card = document.getElementById('profileCard');
     card.classList.toggle('edit-mode', isEditing);
@@ -615,6 +690,7 @@ window.toggleProfileEditMode = function(isEditing) {
         document.getElementById('userPhoneInput').value = currentPhone === 'No especificado' ? '' : currentPhone;
     }
 }
+
 window.saveProfileInfo = async function() {
     const newData = {
         name: document.getElementById('userNameInput').value.trim(),
@@ -624,8 +700,9 @@ window.saveProfileInfo = async function() {
     const saveBtn = document.querySelector('#profileFormFooter .btn-primary'); // El botón "Guardar Cambios" del perfil
     startButtonLoading(saveBtn, 'Actualizando...');
     try {
-        await db.collection('merchants').doc(currentUser.uid).update(newData);
-        await updateUserProfile(currentUser.uid);
+        const { error } = await supabase.from('merchants').update(newData).eq('id', currentUser.id);
+        if (error) throw error;
+        await updateUserProfile(currentUser.id);
         toggleProfileEditMode(false);
         showToast('Perfil actualizado.', 'success');
     } catch (error) {
@@ -636,12 +713,14 @@ window.saveProfileInfo = async function() {
         stopButtonLoading(saveBtn);
     }
 }
+
 window.showProfilePicModal = function() {
     document.getElementById('profilePicModal').style.display = 'flex';
     selectedProfilePicFile = null;
     selectedAvatarUrl = null;
     document.getElementById('profilePicUploadArea').innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic para subir</p>';
 }
+
 window.saveProfilePic = async function() {
     let picUrl = null;
     if (selectedProfilePicFile) {
@@ -655,14 +734,21 @@ window.saveProfilePic = async function() {
         picUrl = selectedAvatarUrl;
     }
     if(picUrl) {
-        await db.collection('merchants').doc(currentUser.uid).update({ profilePic: picUrl });
-        await updateUserProfile(currentUser.uid);
-        hideModal('profilePicModal');
-        showToast('Foto de perfil actualizada.', 'success');
+        try {
+            const { error } = await supabase.from('merchants').update({ profile_pic: picUrl }).eq('id', currentUser.id);
+            if (error) throw error;
+            await updateUserProfile(currentUser.id);
+            hideModal('profilePicModal');
+            showToast('Foto de perfil actualizada.', 'success');
+        } catch (err) {
+            console.error('Error updating profile pic:', err);
+            showToast('Error al actualizar la foto de perfil.', 'error');
+        }
     } else {
         showToast('No seleccionaste ninguna imagen.', 'error');
     }
 }
+
 function populateAvatars() {
     const container = document.getElementById('avatarSelection');
     container.innerHTML = '';
@@ -682,24 +768,17 @@ function populateAvatars() {
         container.appendChild(avatarItem);
     });
 }
+
 // --- COPIA DE SEGURIDAD (IMPORT/EXPORT JSON) ---
 window.exportCatalogToJSON = async function() {
     if (!currentUser) return showToast('Debes iniciar sesión para exportar tu catálogo.', 'error');
     hideModal('backup-options-modal');
     showToast('Preparando la exportación...', 'success');
     try {
-        const snapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).get();
-        if (snapshot.empty) return showToast('No tienes productos para exportar.', 'error');
-        const productsToExport = snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                name: data.name,
-                price: data.price,
-                description: data.description,
-                imageBase64: data.imageBase64 || null,
-                published: typeof data.published === 'boolean' ? data.published : true
-            };
-        });
+        const { data: productsData, error } = await supabase.from('products').select('*').eq('vendor_id', currentUser.id);
+        if (error) throw error;
+        if (!productsData || productsData.length === 0) return showToast('No tienes productos para exportar.', 'error');
+        const productsToExport = productsData.map(d => ({ name: d.name, price: d.price, description: d.description, imageBase64: d.image_base64 || null, published: typeof d.published === 'boolean' ? d.published : true }));
         const jsonString = JSON.stringify(productsToExport, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -716,6 +795,7 @@ window.exportCatalogToJSON = async function() {
         showToast('Hubo un error al exportar el catálogo.', 'error');
     }
 }
+
 window.handleJsonImport = function(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -740,28 +820,23 @@ window.handleJsonImport = function(event) {
     };
     reader.readAsText(file);
 }
+
 async function importCatalogFromJSON(products) {
     if (!Array.isArray(products) || products.length === 0) return showToast('El archivo no contiene productos para importar.', 'error');
     showToast(`Importando ${products.length} productos...`, 'success');
     try {
-        const importPromises = products.map(product => {
-            if (!product.name) return Promise.resolve();
-            const newProductData = {
-                name: product.name, price: product.price || 0, description: product.description || '', imageBase64: product.imageBase64 || null,
-                published: typeof product.published === 'boolean' ? product.published : true,
-                vendorId: currentUser.uid, vendorName: currentMerchantData.business, createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
-            return db.collection('products').add(newProductData);
-        });
-        await Promise.all(importPromises);
+        const rows = products.map(p => ({ name: p.name, price: p.price || 0, description: p.description || '', image_base64: p.imageBase64 || null, published: typeof p.published === 'boolean' ? p.published : true, vendor_id: currentUser.id, vendor_name: currentMerchantData.business, created_at: new Date().toISOString() }));
+        const { error } = await supabase.from('products').insert(rows);
+        if (error) throw error;
         showToast(`${products.length} productos importados correctamente.`, 'success');
         loadMyProducts();
-        updateUserProfile(currentUser.uid);
+        updateUserProfile(currentUser.id);
     } catch (error) {
         console.error("Error durante la importación masiva:", error);
         showToast('Ocurrió un error durante la importación.', 'error');
     }
 }
+
 // --- GENERACIÓN DE CATÁLOGOS ---
 const PDF_THEMES = {
     naturaleza: { name: 'Naturaleza', icon: 'fa-leaf', headerColor: '#22c55e', accentColor: '#16a34a' },
@@ -773,6 +848,7 @@ const PDF_THEMES = {
     minimalista: { name: 'Minimalista', icon: 'fa-dot-circle', headerColor: '#6b7280', accentColor: '#4b5563' },
     elegante: { name: 'Elegante', icon: 'fa-gem', headerColor: '#d97706', accentColor: '#b45309' }
 };
+
 window.showExportModal = function(exportType) {
     if (!currentUser) return showToast('Debes iniciar sesión para crear un catálogo.', 'error');
     const grid = document.getElementById('themeSelectionGrid');
@@ -788,17 +864,19 @@ window.showExportModal = function(exportType) {
     }
     document.getElementById('exportThemeModal').style.display = 'flex';
 }
+
 async function generatePdfWithJsPDF(themeKey) {
     hideModal('exportThemeModal');
     const loadingOverlay = document.getElementById('globalLoadingOverlay');
     try {
         loadingOverlay.style.display = 'flex';
-        const productsSnapshot = await db.collection('products').where('vendorId', '==', currentUser.uid).where('published', '==', true).get();
-        if (productsSnapshot.empty) {
+        const { data: productsData, error } = await supabase.from('products').select('*').eq('vendor_id', currentUser.id).eq('published', true).order('created_at', { ascending: false });
+        if (error) throw error;
+        if (!productsData || productsData.length === 0) {
             showToast('No tienes productos publicados para incluir.', 'error');
             return;
         }
-        const products = productsSnapshot.docs.map(doc => doc.data());
+        const products = productsData.map(r => normalizeProductRow(r));
         const theme = PDF_THEMES[themeKey];
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -876,11 +954,14 @@ async function generatePdfWithJsPDF(themeKey) {
         loadingOverlay.style.display = 'none';
     }
 }
+
 // === NUEVAS FUNCIONES PARA FICHA DE PRODUCTO (JPG) ===
 async function getProductsByVendor(vendorId) {
-    const snapshot = await db.collection('products').where('vendorId', '==', vendorId).orderBy('createdAt', 'desc').get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const { data, error } = await supabase.from('products').select('*').eq('vendor_id', vendorId).order('created_at', { ascending: false });
+    if (error) { console.error('Error fetching products by vendor:', error); return []; }
+    return (data || []).map(r => normalizeProductRow(r));
 }
+
 async function loadUserProductsForSelection() {
     if (!currentUser) return;
     hideModal('catalog-options-modal');
@@ -912,6 +993,7 @@ async function loadUserProductsForSelection() {
         container.innerHTML = '<p>Error al cargar productos.</p>';
     }
 }
+
 /**
  * Genera una imagen JPG de un solo producto usando un canvas.
  * @param {object} product El objeto del producto.
@@ -977,6 +1059,7 @@ async function generateProductJPG(product) {
     };
     productImage.onerror = () => showToast("Error al cargar la imagen del producto.", "error");
 }
+
 function wrapText(context, text, x, y, maxWidth, lineHeight) {
     const words = text.split(' ');
     let line = '';
@@ -993,10 +1076,12 @@ function wrapText(context, text, x, y, maxWidth, lineHeight) {
     }
     context.fillText(line, x, y);
 }
+
 // --- UTILIDADES Y FUNCIONES AUXILIARES ---
 // --- Lightbox con navegación entre productos del mismo vendedor ---
 let currentVendorProducts = [];
 let currentProductIndex = 0;
+
 window.showImageLightbox = async function(imageBase64, productData = null) {
     if (!productData || !productData.vendorId) {
         console.warn("No se recibió información del producto.");
@@ -1010,13 +1095,10 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
     lightboxImg.classList.add('loading');
     lightbox.style.display = 'flex'; // Mostramos el lightbox inmediatamente
     try {
-        // 1. Cargar TODOS los productos del mismo vendedor
-        const snapshot = await db.collection('products')
-            .where('vendorId', '==', productData.vendorId)
-            .where('published', '==', true)
-            .orderBy('createdAt', 'desc')
-            .get();
-        currentVendorProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // 1. Cargar TODOS los productos del mismo vendedor desde Supabase
+        const { data, error } = await supabase.from('products').select('*').eq('vendor_id', productData.vendorId).eq('published', true).order('created_at', { ascending: false });
+        if (error) throw error;
+        currentVendorProducts = (data || []).map(r => normalizeProductRow(r));
         // 2. Encontrar el índice del producto actual
         currentProductIndex = currentVendorProducts.findIndex(p => p.imageBase64 === imageBase64);
         if (currentProductIndex === -1) {
@@ -1035,12 +1117,17 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
         lightboxImg.classList.remove('loading');
     }
 }
+
+/**
+ * Muestra el producto actual en el lightbox y actualiza los botones de WhatsApp e Ir al Puesto.
+ */
 /**
  * Muestra el producto actual en el lightbox y actualiza los botones de WhatsApp e Ir al Puesto.
  */
 function showCurrentProductInLightbox() {
     const product = currentVendorProducts[currentProductIndex];
     if (!product) return;
+
     const img = document.getElementById('lightboxImg');
     // Aplicar efecto fade a la imagen
     img.classList.remove('lightbox-img-visible');
@@ -1056,64 +1143,144 @@ function showCurrentProductInLightbox() {
             img.classList.add('lightbox-img-visible');
         };
     }, 50);
+
     const lightbox = document.getElementById('imageLightbox');
     lightbox.style.display = 'flex';
 
+    // --- CONFIGURAR EL CARRITO FLOTANTE ---
+    const floatingCartBtn = document.createElement('div');
+    floatingCartBtn.className = 'floating-cart-btn';
+    floatingCartBtn.innerHTML = '<i class="fas fa-shopping-cart"></i>';
+    floatingCartBtn.title = 'Agregar al carrito';
+    floatingCartBtn.onclick = function(event) {
+        event.stopPropagation();
+        addToCartWithAnimation(this, product);
+    };
+    // Quitamos cualquier carrito flotante anterior
+    const existingCartBtn = document.querySelector('.floating-cart-btn');
+    if (existingCartBtn) existingCartBtn.remove();
+    // Añadimos el nuevo carrito flotante
+    lightbox.appendChild(floatingCartBtn);
+    // --- FIN DE LA CONFIGURACIÓN DEL CARRITO FLOTANTE ---
+
     // --- Configurar el botón "Ir al Puesto" ---
-// --- Configurar el botón "Ir al Puesto" ---
-const storeBtn = document.getElementById('lightboxStoreBtn');
-if (product.vendorId && product.vendorName) {
-    // Mostrar el botón
-    storeBtn.style.display = 'flex';
-    // Actualizar el texto del botón para incluir el nombre del puesto
-    storeBtn.innerHTML = `<i class="fas fa-store"></i> Ir al puesto de: ${product.vendorName}`;
-    // Configurar la acción del botón
-    storeBtn.onclick = function(event) {
-        event.preventDefault();
-        hideImageLightbox();
-        showVendorPage(product.vendorId, product.vendorName);
-    };
-} else {
-    // Ocultar el botón si no hay información del vendedor
-    storeBtn.style.display = 'none';
-    storeBtn.onclick = function(event) {
-        event.preventDefault();
-        showToast('Información del vendedor no disponible.', 'error');
-    };
-}    // --- FIN DE LA MODIFICACIÓN PARA EL BOTÓN DE PUESTO ---
-    // --- Configurar el botón de WhatsApp ---
-    const whatsappBtn = document.getElementById('lightboxWhatsappBtn');
-    whatsappBtn.style.display = 'none';
-    whatsappBtn.href = '#';
-    if (product.vendorId) {
-        db.collection('merchants').doc(product.vendorId).get().then(vendorDoc => {
-            if (vendorDoc.exists && vendorDoc.data().phone) {
-                const phone = vendorDoc.data().phone.replace(/[^0-9]/g, '');
-                if (phone) {
-                    const productName = product.name || 'un producto';
-                    const productPrice = product.price ? `$${parseFloat(product.price).toFixed(2)}` : 'precio no especificado';
-                    const baseMessage = `Hola, vi tu producto "${productName}" en Feria Virtual. ¿Me podrías dar más información? Precio: ${productPrice}.`;
-                    const message = encodeURI(baseMessage);
-                    whatsappBtn.href = `https://wa.me/${phone}?text=${message}`;
-                    whatsappBtn.style.display = 'flex';
-                }
-            }
-        }).catch(error => {
-            console.error("Error al obtener teléfono del vendedor:", error);
-            whatsappBtn.style.display = 'flex';
-            whatsappBtn.onclick = function(event) {
-                event.preventDefault();
-                showToast('No se pudo cargar el contacto del vendedor. Inténtalo más tarde.', 'error');
-            };
-        });
+    const storeBtn = document.getElementById('lightboxStoreBtn');
+    if (product.vendorId && product.vendorName) {
+        storeBtn.style.display = 'flex';
+        storeBtn.onclick = function(event) {
+            event.preventDefault();
+            hideImageLightbox();
+            showVendorPage(product.vendorId, product.vendorName);
+        };
     } else {
-        whatsappBtn.style.display = 'flex';
-        whatsappBtn.onclick = function(event) {
+        storeBtn.style.display = 'none';
+        storeBtn.onclick = function(event) {
             event.preventDefault();
             showToast('Información del vendedor no disponible.', 'error');
         };
     }
+    // --- FIN DE LA MODIFICACIÓN PARA EL BOTÓN DE PUESTO ---
+
+    // --- Configurar el botón de WhatsApp ---
+    const whatsappBtn = document.getElementById('lightboxWhatsappBtn');
+
+    // === NUEVO: MOSTRAR EL CÍRCULO CON EL ÍCONO INMEDIATAMENTE ===
+    whatsappBtn.style.display = 'flex'; // Mostrar el botón de inmediato
+    whatsappBtn.href = '#'; // Enlace temporal
+    whatsappBtn.innerHTML = `
+        <i class="fab fa-whatsapp"></i>
+        <span class="whatsapp-btn-text">Chatear por WhatsApp</span>
+    `;
+
+    // === NUEVO: DESACTIVAR LA EXPANSIÓN HASTA QUE ESTÉ LISTO ===
+    // Removemos temporalmente las clases que permiten la expansión
+    whatsappBtn.classList.remove('lightbox-whatsapp-circle-btn');
+    whatsappBtn.classList.add('lightbox-whatsapp-circle-btn--loading');
+
+    // === NUEVO: ESTILOS TEMPORALES PARA EL ESTADO "CARGANDO" ===
+    const style = document.createElement('style');
+    style.id = 'whatsapp-loading-style';
+    style.innerHTML = `
+        .lightbox-whatsapp-circle-btn--loading {
+            position: absolute !important;
+            top: 20px !important;
+            left: 20px !important;
+            z-index: 1003 !important;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #25D366;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-weight: 700;
+            box-shadow: 0 4px 8px rgba(37, 211, 102, 0.3);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        .lightbox-whatsapp-circle-btn--loading i {
+            font-size: 24px;
+            margin: 0;
+        }
+        .lightbox-whatsapp-circle-btn--loading .whatsapp-btn-text {
+            display: none; /* Ocultar texto completamente en este estado */
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Ahora, intentamos cargar la información del vendedor
+    if (product.vendorId) {
+        supabase.from('merchants').select('*').eq('id', product.vendorId).single()
+            .then(({ data: vendor, error }) => {
+                if (error) return setupFallbackWhatsapp(whatsappBtn);
+                if (vendor && vendor.phone) {
+                    const phone = vendor.phone.replace(/[^0-9]/g, '');
+                    if (phone) {
+                        const productName = product.name || 'un producto';
+                        const productPrice = product.price ? `$${parseFloat(product.price).toFixed(2)}` : 'precio no especificado';
+                        const baseMessage = `Hola, vi tu producto "${productName}" en Feria Virtual. ¿Me podrías dar más información? Precio: ${productPrice}.`;
+                        const message = encodeURI(baseMessage);
+                        whatsappBtn.href = `https://wa.me/${phone}?text=${message}`;
+                        whatsappBtn.classList.remove('lightbox-whatsapp-circle-btn--loading');
+                        whatsappBtn.classList.add('lightbox-whatsapp-circle-btn');
+                        const tempStyle = document.getElementById('whatsapp-loading-style');
+                        if (tempStyle) tempStyle.remove();
+                    } else {
+                        setupFallbackWhatsapp(whatsappBtn);
+                    }
+                } else {
+                    setupFallbackWhatsapp(whatsappBtn);
+                }
+            }).catch(err => {
+                console.error("Error al obtener teléfono del vendedor:", err);
+                setupFallbackWhatsapp(whatsappBtn);
+            });
+    } else {
+        setupFallbackWhatsapp(whatsappBtn);
+    }
     // --- FIN DE LA CONFIGURACIÓN DEL BOTÓN DE WHATSAPP ---
+}
+
+/**
+ * Configura el comportamiento de fallback para el botón de WhatsApp.
+ * @param {HTMLElement} whatsappBtn - El botón de WhatsApp.
+ */
+function setupFallbackWhatsapp(whatsappBtn) {
+    whatsappBtn.href = '#';
+    whatsappBtn.onclick = function(event) {
+        event.preventDefault();
+        showToast('No se pudo cargar el contacto del vendedor. Inténtalo más tarde.', 'error');
+    };
+
+    // Activar la expansión con el mensaje de error
+    whatsappBtn.classList.remove('lightbox-whatsapp-circle-btn--loading');
+    whatsappBtn.classList.add('lightbox-whatsapp-circle-btn');
+
+    // Eliminar el estilo temporal
+    const tempStyle = document.getElementById('whatsapp-loading-style');
+    if (tempStyle) tempStyle.remove();
 }
 /**
  * Configura los eventos táctiles y de mouse para navegar entre productos.
@@ -1152,6 +1319,7 @@ function setupSwipeGestures() {
         }
     }
 }
+
 /**
  * Muestra el producto anterior.
  */
@@ -1161,6 +1329,7 @@ function prevProduct() {
         showCurrentProductInLightbox();
     }
 }
+
 /**
  * Muestra el siguiente producto.
  */
@@ -1170,9 +1339,11 @@ function nextProduct() {
         showCurrentProductInLightbox();
     }
 }
+
 window.hideImageLightbox = function() {
     document.getElementById('imageLightbox').style.display = 'none';
 }
+
 /**
  * Muestra el overlay de carga global con un mensaje personalizado o aleatorio según el tipo.
  * @param {string} message - Mensaje a mostrar. Si es 'app' o 'productos', se usa un mensaje aleatorio de la lista correspondiente.
@@ -1195,12 +1366,14 @@ function showGlobalLoadingOverlay(message = 'Cargando...') {
     if (msgEl) msgEl.textContent = msg;
     overlay.style.display = 'flex';
 }
+
 function hideGlobalLoadingOverlay() {
     const overlay = document.getElementById('globalLoadingOverlay');
     if (overlay) overlay.style.display = 'none';
     // También ocultamos el corredor
     hideRunnerOverlay();
 }
+
 // --- NUEVAS FUNCIONES PARA EL CORREDOR ANIMADO ---
 /**
  * Muestra el overlay del corredor animado.
@@ -1211,6 +1384,7 @@ function showRunnerOverlay() {
         overlay.classList.add('active');
     }
 }
+
 /**
  * Oculta el overlay del corredor animado.
  */
@@ -1220,6 +1394,7 @@ function hideRunnerOverlay() {
         overlay.classList.remove('active');
     }
 }
+
 function updateAuthUI() {
     if (isMerchant && currentUser) {
         authContainer.innerHTML = `
@@ -1242,6 +1417,7 @@ function updateAuthUI() {
         storeLink.style.display = 'none';
     }
 }
+
 function showMessage(element, message, type) { element.textContent = message; element.className = `login-message login-${type}`; element.style.display = 'block'; }
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
@@ -1253,6 +1429,7 @@ function showToast(message, type = 'success') {
         toast.addEventListener('animationend', () => toast.remove());
     }, 3000);
 }
+
 window.toggleChatbot = function toggleChatbot() {
     const ctn = document.getElementById('chatbotContainer');
     const isOpen = ctn.classList.toggle('visible');
@@ -1262,6 +1439,7 @@ window.toggleChatbot = function toggleChatbot() {
          ctn.style.opacity = isOpen ? '1' : '0';
     }
 };
+
 // --- NUEVAS FUNCIONES UTILITARIAS PARA BLOQUEO DE BOTONES ---
 /**
  * Activa el estado de carga en un botón.
@@ -1276,6 +1454,7 @@ function startButtonLoading(button, loadingText = 'Cargando...') {
     button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
     button.style.opacity = '0.7'; // Opcional: da feedback visual de que está deshabilitado
 }
+
 /**
  * Restaura un botón a su estado original después de la carga.
  * @param {HTMLButtonElement} button - El botón a restaurar.
@@ -1287,79 +1466,19 @@ function stopButtonLoading(button) {
     button.style.opacity = '1';
     delete button.dataset.originalText; // Limpiamos
 }
-// --- CARRITO DE COMPRAS (NUEVA VERSIÓN: CARRITO DE CONTACTOS POR VENDEDOR) ---
+
+// --- CARRITO DE COMPRAS ---
 let shoppingCart = [];
-/**
- * Guarda el carrito actual en localStorage.
- */
-function saveCartToLocalStorage() {
-    try {
-        const cartData = {
-            items: shoppingCart,
-            timestamp: Date.now()
-        };
-        localStorage.setItem('feriaVirtualCart', JSON.stringify(cartData));
-        console.log('🛒 Carrito guardado en localStorage.');
-    } catch (error) {
-        console.error('Error al guardar el carrito:', error);
-    }
-}
-/**
- * Carga el carrito desde localStorage si existe y no ha expirado.
- * @param {number} maxAgeMs - Tiempo máximo de vida del carrito en milisegundos (opcional, por defecto 7 días).
- */
-function loadCartFromLocalStorage(maxAgeMs = 7 * 24 * 60 * 60 * 1000) {
-    try {
-        const cartData = JSON.parse(localStorage.getItem('feriaVirtualCart'));
-        if (!cartData || !Array.isArray(cartData.items)) {
-            return;
-        }
-        // Verificar si el carrito no ha expirado
-        if (Date.now() - cartData.timestamp > maxAgeMs) {
-            console.log('🛒 Carrito expirado. Se descarta.');
-            localStorage.removeItem('feriaVirtualCart');
-            return;
-        }
-        shoppingCart = cartData.items;
-        console.log('🛒 Carrito cargado desde localStorage.');
-        updateCartUI();
-    } catch (error) {
-        console.error('Error al cargar el carrito:', error);
-        // Si hay un error (por ejemplo, datos corruptos), limpiamos el localStorage
-        localStorage.removeItem('feriaVirtualCart');
-    }
-}
-/**
- * Vacía el carrito completamente y actualiza la UI y localStorage.
- */
-function clearCart() {
-    if (shoppingCart.length === 0) {
-        showToast('El carrito ya está vacío.', 'info');
-        return;
-    }
-    if (confirm('¿Estás seguro de que deseas vaciar tu lista de contactos?')) {
-        shoppingCart = [];
-        updateCartUI();
-        saveCartToLocalStorage();
-        showToast('Lista de contactos vaciada.', 'success');
-    }
-}
+
 /**
  * Agrega un producto al carrito con animación visual.
  * @param {HTMLElement} button - El botón que fue clickeado (para la animación).
  * @param {Object} product - El objeto del producto a agregar.
  */
 function addToCartWithAnimation(button, product) {
-    // Validar que el producto tenga un precio válido
-    if (product.price == null || isNaN(parseFloat(product.price))) {
-        showToast('Este producto no tiene un precio válido.', 'error');
-        return;
-    }
-
     // 1. Aplicar efecto de rebote al carrito flotante
     button.classList.add('bounce');
     setTimeout(() => button.classList.remove('bounce'), 600);
-
     // 2. Buscamos si el producto ya está en el carrito
     const existingItem = shoppingCart.find(item => item.id === product.id);
     if (existingItem) {
@@ -1369,27 +1488,22 @@ function addToCartWithAnimation(button, product) {
         // Si es nuevo, lo agregamos con cantidad 1
         shoppingCart.push({
             id: product.id,
-            name: product.name || 'Producto sin nombre',
-            price: parseFloat(product.price), // Convertimos a número
+            name: product.name,
+            price: product.price,
             imageBase64: product.imageBase64,
             vendorId: product.vendorId,
-            vendorName: product.vendorName || 'Vendedor desconocido',
+            vendorName: product.vendorName,
             quantity: 1
         });
     }
-
     // 3. Actualizamos la interfaz
     updateCartUI();
-
     // 4. Crear y mostrar animación de confirmación
     createCartConfirmationAnimation(button);
-
     // 5. Mostrar toast de confirmación
     showToast(`${product.name} agregado al carrito.`, 'success');
-
-    // === NUEVO: Guardar en localStorage ===
-    saveCartToLocalStorage();
 }
+
 /**
  * Crea una animación visual que simula que el producto vuela hacia el ícono del carrito.
  * @param {HTMLElement} sourceElement - El elemento desde donde inicia la animación.
@@ -1431,6 +1545,7 @@ function createCartConfirmationAnimation(sourceElement) {
         }
     }, 600);
 }
+
 /**
  * Función de respaldo para mantener compatibilidad (llama a la nueva función).
  * @param {Object} product - El objeto del producto a agregar.
@@ -1440,6 +1555,7 @@ function addToCart(product) {
     const anyCartButton = document.querySelector('.btn-add-to-cart-overlay, .btn-add-to-cart-minimal') || document.body;
     addToCartWithAnimation(anyCartButton, product);
 }
+
 /**
  * Elimina un producto del carrito.
  * @param {string} productId - El ID del producto a eliminar.
@@ -1447,180 +1563,72 @@ function addToCart(product) {
 function removeFromCart(productId) {
     shoppingCart = shoppingCart.filter(item => item.id !== productId);
     updateCartUI();
-    // === NUEVO: Guardar en localStorage ===
-    saveCartToLocalStorage();
 }
+
 /**
- * Actualiza toda la interfaz del carrito: agrupa productos por vendedor y genera botones de WhatsApp.
- * También gestiona el badge flotante en móviles.
+ * Actualiza la cantidad de un producto en el carrito.
+ * @param {string} productId - El ID del producto.
+ * @param {number} newQuantity - La nueva cantidad (debe ser >= 1).
  */
-function updateCartUI() {
-    // Actualizar el contador global en el ícono del header
-    const itemCount = shoppingCart.reduce((total, item) => total + item.quantity, 0);
-    document.getElementById('cartItemCount').textContent = itemCount;
-
-    // === NUEVO: Actualizar y gestionar el badge flotante para móviles ===
-    const mobileBadge = document.getElementById('mobileCartBadge');
-    const mobileCount = document.getElementById('mobileCartCount');
-    
-    if (itemCount > 0) {
-        mobileCount.textContent = itemCount;
-        // Mostrar el badge solo en pantallas pequeñas
-        if (window.innerWidth <= 768) {
-            mobileBadge.classList.add('active');
-            mobileBadge.style.display = 'flex';
-        } else {
-            mobileBadge.classList.remove('active');
-            mobileBadge.style.display = 'none';
-        }
-    } else {
-        mobileBadge.classList.remove('active');
-        mobileBadge.style.display = 'none';
-    }
-    // === FIN DE LA ACTUALIZACIÓN DEL BADGE ===
-
-    const container = document.getElementById('cartItemsContainer');
-    
-    if (shoppingCart.length === 0) {
-        container.innerHTML = '<p class="empty-cart-message">Tu lista de contactos está vacía.</p>';
+function updateCartItemQuantity(productId, newQuantity) {
+    if (newQuantity < 1) {
+        removeFromCart(productId);
         return;
     }
-
-    // Agrupar productos por vendedor
-    const vendorsMap = {};
-    shoppingCart.forEach(item => {
-        // Asegurarse de que el vendedor tenga un ID válido
-        if (!item.vendorId) {
-            console.warn('Producto sin vendorId encontrado en el carrito:', item);
-            return; // Saltar este item
-        }
-        if (!vendorsMap[item.vendorId]) {
-            vendorsMap[item.vendorId] = {
-                vendorName: item.vendorName || 'Vendedor desconocido',
-                vendorId: item.vendorId,
-                items: [],
-                total: 0
-            };
-        }
-        vendorsMap[item.vendorId].items.push(item);
-        // Asegurarse de que el precio es un número válido
-        const price = parseFloat(item.price) || 0;
-        vendorsMap[item.vendorId].total += price * item.quantity;
-    });
-
-    // Convertir el mapa en un array para iterar
-    const vendors = Object.values(vendorsMap);
-
-    // Generar HTML para cada vendedor
-    let html = '';
-    vendors.forEach(vendor => {
-        html += `
-            <div class="cart-vendor-block">
-                <div class="cart-vendor-header">
-                    <h4><i class="fas fa-store"></i> ${vendor.vendorName}</h4>
-                    <div class="cart-vendor-total">Total: $${vendor.total.toFixed(2)}</div>
-                </div>
-                <div class="cart-vendor-items">
-        `;
-
-        vendor.items.forEach(item => {
-            // Asegurarse de que el precio es un número
-            const displayPrice = parseFloat(item.price) || 0;
-            html += `
-                <div class="cart-item">
-                    <div class="cart-item-image" style="width: 60px; height: 60px; background: #f0f0f0; border-radius: 8px; background-image: url('${item.imageBase64 || 'https://placehold.co/60x60/e2e8f0/a0aec0?text=No+Img'}'); background-size: cover; background-position: center;"></div>
-                    <div class="cart-item-details">
-                        <h5 class="cart-item-title">${item.name || 'Producto sin nombre'}</h5>
-                        <p class="cart-item-price">$${displayPrice.toFixed(2)} c/u</p>
-<div class="cart-item-quantity">
-    <button onclick="updateCartItemQuantity('${item.id}', ${Math.max(1, item.quantity - 1)})" ${item.quantity <= 1 ? 'disabled' : ''}>-</button>
-    <span>${item.quantity}</span>
-    <button onclick="updateCartItemQuantity('${item.id}', ${item.quantity + 1})">+</button>
-    <!-- === NUEVO BOTÓN DE PAPELERA === -->
-    <button onclick="removeFromCart('${item.id}')" class="btn-trash" title="Eliminar producto">
-        <i class="fas fa-trash"></i>
-    </button>
-</div>                    </div>
-                </div>
-            `;
-        });
-
-        // Botón de WhatsApp
-        html += `
-                </div>
-                <div class="cart-vendor-actions">
-                    <button class="btn btn-whatsapp" onclick="contactVendorViaWhatsApp('${vendor.vendorId}', ${JSON.stringify(vendor.items).replace(/"/g, '&quot;')})">
-<i class="fab fa-whatsapp"></i> Contactar con ${vendor.vendorName}
-                    </button>
-                </div>
-            </div>
-        `;
-    });
-
-    container.innerHTML = html;
-}
-/**
- * Genera y abre un enlace de WhatsApp con un mensaje pre-escrito para el vendedor.
- * @param {string} vendorId - ID del vendedor.
- * @param {Array} items - Lista de productos seleccionados para este vendedor.
- */
-async function contactVendorViaWhatsApp(vendorId, items) {
-    try {
-        // Obtener el teléfono del vendedor desde Firestore
-        const vendorDoc = await db.collection('merchants').doc(vendorId).get();
-        if (!vendorDoc.exists) {
-            showToast('No se encontró la información del vendedor.', 'error');
-            return;
-        }
-        const vendorData = vendorDoc.data();
-        let phone = vendorData.phone;
-        if (!phone) {
-            showToast('Este vendedor no tiene un número de WhatsApp registrado.', 'error');
-            return;
-        }
-        // Limpiar el número: solo dígitos
-        phone = phone.replace(/\D/g, '');
-        // Construir el mensaje
-        let message = `Hola, quiero comprar los siguientes productos de tu puesto en Feria Virtual:\n`;
-        let total = 0;
-        items.forEach(item => {
-            const subtotal = item.price * item.quantity;
-            message += `- ${item.name} (${item.quantity} u.): $${subtotal.toFixed(2)}\n`;
-            total += subtotal;
-        });
-        message += `Total: $${total.toFixed(2)}\n`;
-        message += `Por favor, confirmame para coordinar la entrega y el pago. ¡Gracias!`;
-        // Codificar y abrir
-        const encodedMessage = encodeURIComponent(message);
-        const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
-        window.open(whatsappUrl, '_blank');
-        // Feedback al usuario
-        showToast(`Abriendo chat con ${vendorData.business || 'el vendedor'}...`, 'success');
-    } catch (error) {
-        console.error("Error al contactar al vendedor:", error);
-        showToast('Hubo un error al intentar contactar al vendedor.', 'error');
+    const item = shoppingCart.find(item => item.id === productId);
+    if (item) {
+        item.quantity = newQuantity;
+        updateCartUI();
     }
 }
+
+/**
+ * Actualiza toda la interfaz del carrito: contador, items y total.
+ */
+function updateCartUI() {
+    // Actualizar el contador en el ícono
+    const itemCount = shoppingCart.reduce((total, item) => total + item.quantity, 0);
+    document.getElementById('cartItemCount').textContent = itemCount;
+    // Actualizar la lista de items
+    const container = document.getElementById('cartItemsContainer');
+    if (shoppingCart.length === 0) {
+        container.innerHTML = '<p class="empty-cart-message">Tu carrito está vacío.</p>';
+    } else {
+        container.innerHTML = '';
+        shoppingCart.forEach(item => {
+            const itemElement = document.createElement('div');
+            itemElement.className = 'cart-item';
+            itemElement.innerHTML = `
+                <div class="cart-item-image" style="background-image: url('${item.imageBase64 || 'https://placehold.co/80x80/e2e8f0/a0aec0?text=No+Img'}')"></div>
+                <div class="cart-item-details">
+                    <h4 class="cart-item-title">${item.name}</h4>
+                    <p class="cart-item-price">$${(item.price || 0).toFixed(2)}</p>
+                    <div class="cart-item-quantity">
+                        <button onclick="updateCartItemQuantity('${item.id}', ${item.quantity - 1})">-</button>
+                        <span>${item.quantity}</span>
+                        <button onclick="updateCartItemQuantity('${item.id}', ${item.quantity + 1})">+</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(itemElement);
+        });
+    }
+    // Actualizar el total
+    const total = shoppingCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    document.getElementById('cartTotal').textContent = `$${total.toFixed(2)}`;
+}
+
 /**
  * Alterna la visibilidad del panel del carrito.
  */
 function toggleCart() {
     const panel = document.getElementById('cartPanel');
     const overlay = document.getElementById('cartOverlay');
-    const mobileBadge = document.getElementById('mobileCartBadge');
-
-    const isActive = panel.classList.toggle('active');
+    panel.classList.toggle('active');
     overlay.classList.toggle('active');
+}
 
-    // Opcional: Ocultar el badge mientras el panel está abierto
-    if (isActive && window.innerWidth <= 768) {
-        mobileBadge.style.opacity = '0';
-        mobileBadge.style.pointerEvents = 'none';
-    } else {
-        mobileBadge.style.opacity = '1';
-        mobileBadge.style.pointerEvents = 'auto';
-    }
-}/**
+/**
  * Procesa el pago (por ahora solo muestra un mensaje).
  */
 function proceedToCheckout() {
@@ -1628,38 +1636,63 @@ function proceedToCheckout() {
         showToast('Tu carrito está vacío.', 'error');
         return;
     }
+    // Aquí iría la lógica para procesar el pago
+    // Por ejemplo, redirigir a una pasarela de pago o mostrar un formulario
     showToast('¡Función de pago aún no implementada! Contacta directamente al vendedor por WhatsApp.', 'info');
+    // Opcional: puedes cerrar el carrito después de hacer clic
+    // toggleCart();
 }
+
 // --- INICIALIZACIÓN DE LA APLICACIÓN ---
-function initializeApp() {
+async function initializeApp() {
     // --- MOSTRAR SPINNER DE CARGA INICIAL ---
     showInitialLoadingSpinner('Cargando datos y autenticando...');
-    auth.onAuthStateChanged(async (user) => {
+    // Obtener usuario actual y sus datos
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-            const merchantDoc = await db.collection('merchants').doc(user.uid).get();
-            if (merchantDoc.exists) {
-                currentUser = user; isMerchant = true;
-                await updateUserProfile(user.uid);
+            // Verificar si es merchant
+            const { data: merchant, error } = await supabase.from('merchants').select('*').eq('id', user.id).single();
+            if (!error && merchant) {
+                currentUser = { id: user.id, email: user.email }; isMerchant = true;
+                await updateUserProfile(user.id);
                 showSection('profile');
-            } else { isMerchant = false; currentUser = null; currentMerchantData = null; }
+            } else {
+                isMerchant = false; currentUser = null; currentMerchantData = null;
+            }
         } else {
             currentUser = null; isMerchant = false; currentMerchantData = null;
             showSection('home');
         }
+    } catch (e) {
+        console.error('Error checking auth state:', e);
+    }
+    // Escuchar cambios de auth (login/logout)
+    supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN') {
+            const user = session.user;
+            currentUser = { id: user.id, email: user.email };
+            updateUserProfile(user.id);
+            isMerchant = true;
+            showSection('profile');
+        } else if (event === 'SIGNED_OUT') {
+            currentUser = null; isMerchant = false; currentMerchantData = null;
+            showSection('home');
+        }
         updateAuthUI();
-        // --- OCULTAR SPINNER SOLO CUANDO USUARIO Y DATOS ESTÉN LISTOS ---
         hideInitialLoadingSpinner();
-        // === NUEVO: Cargar el carrito desde localStorage ===
-        loadCartFromLocalStorage();
     });
+
 // --- EVENT LISTENER PARA INICIAR SESIÓN CON ENTER ---
 document.getElementById('loginPassword').addEventListener('keypress', function(event) {
     if (event.key === 'Enter') {
         login();
     }
 });
+
     // --- EVENT LISTENER GLOBAL PARA CERRAR CON ESC ---
     document.addEventListener('keydown', closeActiveModalOnEsc);
+
     document.getElementById('create-catalog-btn').addEventListener('click', () => document.getElementById('catalog-options-modal').style.display = 'flex');
     document.getElementById('backup-btn').addEventListener('click', () => document.getElementById('backup-options-modal').style.display = 'flex');
     document.getElementById('generate-pdf-btn').addEventListener('click', () => {
@@ -1675,89 +1708,31 @@ document.getElementById('loginPassword').addEventListener('keypress', function(e
         document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
     });
     const themeToggle = document.getElementById('themeToggle');
-/**
- * Aplica el tema (claro u oscuro) a toda la aplicación.
- * @param {string} theme - 'light' o 'dark'
- */
-const applyTheme = (theme) => {
-    document.body.dataset.theme = theme;
-    localStorage.setItem('theme', theme);
-    // Actualizar favicon dinámicamente (opcional)
-    const favicon = document.querySelector('link[rel="icon"]');
-    if (favicon) {
-        favicon.href = theme === 'dark' ? 'favicon-dark.ico' : 'favicon.png';
-    }
-    // Actualizar título de la página (opcional, para accesibilidad)
-    document.title = theme === 'dark' ? 'Feria Virtual (Modo Oscuro)' : 'Feria Virtual (Modo Claro)';
-};    themeToggle.addEventListener('click', () => applyTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
+    const applyTheme = (theme) => { document.body.dataset.theme = theme; localStorage.setItem('theme', theme); };
+    themeToggle.addEventListener('click', () => applyTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
     applyTheme(localStorage.getItem('theme') || 'light');
     loadProducts();
     populateAvatars();
-// --- SOLUCIÓN DEFINITIVA: EVENT LISTENERS PARA EL MENÚ HAMBURGUESA ---
-// Esperamos a que el DOM esté completamente cargado
-document.addEventListener('DOMContentLoaded', function() {
-    const hamburgerMenu = document.getElementById('hamburgerMenu');
-    const navContainer = document.getElementById('navContainer');
-    const navOverlay = document.getElementById('navOverlay');
-    const navLinks = document.querySelectorAll('.nav-link');
 
-    // Función para abrir/cerrar el menú
-    function toggleHamburgerMenu() {
-        navContainer.classList.toggle('active');
-        navOverlay.classList.toggle('active');
-    }
+    // --- NUEVO: EVENT LISTENER PARA CERRAR EL MENÚ HAMBURGUESA ---
+    document.getElementById('hamburgerMenu').addEventListener('click', function() {
+        document.getElementById('navContainer').classList.toggle('active');
+        document.getElementById('navOverlay').classList.toggle('active');
+    });
 
-    // Función para cerrar el menú
-    function closeHamburgerMenu() {
-        navContainer.classList.remove('active');
-        navOverlay.classList.remove('active');
-    }
+    // Cerrar al hacer clic en el overlay
+    document.getElementById('navOverlay').addEventListener('click', function() {
+        document.getElementById('navContainer').classList.remove('active');
+        document.getElementById('navOverlay').classList.remove('active');
+    });
 
-    // Asignar evento al botón hamburguesa
-    if (hamburgerMenu) {
-        hamburgerMenu.addEventListener('click', toggleHamburgerMenu);
-    }
-
-    // Asignar evento al overlay
-    if (navOverlay) {
-        navOverlay.addEventListener('click', closeHamburgerMenu);
-    }
-
-    // Asignar evento a cada enlace de navegación
-    if (navLinks.length > 0) {
-        navLinks.forEach(link => {
-            // Guardamos la función original del onclick
-            const originalOnclick = link.getAttribute('onclick');
-            // Reemplazamos el onclick
-            link.onclick = function(event) {
-                // Primero, ejecutamos la función original (navegar a la sección)
-                if (originalOnclick) {
-                    new Function('event', originalOnclick).call(this, event);
-                }
-                // Luego, cerramos el menú
-                closeHamburgerMenu();
-                // Prevenimos el comportamiento por defecto (#) si es necesario
-                event.preventDefault();
-            };
+    // Cerrar al hacer clic en cualquier enlace de navegación
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function() {
+            document.getElementById('navContainer').classList.remove('active');
+            document.getElementById('navOverlay').classList.remove('active');
         });
-    }
-});
+    });
 }
-/**
- * Actualiza la cantidad de un producto en el carrito.
- * @param {string} productId - El ID del producto.
- * @param {number} newQuantity - La nueva cantidad (debe ser >= 1).
- */
-function updateCartItemQuantity(productId, newQuantity) {
-    if (newQuantity < 1) {
-        removeFromCart(productId);
-        return;
-    }
-    const item = shoppingCart.find(item => item.id === productId);
-    if (item) {
-        item.quantity = newQuantity;
-        updateCartUI();
-        saveCartToLocalStorage(); // ¡No olvides guardar en localStorage!
-    }
-}
+
 initializeApp();
