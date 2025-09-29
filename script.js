@@ -102,9 +102,11 @@ function hideInitialLoadingSpinner() {
 
 window.generateCatalogJPG = async function() {
     if (!currentUser) return showToast('Debes iniciar sesión para generar imágenes.', 'error');
+    if (!(await ensureSupabaseAvailable())) return; // short-circuit if Supabase host not reachable
     showGlobalLoadingOverlay('Generando imágenes del catálogo...');
     try {
-        const { data: productsData, error } = await supabase.from('products').select('*').eq('vendor_id', currentUser.id);
+    const supabaseClient = getSupabase();
+    const { data: productsData, error } = await supabaseClient.from('products').select('*').eq('vendor_id', currentUser.id);
         if (error) throw error;
         if (!productsData || productsData.length === 0) {
             hideGlobalLoadingOverlay();
@@ -163,9 +165,11 @@ window.generateCatalogJPG = async function() {
 
 window.generatePdfWithJsPDF = async function() {
     if (!currentUser) return showToast('Debes iniciar sesión para generar el PDF.', 'error');
+    if (!(await ensureSupabaseAvailable())) return;
     showGlobalLoadingOverlay('Generando PDF del catálogo...');
     try {
-        const { data: productsData, error } = await supabase.from('products').select('*').eq('vendor_id', currentUser.id);
+    const supabaseClient = getSupabase();
+    const { data: productsData, error } = await supabaseClient.from('products').select('*').eq('vendor_id', currentUser.id);
         if (error) throw error;
         if (!productsData || productsData.length === 0) {
             hideGlobalLoadingOverlay();
@@ -209,9 +213,84 @@ window.generatePdfWithJsPDF = async function() {
 
 // Feria Virtual - Lógica de la Aplicación
 // Configuración de Supabase (cliente UMD cargado desde index.html)
-const supabaseUrl = 'https://gkddymcuajakvghffava.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdrZGR5bWN1YWpha3ZnaGZmYXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NzUyNDksImV4cCI6MjA3MzQ1MTI0OX0.12aqVrRdAGaSq6eEm5xcwqkPpNyEdQdA77t8MeKhWKw';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+const supabaseUrl = 'https://fyierdvjqwtuoilvhfdh.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5aWVyZHZqcXd0dW9pbHZoZmRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkwOTU3NTksImV4cCI6MjA3NDY3MTc1OX0.Fx-edKYpWjGJ2tTNODSkGXXodu0pNp1XmvYkwRd3C_M';
+// Declaramos la variable global pero inicializamos el cliente de Supabase de forma perezosa
+// para evitar que el SDK intente refrescar tokens automáticamente durante problemas de DNS.
+let supabase = null;
+
+function initializeSupabaseClient() {
+    if (supabase) return supabase;
+    supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey, {
+        auth: { persistSession: true, autoRefreshToken: false, detectSessionInUrl: false }
+    });
+    return supabase;
+}
+
+function getSupabase() {
+    if (!supabase) return initializeSupabaseClient();
+    return supabase;
+}
+
+// --- NETWORK / SUPABASE REACHABILITY HELPERS ---
+/**
+ * Checks whether the Supabase host is reachable. Uses a short fetch with no-cors to detect DNS/network failures.
+ * Returns true if the request did not immediately fail due to network/DNS. This is conservative — false means likely offline or DNS problem.
+ */
+async function isSupabaseReachable(timeout = 3000) {
+    try {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeout);
+        // Use no-cors so we don't get CORS rejections; we only care about network-level failures (DNS, offline).
+        await fetch(supabaseUrl, { method: 'GET', mode: 'no-cors', signal: controller.signal });
+        clearTimeout(id);
+        return true;
+    } catch (err) {
+        return false;
+    }
+}
+
+function showSupabaseNetworkBanner(message) {
+    let banner = document.getElementById('supabase-network-banner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'supabase-network-banner';
+        banner.style.position = 'fixed';
+        banner.style.left = '0';
+        banner.style.right = '0';
+        banner.style.top = '0';
+        banner.style.zIndex = '10050';
+        banner.style.background = '#ffdddd';
+        banner.style.color = '#800';
+        banner.style.padding = '10px 12px';
+        banner.style.fontSize = '14px';
+        banner.style.textAlign = 'center';
+        banner.style.boxShadow = '0 2px 6px rgba(0,0,0,0.08)';
+        document.body.appendChild(banner);
+    }
+    banner.textContent = message || 'No se puede conectar a Supabase. Revisa tu conexión a Internet o la URL configurada.';
+}
+
+function hideSupabaseNetworkBanner() {
+    const banner = document.getElementById('supabase-network-banner');
+    if (banner) banner.remove();
+}
+
+/**
+ * High-level guard used before calling Supabase from UI flows.
+ * Returns true when Supabase appears reachable; otherwise shows a friendly message and returns false.
+ */
+async function ensureSupabaseAvailable() {
+    const reachable = await isSupabaseReachable();
+    if (!reachable) {
+        console.error('Supabase host not reachable:', supabaseUrl);
+        showSupabaseNetworkBanner('No se puede conectar a Supabase (DNS/Red). Si el problema persiste, revisa la URL o tu conexión.');
+        showToast('No se puede conectar a Supabase. Revisa tu conexión o la URL.', 'error');
+        return false;
+    }
+    hideSupabaseNetworkBanner();
+    return true;
+}
 
 // --- VARIABLES GLOBALES ---
 let currentUser = null;
@@ -320,12 +399,14 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
     const productsGrid = document.getElementById(containerId);
     // Mostrar el corredor animado
     showRunnerOverlay();
+    if (!(await ensureSupabaseAvailable())) { hideRunnerOverlay(); productsGrid.innerHTML = `<div>Error de red. Intenta más tarde.</div>`; return; }
     try {
         // Usar Supabase: las columnas en la BD están en snake_case
-        let q = supabase.from('products').select('*').eq('published', true);
+    const supabaseClient = getSupabase();
+    let q = supabaseClient.from('products').select('*').eq('published', true);
         if (filter.vendorId) q = q.eq('vendor_id', filter.vendorId);
         q = q.order('created_at', { ascending: false });
-        const { data, error } = await q;
+    const { data, error } = await q;
         // Ocultar el corredor
         hideRunnerOverlay();
         productsGrid.innerHTML = '';
@@ -348,8 +429,10 @@ async function loadMyProducts() {
     const productsGrid = document.getElementById('myProductsGrid');
     // Mostrar el corredor animado
     showRunnerOverlay();
+    if (!(await ensureSupabaseAvailable())) { hideRunnerOverlay(); productsGrid.innerHTML = `<div>Error de red. Intenta más tarde.</div>`; return; }
     try {
-        const { data, error } = await supabase.from('products').select('*').eq('vendor_id', currentUser.id).order('created_at', { ascending: false });
+    const supabaseClient = getSupabase();
+    const { data, error } = await supabaseClient.from('products').select('*').eq('vendor_id', currentUser.id).order('created_at', { ascending: false });
         if (error) throw error;
         const products = (data || []).map(r => normalizeProductRow(r));
         // Ocultar el corredor
@@ -381,11 +464,12 @@ window.registerMerchant = async function() {
     // --- INICIO DE LA CARGA ---
     startButtonLoading(registerBtn, 'Registrando...');
     try {
+        if (!(await ensureSupabaseAvailable())) return stopButtonLoading(registerBtn);
         // Crear usuario en Supabase
-        const { data: signData, error: signError } = await supabase.auth.signUp({ email, password });
+    const supabaseClient = getSupabase();
+    const { data: signData, error: signError } = await supabaseClient.auth.signUp({ email, password });
         if (signError) throw signError;
         const userId = signData?.user?.id;
-        // Insertar merchant en la tabla 'merchants' (usar id igual al userId)
         const { error: insertError } = await supabase.from('merchants').insert([{ id: userId, name, email, business, phone, description, created_at: new Date().toISOString() }]);
         if (insertError) throw insertError;
         showMessage(msgEl, '¡Registro exitoso! Revisa tu correo para confirmar (si aplica).', 'success');
@@ -395,7 +479,12 @@ window.registerMerchant = async function() {
         }, 1000);
     } catch (error) {
         console.error('Error en registro:', error);
-        showMessage(msgEl, 'Error en el registro.', 'error');
+        let userMsg = 'Error en el registro.';
+        try {
+            if (error && error.message) userMsg = `${userMsg} ${error.message}`;
+            else if (error && error.error_description) userMsg = `${userMsg} ${error.error_description}`;
+        } catch (e) {}
+        showMessage(msgEl, userMsg, 'error');
     } finally {
         // --- FIN DE LA CARGA (SIEMPRE se ejecuta, incluso si hay error) ---
         stopButtonLoading(registerBtn);
@@ -411,16 +500,21 @@ window.login = async function() {
     // --- INICIO DE LA CARGA ---
     startButtonLoading(loginBtn, 'Iniciando...');
     try {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (!(await ensureSupabaseAvailable())) return stopButtonLoading(loginBtn);
+    const supabaseClient = getSupabase();
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        showMessage(msgEl, '¡Bienvenido!', 'success');
+        let userMsg = '¡Bienvenido!';
+        showMessage(msgEl, userMsg, 'success');
         setTimeout(() => {
             hideLogin();
             showSection('profile');
         }, 1000);
     } catch (error) {
         console.error('Error login:', error);
-        showMessage(msgEl, 'Correo o contraseña incorrectos.', 'error');
+        let userMsg = 'Correo o contraseña incorrectos.';
+        try { if (error && error.message) userMsg = `${userMsg} ${error.message}`; } catch (e) {}
+        showMessage(msgEl, userMsg, 'error');
     } finally {
         // --- FIN DE LA CARGA ---
         stopButtonLoading(loginBtn);
@@ -431,10 +525,12 @@ window.logout = async function() { await supabase.auth.signOut(); }
 
 async function updateUserProfile(userId) {
     try {
-        const { data: merchant, error: merchantError } = await supabase.from('merchants').select('*').eq('id', userId).single();
-        if (merchantError) throw merchantError;
-        currentMerchantData = merchant;
-        const { data: products, error: productsError } = await supabase.from('products').select('*').eq('vendor_id', userId);
+    if (!(await ensureSupabaseAvailable())) return;
+    const supabaseClient = getSupabase();
+    const { data: merchant, error: merchantError } = await supabaseClient.from('merchants').select('*').eq('id', userId).single();
+    if (merchantError) throw merchantError;
+    currentMerchantData = merchant;
+    const { data: products, error: productsError } = await supabaseClient.from('products').select('*').eq('vendor_id', userId);
         if (productsError) throw productsError;
         document.getElementById('userName').textContent = currentMerchantData.name;
         document.getElementById('userEmail').textContent = currentMerchantData.email;
@@ -473,7 +569,9 @@ function setupImageUpload(areaId, inputId, fileVariableSetter) {
 
 async function loadProductForEdit(productId) {
     try {
-        const { data: row, error } = await supabase.from('products').select('*').eq('id', productId).single();
+    if (!(await ensureSupabaseAvailable())) return;
+    const supabaseClient = getSupabase();
+    const { data: row, error } = await supabaseClient.from('products').select('*').eq('id', productId).single();
         if (error) throw error;
         const product = normalizeProductRow(row);
         document.getElementById('productName').value = product.name;
@@ -513,12 +611,14 @@ window.saveProduct = async function() {
     const saveBtn = document.querySelector('#productModal .btn-primary'); // El botón "Guardar Producto" en el modal
     startButtonLoading(saveBtn, 'Guardando...');
     try {
+        if (!(await ensureSupabaseAvailable())) { stopButtonLoading(saveBtn); return; }
+        const supabaseClient = getSupabase();
         if (isEditing) {
             const productId = document.getElementById('productModal').dataset.productId;
-            const { error } = await supabase.from('products').update(dbProduct).eq('id', productId);
+            const { error } = await supabaseClient.from('products').update(dbProduct).eq('id', productId);
             if (error) throw error;
         } else {
-            const { error } = await supabase.from('products').insert([dbProduct]);
+            const { error } = await supabaseClient.from('products').insert([dbProduct]);
             if (error) throw error;
         }
         showToast('Producto guardado.', 'success');
@@ -601,7 +701,9 @@ function renderMyProductCard(container, product) {
 // window.deleteProduct = async function(id) { if (confirm('¿Eliminar producto?')) { await supabase.from('products').delete().eq('id', id); loadMyProducts(); showToast('Producto eliminado.'); } }
 window.toggleProductStatus = async function(id, status) { 
     try {
-        const { error } = await supabase.from('products').update({ published: status }).eq('id', id);
+        if (!(await ensureSupabaseAvailable())) return;
+    const supabaseClient = getSupabase();
+    const { error } = await supabaseClient.from('products').update({ published: status }).eq('id', id);
         if (error) throw error;
         loadMyProducts();
     } catch (err) { console.error('Error toggling product status:', err); }
@@ -613,7 +715,9 @@ window.showVendorPage = async function(vendorId, vendorName) {
     const whatsappBtn = document.getElementById('vendorWhatsappBtn');
     whatsappBtn.style.display = 'none';
     try {
-        const { data: merchant, error } = await supabase.from('merchants').select('*').eq('id', vendorId).single();
+        if (!(await ensureSupabaseAvailable())) return showToast('No se puede conectar a Supabase para cargar la página del vendedor.', 'error');
+    const supabaseClient = getSupabase();
+    const { data: merchant, error } = await supabaseClient.from('merchants').select('*').eq('id', vendorId).single();
         if (!error && merchant && merchant.phone) {
             const phone = merchant.phone.replace(/[^0-9]/g, '');
             if (phone) {
@@ -665,7 +769,9 @@ window.saveStoreInfo = async function() {
     const saveBtn = document.querySelector('#storeFormFooter .btn-primary'); // El botón "Guardar Cambios" del puesto
     startButtonLoading(saveBtn, 'Guardando...');
     try {
-        const { error } = await supabase.from('merchants').update(newData).eq('id', currentUser.id);
+        if (!(await ensureSupabaseAvailable())) { stopButtonLoading(saveBtn); return; }
+    const supabaseClient = getSupabase();
+    const { error } = await supabaseClient.from('merchants').update(newData).eq('id', currentUser.id);
         if (error) throw error;
         await updateUserProfile(currentUser.id); 
         toggleStoreEditMode(false);
@@ -700,7 +806,9 @@ window.saveProfileInfo = async function() {
     const saveBtn = document.querySelector('#profileFormFooter .btn-primary'); // El botón "Guardar Cambios" del perfil
     startButtonLoading(saveBtn, 'Actualizando...');
     try {
-        const { error } = await supabase.from('merchants').update(newData).eq('id', currentUser.id);
+        if (!(await ensureSupabaseAvailable())) { stopButtonLoading(saveBtn); return; }
+    const supabaseClient = getSupabase();
+    const { error } = await supabaseClient.from('merchants').update(newData).eq('id', currentUser.id);
         if (error) throw error;
         await updateUserProfile(currentUser.id);
         toggleProfileEditMode(false);
@@ -735,7 +843,9 @@ window.saveProfilePic = async function() {
     }
     if(picUrl) {
         try {
-            const { error } = await supabase.from('merchants').update({ profile_pic: picUrl }).eq('id', currentUser.id);
+            if (!(await ensureSupabaseAvailable())) return showToast('No se puede conectar a Supabase para actualizar la foto.', 'error');
+            const supabaseClient = getSupabase();
+            const { error } = await supabaseClient.from('merchants').update({ profile_pic: picUrl }).eq('id', currentUser.id);
             if (error) throw error;
             await updateUserProfile(currentUser.id);
             hideModal('profilePicModal');
@@ -775,7 +885,9 @@ window.exportCatalogToJSON = async function() {
     hideModal('backup-options-modal');
     showToast('Preparando la exportación...', 'success');
     try {
-        const { data: productsData, error } = await supabase.from('products').select('*').eq('vendor_id', currentUser.id);
+        if (!(await ensureSupabaseAvailable())) return showToast('No se puede conectar a Supabase para exportar.', 'error');
+    const supabaseClient = getSupabase();
+    const { data: productsData, error } = await supabaseClient.from('products').select('*').eq('vendor_id', currentUser.id);
         if (error) throw error;
         if (!productsData || productsData.length === 0) return showToast('No tienes productos para exportar.', 'error');
         const productsToExport = productsData.map(d => ({ name: d.name, price: d.price, description: d.description, imageBase64: d.image_base64 || null, published: typeof d.published === 'boolean' ? d.published : true }));
@@ -825,8 +937,10 @@ async function importCatalogFromJSON(products) {
     if (!Array.isArray(products) || products.length === 0) return showToast('El archivo no contiene productos para importar.', 'error');
     showToast(`Importando ${products.length} productos...`, 'success');
     try {
+        if (!(await ensureSupabaseAvailable())) return showToast('No se puede conectar a Supabase para importar.', 'error');
         const rows = products.map(p => ({ name: p.name, price: p.price || 0, description: p.description || '', image_base64: p.imageBase64 || null, published: typeof p.published === 'boolean' ? p.published : true, vendor_id: currentUser.id, vendor_name: currentMerchantData.business, created_at: new Date().toISOString() }));
-        const { error } = await supabase.from('products').insert(rows);
+    const supabaseClient = getSupabase();
+    const { error } = await supabaseClient.from('products').insert(rows);
         if (error) throw error;
         showToast(`${products.length} productos importados correctamente.`, 'success');
         loadMyProducts();
@@ -957,7 +1071,9 @@ async function generatePdfWithJsPDF(themeKey) {
 
 // === NUEVAS FUNCIONES PARA FICHA DE PRODUCTO (JPG) ===
 async function getProductsByVendor(vendorId) {
-    const { data, error } = await supabase.from('products').select('*').eq('vendor_id', vendorId).order('created_at', { ascending: false });
+    if (!(await ensureSupabaseAvailable())) return [];
+    const supabaseClient = getSupabase();
+    const { data, error } = await supabaseClient.from('products').select('*').eq('vendor_id', vendorId).order('created_at', { ascending: false });
     if (error) { console.error('Error fetching products by vendor:', error); return []; }
     return (data || []).map(r => normalizeProductRow(r));
 }
@@ -969,7 +1085,8 @@ async function loadUserProductsForSelection() {
     container.innerHTML = '<p>Cargando tus productos...</p>';
     document.getElementById('select-product-modal').style.display = 'flex';
     try {
-        const products = await getProductsByVendor(currentUser.uid);
+    if (!(await ensureSupabaseAvailable())) { container.innerHTML = '<p>Error de red. Intenta más tarde.</p>'; return; }
+    const products = await getProductsByVendor(currentUser.uid);
         container.innerHTML = '';
         if (products.length === 0) {
             container.innerHTML = '<p>No tienes productos para seleccionar.</p>';
@@ -1096,7 +1213,9 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
     lightbox.style.display = 'flex'; // Mostramos el lightbox inmediatamente
     try {
         // 1. Cargar TODOS los productos del mismo vendedor desde Supabase
-        const { data, error } = await supabase.from('products').select('*').eq('vendor_id', productData.vendorId).eq('published', true).order('created_at', { ascending: false });
+    if (!(await ensureSupabaseAvailable())) throw new Error('Supabase unreachable');
+    const supabaseClient = getSupabase();
+    const { data, error } = await supabaseClient.from('products').select('*').eq('vendor_id', productData.vendorId).eq('published', true).order('created_at', { ascending: false });
         if (error) throw error;
         currentVendorProducts = (data || []).map(r => normalizeProductRow(r));
         // 2. Encontrar el índice del producto actual
@@ -1649,16 +1768,31 @@ async function initializeApp() {
     showInitialLoadingSpinner('Cargando datos y autenticando...');
     // Obtener usuario actual y sus datos
     try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-            // Verificar si es merchant
-            const { data: merchant, error } = await supabase.from('merchants').select('*').eq('id', user.id).single();
-            if (!error && merchant) {
-                currentUser = { id: user.id, email: user.email }; isMerchant = true;
-                await updateUserProfile(user.id);
-                showSection('profile');
+        // Comprobar conectividad con Supabase antes de hacer llamadas pesadas
+        const supReachable = await isSupabaseReachable();
+        window._supabaseReachable = supReachable;
+        if (!supReachable) {
+            showSupabaseNetworkBanner('No se puede conectar a Supabase. Revisa tu conexión a Internet o la URL configurada.');
+            // No hacemos return: continuamos con la inicialización local (listeners y UI) pero evitamos llamadas a Supabase
+        }
+        if (supReachable) {
+            // Inicializar cliente Supabase ahora que confirmamos reachability
+            initializeSupabaseClient();
+            const supabaseClient = getSupabase();
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (user) {
+                // Verificar si es merchant
+                const { data: merchant, error } = await supabaseClient.from('merchants').select('*').eq('id', user.id).single();
+                if (!error && merchant) {
+                    currentUser = { id: user.id, email: user.email }; isMerchant = true;
+                    await updateUserProfile(user.id);
+                    showSection('profile');
+                } else {
+                    isMerchant = false; currentUser = null; currentMerchantData = null;
+                }
             } else {
-                isMerchant = false; currentUser = null; currentMerchantData = null;
+                currentUser = null; isMerchant = false; currentMerchantData = null;
+                showSection('home');
             }
         } else {
             currentUser = null; isMerchant = false; currentMerchantData = null;
@@ -1668,7 +1802,9 @@ async function initializeApp() {
         console.error('Error checking auth state:', e);
     }
     // Escuchar cambios de auth (login/logout)
-    supabase.auth.onAuthStateChange((event, session) => {
+    const _sup = getSupabase();
+    if (_sup && _sup.auth && typeof _sup.auth.onAuthStateChange === 'function') {
+        _sup.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_IN') {
             const user = session.user;
             currentUser = { id: user.id, email: user.email };
@@ -1681,7 +1817,11 @@ async function initializeApp() {
         }
         updateAuthUI();
         hideInitialLoadingSpinner();
-    });
+        });
+    } else {
+        // No hay cliente o el método no existe; ocultar spinner para no bloquear la UI
+        hideInitialLoadingSpinner();
+    }
 
 // --- EVENT LISTENER PARA INICIAR SESIÓN CON ENTER ---
 document.getElementById('loginPassword').addEventListener('keypress', function(event) {
@@ -1711,7 +1851,10 @@ document.getElementById('loginPassword').addEventListener('keypress', function(e
     const applyTheme = (theme) => { document.body.dataset.theme = theme; localStorage.setItem('theme', theme); };
     themeToggle.addEventListener('click', () => applyTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
     applyTheme(localStorage.getItem('theme') || 'light');
-    loadProducts();
+    // Solo cargar productos si Supabase está disponible (evita errores en caso de DNS/Red)
+    if (window._supabaseReachable === undefined || window._supabaseReachable) {
+        loadProducts();
+    }
     populateAvatars();
 
     // --- NUEVO: EVENT LISTENER PARA CERRAR EL MENÚ HAMBURGUESA ---
