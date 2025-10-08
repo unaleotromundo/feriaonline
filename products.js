@@ -3,6 +3,141 @@
 let currentVendorProducts = [];
 let currentProductIndex = 0;
 
+// ✅ FIX: Código para script.js - Reemplazar initializeApp()
+/*
+INSTRUCCIONES: Reemplaza la función initializeApp() en script.js con esta versión:
+
+async function initializeApp() {
+    showInitialLoadingSpinner('Cargando Feria Virtual...');
+    
+    try {
+        const supReachable = await isSupabaseReachable();
+        window._supabaseReachable = supReachable;
+        
+        if (!supReachable) {
+            console.warn('Supabase no alcanzable, modo sin conexión');
+            showSupabaseNetworkBanner('Modo sin conexión. Algunas funciones pueden no estar disponibles.');
+        }
+        
+        if (supReachable) {
+            initializeSupabaseClient();
+            const supabaseClient = getSupabase();
+            
+            try {
+                // ✅ Intentar obtener sesión existente sin forzar error
+                const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+                
+                if (session && session.user && !sessionError) {
+                    // Hay una sesión válida, cargar datos del comerciante
+                    const { data: merchant, error: merchantError } = await supabaseClient
+                        .from('merchants')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .single();
+                    
+                    if (!merchantError && merchant) {
+                        currentUser = { id: session.user.id, email: session.user.email }; 
+                        isMerchant = true;
+                        await updateUserProfile(session.user.id);
+                        showSection('profile');
+                    } else {
+                        // Usuario autenticado pero no es comerciante
+                        currentUser = null;
+                        isMerchant = false;
+                        currentMerchantData = null;
+                        showSection('home');
+                    }
+                } else {
+                    // No hay sesión, usuario anónimo
+                    currentUser = null;
+                    isMerchant = false;
+                    currentMerchantData = null;
+                    showSection('home');
+                }
+            } catch (authError) {
+                console.warn('Error al verificar autenticación:', authError);
+                // Ignorar error de autenticación y continuar como usuario anónimo
+                currentUser = null;
+                isMerchant = false;
+                currentMerchantData = null;
+                showSection('home');
+            }
+        } else {
+            // Sin conexión a Supabase, modo anónimo
+            currentUser = null;
+            isMerchant = false;
+            currentMerchantData = null;
+            showSection('home');
+        }
+    } catch (e) {
+        console.error('Error en inicialización:', e);
+        // Continuar de todos modos
+        currentUser = null;
+        isMerchant = false;
+        currentMerchantData = null;
+        showSection('home');
+    }
+
+    hideInitialLoadingSpinner();
+    updateAuthUI();
+
+    // Eventos del DOM
+    document.getElementById('loginPassword').addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') login();
+    });
+    
+    document.addEventListener('keydown', closeActiveModalOnEsc);
+    
+    document.getElementById('hamburgerMenu').addEventListener('click', function() {
+        document.getElementById('navContainer').classList.toggle('active');
+        document.getElementById('navOverlay').classList.toggle('active');
+    });
+    
+    document.getElementById('navOverlay').addEventListener('click', function() {
+        document.getElementById('navContainer').classList.remove('active');
+        document.getElementById('navOverlay').classList.remove('active');
+    });
+    
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function() {
+            document.getElementById('navContainer').classList.remove('active');
+            document.getElementById('navOverlay').classList.remove('active');
+        });
+    });
+
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        const applyTheme = (theme) => { 
+            document.body.dataset.theme = theme; 
+            localStorage.setItem('theme', theme); 
+        };
+        themeToggle.addEventListener('click', () => {
+            const newTheme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+            applyTheme(newTheme);
+        });
+        applyTheme(localStorage.getItem('theme') || 'light');
+    }
+
+    populateAvatars();
+    setupImageUpload('productImageUploadArea', 'productImageInput', (file) => selectedProductFile = file);
+    setupImageUpload('profilePicUploadArea', 'profilePicInput', (file) => {
+        selectedProfilePicFile = file;
+        selectedAvatarUrl = null;
+        document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
+    });
+
+    // ✅ Cargar productos SIEMPRE, sin importar si hay sesión
+    if (typeof loadProducts === 'function') {
+        loadProducts();
+    }
+
+    // Cargar carrito desde localStorage
+    if (typeof loadCartFromLocalStorage === 'function') {
+        loadCartFromLocalStorage();
+    }
+}
+*/
+
 /**
  * Sube una imagen al bucket 'product-images' y devuelve { publicUrl, path }
  */
@@ -30,12 +165,12 @@ function normalizeProductRow(row) {
     if (!row) return null;
     return {
         id: row.id,
-        name: row.name,
-        price: row.price,
-        description: row.description,
+        name: row.name || 'Producto sin nombre',
+        price: row.price || 0,
+        description: row.description || '',
         category: row.category || 'otros',
         vendorId: row.vendor_id || row.vendorId || null,
-        vendorName: row.vendor_name || row.vendorName || null,
+        vendorName: row.vendor_name || row.vendorName || 'Vendedor',
         imageBase64: row.image_base64 || row.imageBase64 || null,
         imageUrl: row.image_url || row.imageUrl || null,
         imageStoragePath: row.image_storage_path || row.imageStoragePath || null,
@@ -52,85 +187,151 @@ function isValidId(id) {
 // === CARGA Y RENDERIZADO DE PRODUCTOS ===
 async function loadProducts(containerId = 'productsGrid', filter = {}) {
     const productsGrid = document.getElementById(containerId);
-    showRunnerOverlay();
-    if (!(await ensureSupabaseAvailable())) { 
-        hideRunnerOverlay(); 
-        productsGrid.innerHTML = `<div>Error de red. Intenta más tarde.</div>`; 
-        return; 
+    if (!productsGrid) {
+        console.warn(`Container ${containerId} no encontrado`);
+        return;
     }
+    
+    showRunnerOverlay();
+    
+    // ✅ VERIFICACIÓN MEJORADA: No bloquear si no hay conexión, intentar de todas formas
+    const isReachable = await ensureSupabaseAvailable();
+    if (!isReachable) {
+        console.warn('Supabase no alcanzable, intentando de todas formas...');
+    }
+    
     try {
         const supabaseClient = getSupabase();
-        let q = supabaseClient.from('products').select('*').eq('published', true);
-        if (isValidId(filter.vendorId)) q = q.eq('vendor_id', filter.vendorId);
+        
+        // ✅ Query público - no requiere autenticación
+        let q = supabaseClient
+            .from('products')
+            .select('*')
+            .eq('published', true);
+        
+        if (isValidId(filter.vendorId)) {
+            q = q.eq('vendor_id', filter.vendorId);
+        }
+        
         q = q.order('created_at', { ascending: false });
+        
         const { data, error } = await q;
+        
         hideRunnerOverlay();
         productsGrid.innerHTML = '';
-        if (error) throw error;
-        if (!data || data.length === 0) {
-            productsGrid.innerHTML = `<div>No hay productos para mostrar.</div>`;
+        
+        if (error) {
+            console.error("Error loading products:", error);
+            productsGrid.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
+                <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                <p>No se pudieron cargar los productos en este momento.</p>
+                <p style="font-size: 0.9rem; margin-top: 0.5rem;">Intenta recargar la página.</p>
+            </div>`;
             return;
         }
-        data.forEach(row => renderProductCard(productsGrid, normalizeProductRow(row)));
+        
+        if (!data || data.length === 0) {
+            productsGrid.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
+                <i class="fas fa-shopping-bag" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                <p>No hay productos disponibles en este momento.</p>
+            </div>`;
+            return;
+        }
+        
+        // ✅ Normalizar y renderizar productos
+        data.forEach(row => {
+            const product = normalizeProductRow(row);
+            if (product) {
+                renderProductCard(productsGrid, product);
+            }
+        });
+        
     } catch (error) {
         console.error("Error loading products:", error);
         hideRunnerOverlay();
-        const msg = error && (error.message || error.error || JSON.stringify(error));
-        productsGrid.innerHTML = `<div>Error al cargar productos. ${msg ? `(${msg})` : ''}</div>`;
+        productsGrid.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
+            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+            <p>Error al cargar productos.</p>
+            <p style="font-size: 0.9rem; margin-top: 0.5rem;">${error.message || 'Intenta recargar la página.'}</p>
+        </div>`;
     }
 }
 
 async function loadMyProducts() {
-    if (!currentUser) return;
+    if (!currentUser) {
+        console.warn('No hay usuario logueado para cargar productos');
+        return;
+    }
+    
     const productsGrid = document.getElementById('myProductsGrid');
+    if (!productsGrid) return;
+    
     showRunnerOverlay();
+    
     if (!(await ensureSupabaseAvailable())) { 
         hideRunnerOverlay(); 
         productsGrid.innerHTML = `<div>Error de red. Intenta más tarde.</div>`; 
         return; 
     }
+    
     try {
         const supabaseClient = getSupabase();
         let q = supabaseClient.from('products').select('*');
-        if (isValidId(currentUser.id)) q = q.eq('vendor_id', currentUser.id);
+        
+        if (isValidId(currentUser.id)) {
+            q = q.eq('vendor_id', currentUser.id);
+        }
+        
         q = q.order('created_at', { ascending: false });
+        
         const { data, error } = await q;
         if (error) throw error;
+        
         const products = (data || []).map(r => normalizeProductRow(r));
+        
         hideRunnerOverlay();
         productsGrid.innerHTML = '';
+        
         if (products.length === 0) {
             productsGrid.innerHTML = '<div>Aún no has agregado productos.</div>';
             return;
         }
+        
         products.forEach(product => renderMyProductCard(productsGrid, product));
     } catch (error) {
         console.error("Error loading user products:", error);
         hideRunnerOverlay();
-        const msg = error && (error.message || error.error || JSON.stringify(error));
-        productsGrid.innerHTML = `<div>Error al cargar tus productos. ${msg ? `(${msg})` : ''}</div>`;
+        productsGrid.innerHTML = `<div>Error al cargar tus productos. ${error.message || ''}</div>`;
     }
 }
 
 function renderProductCard(container, product) {
     const card = document.createElement('div');
     card.className = 'product-card';
+    
     const imgSrc = product.imageUrl || product.imageBase64 || '';
     const hasImage = !!imgSrc;
-    const escapedProductJson = JSON.stringify(product).replace(/"/g, '&quot;');
+    
+    // ✅ Escapar correctamente el JSON para evitar errores
+    const escapedProductJson = JSON.stringify(product)
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    
+    // ✅ Manejo seguro del nombre del vendedor
+    const safeVendorName = (product.vendorName || 'Vendedor')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"');
+    
     let vendorLinkHtml = '';
-    try {
-        const safeVendorName = (product.vendorName || '').replace(/'/g, "\\'");
-        if (isValidId(product.vendorId)) {
-            vendorLinkHtml = `<a href="#" onclick="event.preventDefault(); showVendorPage('${product.vendorId}', '${safeVendorName}')">${product.vendorName || ''}</a>`;
-        } else {
-            vendorLinkHtml = `<a href="#" onclick="event.preventDefault(); showVendorPage(null, '${safeVendorName}')">${product.vendorName || ''}</a>`;
-        }
-    } catch (e) {
-        vendorLinkHtml = `${product.vendorName || ''}`;
+    
+    if (isValidId(product.vendorId)) {
+        vendorLinkHtml = `<a href="#" onclick="event.preventDefault(); showVendorPage('${product.vendorId}', '${safeVendorName}')">${product.vendorName}</a>`;
+    } else {
+        vendorLinkHtml = `<span>${product.vendorName}</span>`;
     }
+    
     card.innerHTML = `
-        <div class="product-image" ${hasImage ? `style="background-image: url('${imgSrc}')" onclick="showImageLightbox('${imgSrc}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}', id: '${product.id}', category: '${product.category}' })"` : ''}>
+        <div class="product-image" ${hasImage ? `style="background-image: url('${imgSrc}')" onclick="showImageLightbox('${imgSrc}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId || ''}', id: '${product.id}', category: '${product.category}' })"` : ''}>
             ${!hasImage ? '<i class="fas fa-shopping-bag"></i>' : ''}
             <button class="btn-add-to-cart-overlay" onclick="event.stopPropagation(); addToCartWithAnimation(this, ${escapedProductJson})">
                 <i class="fas fa-cart-plus"></i>
@@ -151,6 +352,7 @@ function renderProductCard(container, product) {
                 </div>
             </div>
         </div>`;
+    
     container.appendChild(card);
 }
 
@@ -304,8 +506,7 @@ window.saveProduct = async function() {
         }
     } catch (error) {
         console.error("Error saving product:", error);
-        const msg = error && (error.message || error.error || JSON.stringify(error));
-        showToast(`Error al guardar el producto. ${msg ? msg : ''}`, 'error');
+        showToast(`Error al guardar el producto. ${error.message || ''}`, 'error');
     } finally {
         stopButtonLoading(saveBtn);
     }
@@ -694,13 +895,19 @@ function wrapText(context, text, x, y, maxWidth, lineHeight) {
 // === VENDEDOR Y FILTROS ===
 window.showVendorPage = async function(vendorId, vendorName) {
     showSection('vendor-page');
-    document.getElementById('vendorPageTitle').textContent = vendorName;
+    document.getElementById('vendorPageTitle').textContent = vendorName || 'Tienda del Vendedor';
     const whatsappBtn = document.getElementById('vendorWhatsappBtn');
     whatsappBtn.style.display = 'none';
+    
     try {
-        if (!(await ensureSupabaseAvailable())) return showToast('No se puede conectar a Supabase para cargar la página del vendedor.', 'error');
+        if (!(await ensureSupabaseAvailable())) {
+            showToast('No se puede conectar para cargar la página del vendedor.', 'error');
+            return;
+        }
+        
         const supabaseClient = getSupabase();
         let merchant = null;
+        
         try {
             if (isValidId(vendorId)) {
                 const { data: mdata, error } = await supabaseClient.from('merchants').select('*').eq('id', vendorId).single();
@@ -719,6 +926,7 @@ window.showVendorPage = async function(vendorId, vendorName) {
         } catch (e) {
             console.error('Error fetching merchant by id/name fallback:', e);
         }
+        
         if (merchant && merchant.phone) {
             const phone = merchant.phone.replace(/[^0-9]/g, '');
             if (phone) {
@@ -726,7 +934,10 @@ window.showVendorPage = async function(vendorId, vendorName) {
                 whatsappBtn.style.display = 'inline-flex';
             }
         }
-    } catch (error) { console.error("Error fetching vendor phone:", error); }
+    } catch (error) { 
+        console.error("Error fetching vendor phone:", error); 
+    }
+    
     loadProducts('vendorProductsGrid', { vendorId: vendorId });
 }
 
@@ -761,22 +972,32 @@ async function applyFilters() {
     const productsGrid = document.getElementById('productsGrid');
     const noResultsMessage = document.getElementById('noResultsMessage');
     const resultsCount = document.getElementById('resultsCount');
+    
+    if (!productsGrid) return;
+    
     showRunnerOverlay();
+    
     try {
         if (!(await ensureSupabaseAvailable())) {
             hideRunnerOverlay();
             productsGrid.innerHTML = `<div>Error de red. Intenta más tarde.</div>`;
             return;
         }
+        
         const supabaseClient = getSupabase();
         let q = supabaseClient.from('products').select('*').eq('published', true);
+        
         if (currentCategory !== 'all') {
             q = q.eq('category', currentCategory);
         }
+        
         q = q.order('created_at', { ascending: false });
+        
         const { data, error } = await q;
         if (error) throw error;
+        
         let products = (data || []).map(r => normalizeProductRow(r));
+        
         if (currentSearchText) {
             products = products.filter(product => {
                 const name = (product.name || '').toLowerCase();
@@ -787,7 +1008,9 @@ async function applyFilters() {
                        vendor.includes(currentSearchText);
             });
         }
+        
         hideRunnerOverlay();
+        
         if (products.length === 0) {
             productsGrid.style.display = 'none';
             noResultsMessage.style.display = 'flex';
@@ -909,6 +1132,8 @@ window.sortByPrice = async function(order) {
     const noResultsMessage = document.getElementById('noResultsMessage');
     const resultsCount = document.getElementById('resultsCount');
     
+    if (!productsGrid) return;
+    
     showRunnerOverlay();
     
     try {
@@ -970,4 +1195,4 @@ window.sortByPrice = async function(order) {
         hideRunnerOverlay();
         productsGrid.innerHTML = `<div>Error al cargar productos.</div>`;
     }
-};
+}

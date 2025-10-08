@@ -207,7 +207,8 @@ function initializeSupabaseClient() {
             }
         }
     });
-      supabase.auth.onAuthStateChange(async (event, session) => {
+    
+    supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('Auth state changed:', event, session ? 'Sesión activa' : 'Sin sesión');
         if (event === 'SIGNED_OUT') {
             if (currentUser) {
@@ -219,17 +220,13 @@ function initializeSupabaseClient() {
             } 
         }
     });
+    
     const originalFetch = window.fetch;
     window.fetch = async function(...args) {
         try {
             const response = await originalFetch.apply(this, args);
             if (response.status === 403 && args[0]?.includes?.('supabase.co/auth')) {
-                console.error('❌ Error 403 detectado en llamada auth, limpiando sesión...');
-                cleanupCorruptedSessions();
-                if (currentUser) {
-                    showToast('Tu sesión expiró. Recargando...', 'error');
-                    setTimeout(() => location.reload(), 1500);
-                }
+                console.error('❌ Error 403 detectado en llamada auth');
             }
             return response;
         } catch (err) {
@@ -244,21 +241,21 @@ function getSupabase() {
     return supabase;
 }
 
-// Detectar cuando la pestana vuelve a estar activa
+// Detectar cuando la pestaña vuelve a estar activa
 document.addEventListener('visibilitychange', async () => {
     if (!document.hidden && supabase) {
-        console.log('Pestana activa - verificando sesion...');
+        console.log('Pestaña activa - verificando sesión...');
         
         try {
             const { data: { session }, error } = await supabase.auth.getSession();
             
             if (error) {
-                console.error('Error al obtener sesion:', error);
+                console.error('Error al obtener sesión:', error);
                 return;
             }
             
             if (session) {
-                console.log('Sesion valida detectada');
+                console.log('Sesión válida detectada');
                 
                 const expiresAt = session.expires_at * 1000;
                 const now = Date.now();
@@ -270,12 +267,12 @@ document.addEventListener('visibilitychange', async () => {
                 }
             }
         } catch (err) {
-            console.error('Error al verificar sesion:', err);
+            console.error('Error al verificar sesión:', err);
         }
     }
 });
 
-// Mantener la conexion activa
+// Mantener la conexión activa
 let heartbeatInterval = null;
 
 function startSupabaseHeartbeat() {
@@ -290,7 +287,7 @@ function startSupabaseHeartbeat() {
                 await supabase.from('merchants').select('id').limit(1);
             }
         } catch (err) {
-            console.error('Heartbeat fallo:', err);
+            console.error('Heartbeat falló:', err);
         }
     }, 30000);
 }
@@ -390,10 +387,6 @@ let dataCache = {
     merchants: {}
 };
 
-/**
- * Normaliza filas de la base (incluyendo categoría)
- */
-
 // Util: valida un id
 function isValidId(id) {
     return id && typeof id === 'string' && id.length > 0 && id !== 'undefined' && id !== 'null';
@@ -405,14 +398,11 @@ const CACHE_DURATION = 5 * 60 * 1000;
 const appLoadingMessages = [
     "Cargando Feria Virtual...",
     "Estableciendo puestos...",
-    "Ordenando ropa...",
-    "Regando plantitas...",
+    "Ordenando productos...",
+    "Preparando ofertas...",
     "Encendiendo las luces de la feria...",
-    "Preparando el café para los vendedores...",
-    "Alistando los carritos...",
-    "Poniendo precios justos...",
-    "¡Bienvenido! Un momentito más...",
-    "Conectando con la nube..."
+    "¡Casi listo!...",
+    "Conectando con vendedores..."
 ];
 
 const productLoadingMessages = [
@@ -427,8 +417,6 @@ const productLoadingMessages = [
     "Preparando todo para vos...",
     "¡Casi listo! Un momentito más..."
 ];
-
-
 
 // --- NAVEGACIÓN Y VISIBILIDAD DE SECCIONES ---
 window.showSection = function(sectionId) {
@@ -467,17 +455,39 @@ window.registerMerchant = async function() {
     const description = document.getElementById('regDescription').value.trim();
     const msgEl = document.getElementById('registerMessage');
     const registerBtn = document.querySelector('#register .btn-primary');
-    if (!name || !email || !password || !business) return showMessage(msgEl, 'Por favor completa todos los campos requeridos.', 'error');
-    if (password.length < 6) return showMessage(msgEl, 'La contraseña debe tener al menos 6 caracteres.', 'error');
+    
+    if (!name || !email || !password || !business) {
+        return showMessage(msgEl, 'Por favor completa todos los campos requeridos.', 'error');
+    }
+    if (password.length < 6) {
+        return showMessage(msgEl, 'La contraseña debe tener al menos 6 caracteres.', 'error');
+    }
+    
     startButtonLoading(registerBtn, 'Registrando...');
+    
     try {
-        if (!(await ensureSupabaseAvailable())) return stopButtonLoading(registerBtn);
+        if (!(await ensureSupabaseAvailable())) {
+            stopButtonLoading(registerBtn);
+            return;
+        }
+        
         const supabaseClient = getSupabase();
         const { data: signData, error: signError } = await supabaseClient.auth.signUp({ email, password });
         if (signError) throw signError;
+        
         const userId = signData?.user?.id;
-        const { error: insertError } = await supabase.from('merchants').insert([{ id: userId, name, email, business, phone, description, created_at: new Date().toISOString() }]);
+        const { error: insertError } = await supabase.from('merchants').insert([{ 
+            id: userId, 
+            name, 
+            email, 
+            business, 
+            phone, 
+            description, 
+            created_at: new Date().toISOString() 
+        }]);
+        
         if (insertError) throw insertError;
+        
         showMessage(msgEl, '¡Registro exitoso! Revisa tu correo para confirmar (si aplica).', 'success');
         setTimeout(() => {
             hideLogin();
@@ -486,10 +496,7 @@ window.registerMerchant = async function() {
     } catch (error) {
         console.error('Error en registro:', error);
         let userMsg = 'Error en el registro.';
-        try {
-            if (error && error.message) userMsg = `${userMsg} ${error.message}`;
-            else if (error && error.error_description) userMsg = `${userMsg} ${error.error_description}`;
-        } catch (e) {}
+        if (error && error.message) userMsg = `${userMsg} ${error.message}`;
         showMessage(msgEl, userMsg, 'error');
     } finally {
         stopButtonLoading(registerBtn);
@@ -501,15 +508,24 @@ window.login = async function() {
     const password = document.getElementById('loginPassword').value;
     const msgEl = document.getElementById('loginMessage');
     const loginBtn = document.querySelector('#loginModal .btn-primary');
-    if (!email || !password) return showMessage(msgEl, 'Por favor completa todos los campos.', 'error');
+    
+    if (!email || !password) {
+        return showMessage(msgEl, 'Por favor completa todos los campos.', 'error');
+    }
+    
     startButtonLoading(loginBtn, 'Iniciando...');
+    
     try {
-        if (!(await ensureSupabaseAvailable())) return stopButtonLoading(loginBtn);
+        if (!(await ensureSupabaseAvailable())) {
+            stopButtonLoading(loginBtn);
+            return;
+        }
+        
         const supabaseClient = getSupabase();
         const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        let userMsg = '¡Bienvenido!';
-        showMessage(msgEl, userMsg, 'success');
+        
+        showMessage(msgEl, '¡Bienvenido!', 'success');
         setTimeout(() => {
             hideLogin();
             showSection('profile');
@@ -517,14 +533,16 @@ window.login = async function() {
     } catch (error) {
         console.error('Error login:', error);
         let userMsg = 'Correo o contraseña incorrectos.';
-        try { if (error && error.message) userMsg = `${userMsg} ${error.message}`; } catch (e) {}
+        if (error && error.message) userMsg = `${userMsg} ${error.message}`;
         showMessage(msgEl, userMsg, 'error');
     } finally {
         stopButtonLoading(loginBtn);
     }
 };
 
-window.logout = async function() { await supabase.auth.signOut(); };
+window.logout = async function() { 
+    await supabase.auth.signOut(); 
+};
 
 async function updateUserProfile(userId) {
     try {
@@ -532,27 +550,35 @@ async function updateUserProfile(userId) {
         const supabaseClient = getSupabase();
         const { data: merchant, error: merchantError } = await supabaseClient.from('merchants').select('*').eq('id', userId).single();
         if (merchantError) throw merchantError;
+        
         currentMerchantData = merchant;
+        
         let productsQuery = supabaseClient.from('products').select('*');
         if (isValidId(userId)) productsQuery = productsQuery.eq('vendor_id', userId);
         const { data: products, error: productsError } = await productsQuery;
         if (productsError) throw productsError;
+        
         document.getElementById('userName').textContent = currentMerchantData.name;
         document.getElementById('userEmail').textContent = currentMerchantData.email;
         document.getElementById('userPhone').textContent = currentMerchantData.phone || 'No especificado';
         document.getElementById('userBusiness').textContent = currentMerchantData.business;
         document.getElementById('userProducts').textContent = `${(products || []).length} productos publicados`;
+        
         const createdAt = currentMerchantData.created_at;
         document.getElementById('userSince').textContent = createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A';
+        
         const profilePicContainer = document.getElementById('profilePicContainer');
         if (currentMerchantData.profile_pic) {
             profilePicContainer.innerHTML = `<img src="${currentMerchantData.profile_pic}" alt="Foto de perfil" loading="lazy"><div class="profile-pic-edit-overlay"><i class="fas fa-camera"></i></div>`;
         } else {
              profilePicContainer.innerHTML = `<i class="fas fa-user"></i><div class="profile-pic-edit-overlay"><i class="fas fa-camera"></i></div>`;
         }
+        
         document.getElementById('storeName').value = currentMerchantData.business;
         document.getElementById('storeDescription').value = currentMerchantData.description;
-    } catch (error) { console.error("Error loading profile:", error); }
+    } catch (error) { 
+        console.error("Error loading profile:", error); 
+    }
 }
 
 function setupImageUpload(areaId, inputId, fileVariableSetter) {
@@ -575,11 +601,14 @@ function setupImageUpload(areaId, inputId, fileVariableSetter) {
                 uploadArea.innerHTML = `<img src="${event.target.result}" class="preview-image" loading="lazy">`;
             };
             reader.readAsDataURL(file);
+            
             (async () => {
                 try {
                     if (inputId.includes('product')) selectedProductUpload = null;
                     if (inputId.includes('profile')) selectedProfilePicUpload = null;
+                    
                     if (!(await ensureSupabaseAvailable())) return;
+                    
                     if (!document.getElementById('upload-spinner-styles')) {
                         const style = document.createElement('style');
                         style.id = 'upload-spinner-styles';
@@ -590,12 +619,15 @@ function setupImageUpload(areaId, inputId, fileVariableSetter) {
                         `;
                         document.head.appendChild(style);
                     }
+                    
                     const prev = uploadArea.innerHTML;
                     uploadArea.innerHTML = `<div class="uploading-placeholder"><div class="small-spinner"></div><div style="font-size:0.9em">Subiendo...</div></div>`;
+                    
                     const opts = inputId.includes('product') ? { maxSizeMB: 0.5, maxWidthOrHeight: 800 } : { maxSizeMB: 0.2, maxWidthOrHeight: 400 };
                     const compressed = await imageCompression(file, opts);
                     const supId = currentUser?.id || 'anonymous';
                     const uploadResult = await uploadProductImage(compressed, supId);
+                    
                     if (uploadResult) {
                         const publicUrl = uploadResult.publicUrl;
                         if (inputId.includes('product')) selectedProductUpload = uploadResult;
@@ -618,6 +650,7 @@ window.toggleStoreEditMode = function(isEditing) {
     document.getElementById('storeDescription').readOnly = !isEditing;
     document.getElementById('editStoreBtn').style.display = isEditing ? 'none' : 'block';
     document.getElementById('storeFormFooter').style.display = isEditing ? 'flex' : 'none';
+    
     if (!isEditing && currentMerchantData) {
         document.getElementById('storeName').value = currentMerchantData.business;
         document.getElementById('storeDescription').value = currentMerchantData.description;
@@ -625,14 +658,23 @@ window.toggleStoreEditMode = function(isEditing) {
 };
 
 window.saveStoreInfo = async function() {
-    const newData = { business: document.getElementById('storeName').value, description: document.getElementById('storeDescription').value };
+    const newData = { 
+        business: document.getElementById('storeName').value, 
+        description: document.getElementById('storeDescription').value 
+    };
     const saveBtn = document.querySelector('#storeFormFooter .btn-primary');
     startButtonLoading(saveBtn, 'Guardando...');
+    
     try {
-        if (!(await ensureSupabaseAvailable())) { stopButtonLoading(saveBtn); return; }
+        if (!(await ensureSupabaseAvailable())) { 
+            stopButtonLoading(saveBtn); 
+            return; 
+        }
+        
         const supabaseClient = getSupabase();
         const { error } = await supabaseClient.from('merchants').update(newData).eq('id', currentUser.id);
         if (error) throw error;
+        
         await updateUserProfile(currentUser.id); 
         toggleStoreEditMode(false);
         showToast('Información del puesto actualizada.', 'success');
@@ -649,6 +691,7 @@ window.toggleProfileEditMode = function(isEditing) {
     card.classList.toggle('edit-mode', isEditing);
     document.getElementById('editProfileBtn').style.display = isEditing ? 'none' : 'block';
     document.getElementById('profileFormFooter').style.display = isEditing ? 'flex' : 'none';
+    
     if (isEditing) {
         document.getElementById('userNameInput').value = document.getElementById('userName').textContent;
         const currentPhone = document.getElementById('userPhone').textContent;
@@ -663,11 +706,17 @@ window.saveProfileInfo = async function() {
     };
     const saveBtn = document.querySelector('#profileFormFooter .btn-primary');
     startButtonLoading(saveBtn, 'Actualizando...');
+    
     try {
-        if (!(await ensureSupabaseAvailable())) { stopButtonLoading(saveBtn); return; }
+        if (!(await ensureSupabaseAvailable())) { 
+            stopButtonLoading(saveBtn); 
+            return; 
+        }
+        
         const supabaseClient = getSupabase();
         const { error } = await supabaseClient.from('merchants').update(newData).eq('id', currentUser.id);
         if (error) throw error;
+        
         await updateUserProfile(currentUser.id);
         toggleProfileEditMode(false);
         showToast('Perfil actualizado.', 'success');
@@ -688,6 +737,7 @@ window.showProfilePicModal = function() {
 
 window.saveProfilePic = async function() {
     let picUrl = null;
+    
     if (selectedProfilePicUpload) {
         picUrl = selectedProfilePicUpload.publicUrl;
     } else if (selectedProfilePicFile) {
@@ -704,16 +754,23 @@ window.saveProfilePic = async function() {
                     reader.readAsDataURL(compressedFile);
                 });
             }
-        } catch (e) { console.error('Error uploading profile pic:', e); }
+        } catch (e) { 
+            console.error('Error uploading profile pic:', e); 
+        }
     } else if (selectedAvatarUrl) {
         picUrl = selectedAvatarUrl;
     }
+    
     if(picUrl) {
         try {
-            if (!(await ensureSupabaseAvailable())) return showToast('No se puede conectar a Supabase para actualizar la foto.', 'error');
+            if (!(await ensureSupabaseAvailable())) {
+                return showToast('No se puede conectar a Supabase para actualizar la foto.', 'error');
+            }
+            
             const supabaseClient = getSupabase();
             const { error } = await supabaseClient.from('merchants').update({ profile_pic: picUrl }).eq('id', currentUser.id);
             if (error) throw error;
+            
             await updateUserProfile(currentUser.id);
             hideModal('profilePicModal');
             selectedProfilePicUpload = null;
@@ -731,6 +788,7 @@ function populateAvatars() {
     const container = document.getElementById('avatarSelection');
     container.innerHTML = '';
     const avatars = ['male', 'female', 'human', 'identicon', 'bottts', 'avataaars', 'jdenticon', 'micah'];
+    
     avatars.forEach(seed => {
         const avatarUrl = `https://api.dicebear.com/8.x/pixel-art/svg?seed=${seed}&radius=50`;
         const avatarItem = document.createElement('div');
@@ -814,7 +872,6 @@ function updateAuthUI() {
     }
 }
 
-
 // === DELEGACIÓN DE EVENTOS PARA BOTONES DINÁMICOS ===
 document.addEventListener('click', function(e) {
     if (e.target.id === 'create-catalog-btn') {
@@ -836,12 +893,8 @@ document.addEventListener('change', function(e) {
 });
 
 // === FUNCIONES DE COMPATIBILIDAD PARA NAVEGACIÓN ENTRE MÓDULOS ===
-// Este código permite que script.js y products.js se comuniquen correctamente
-
-// Exponer loadProducts globalmente si no existe
 if (typeof window.loadProductsWrapper === 'undefined') {
     window.loadProductsWrapper = function(containerId = 'productsGrid', filter = {}) {
-        // Verificar que la función existe en products.js
         if (typeof loadProducts === 'function') {
             return loadProducts(containerId, filter);
         } else {
@@ -850,10 +903,8 @@ if (typeof window.loadProductsWrapper === 'undefined') {
     };
 }
 
-// Exponer loadMyProducts globalmente si no existe
 if (typeof window.loadMyProductsWrapper === 'undefined') {
     window.loadMyProductsWrapper = function() {
-        // Verificar que la función existe en products.js
         if (typeof loadMyProducts === 'function') {
             return loadMyProducts();
         } else {
@@ -863,80 +914,107 @@ if (typeof window.loadMyProductsWrapper === 'undefined') {
 }
 
 // --- INICIALIZACIÓN DE LA APLICACIÓN ---
-
+// ✅ VERSIÓN CORREGIDA: No fuerza autenticación, permite uso anónimo
 async function initializeApp() {
-    showInitialLoadingSpinner('Cargando datos y autenticando...');
+    showInitialLoadingSpinner('Cargando Feria Virtual...');
+    
     try {
         const supReachable = await isSupabaseReachable();
         window._supabaseReachable = supReachable;
+        
         if (!supReachable) {
-            showSupabaseNetworkBanner('No se puede conectar a Supabase. Revisa tu conexion a Internet o la URL configurada.');
+            console.warn('Supabase no alcanzable, modo sin conexión');
+            showSupabaseNetworkBanner('Modo sin conexión. Algunas funciones pueden no estar disponibles.');
         }
+        
         if (supReachable) {
             initializeSupabaseClient();
             const supabaseClient = getSupabase();
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            if (user) {
-                const { data: merchant, error } = await supabaseClient.from('merchants').select('*').eq('id', user.id).single();
-                if (!error && merchant) {
-                    currentUser = { id: user.id, email: user.email }; 
-                    isMerchant = true;
-                    await updateUserProfile(user.id);
-                    showSection('profile');
+            
+            try {
+                // ✅ Intentar obtener sesión existente sin forzar error
+                const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+                
+                if (session && session.user && !sessionError) {
+                    // Hay una sesión válida, cargar datos del comerciante
+                    const { data: merchant, error: merchantError } = await supabaseClient
+                        .from('merchants')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .single();
+                    
+                    if (!merchantError && merchant) {
+                        currentUser = { id: session.user.id, email: session.user.email }; 
+                        isMerchant = true;
+                        await updateUserProfile(session.user.id);
+                        showSection('profile');
+                    } else {
+                        // Usuario autenticado pero no es comerciante
+                        currentUser = null;
+                        isMerchant = false;
+                        currentMerchantData = null;
+                        showSection('home');
+                    }
                 } else {
-                    isMerchant = false; 
-                    currentUser = null; 
+                    // No hay sesión, usuario anónimo
+                    currentUser = null;
+                    isMerchant = false;
                     currentMerchantData = null;
                     showSection('home');
                 }
-            } else {
-                currentUser = null; 
-                isMerchant = false; 
+            } catch (authError) {
+                console.warn('Error al verificar autenticación:', authError);
+                // Ignorar error de autenticación y continuar como usuario anónimo
+                currentUser = null;
+                isMerchant = false;
                 currentMerchantData = null;
                 showSection('home');
             }
         } else {
-            currentUser = null; 
-            isMerchant = false; 
+            // Sin conexión a Supabase, modo anónimo
+            currentUser = null;
+            isMerchant = false;
             currentMerchantData = null;
             showSection('home');
         }
     } catch (e) {
-        console.error('Error checking auth state:', e);
+        console.error('Error en inicialización:', e);
+        // Continuar de todos modos
+        currentUser = null;
+        isMerchant = false;
+        currentMerchantData = null;
+        showSection('home');
     }
 
-    // ELIMINAR TODO EL BLOQUE DE _sup.auth.onAuthStateChange
-    // Y REEMPLAZARLO CON ESTAS 2 LINEAS:
     hideInitialLoadingSpinner();
     updateAuthUI();
 
-    // El resto del codigo sigue igual...
-    document.getElementById('loginPassword').addEventListener('keypress', function(event) {
-        if (event.key === 'Enter') {
-            login();
-        }
-    });
-
-// El listener ya esta configurado en initializeSupabaseClient()
-// Solo ocultamos el spinner
-hideInitialLoadingSpinner();
-updateAuthUI();
-
-    // Eventos que SÍ existen al cargar la página
-document.getElementById('loginPassword').addEventListener('keypress', function(event) {
-        if (event.key === 'Enter') {
-            login();
-        }
-    });
+    // Eventos del DOM
+    const loginPasswordInput = document.getElementById('loginPassword');
+    if (loginPasswordInput) {
+        loginPasswordInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') login();
+        });
+    }
+    
     document.addEventListener('keydown', closeActiveModalOnEsc);
-    document.getElementById('hamburgerMenu').addEventListener('click', function() {
-        document.getElementById('navContainer').classList.toggle('active');
-        document.getElementById('navOverlay').classList.toggle('active');
-    });
-    document.getElementById('navOverlay').addEventListener('click', function() {
-        document.getElementById('navContainer').classList.remove('active');
-        document.getElementById('navOverlay').classList.remove('active');
-    });
+    
+    const hamburgerMenu = document.getElementById('hamburgerMenu');
+    if (hamburgerMenu) {
+        hamburgerMenu.addEventListener('click', function() {
+            document.getElementById('navContainer').classList.toggle('active');
+            document.getElementById('navOverlay').classList.toggle('active');
+        });
+    }
+    
+    const navOverlay = document.getElementById('navOverlay');
+    if (navOverlay) {
+        navOverlay.addEventListener('click', function() {
+            document.getElementById('navContainer').classList.remove('active');
+            document.getElementById('navOverlay').classList.remove('active');
+        });
+    }
+    
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', function() {
             document.getElementById('navContainer').classList.remove('active');
@@ -957,10 +1035,8 @@ document.getElementById('loginPassword').addEventListener('keypress', function(e
         applyTheme(localStorage.getItem('theme') || 'light');
     }
 
-    // Avatar
     populateAvatars();
-
-    // Uploads
+    
     setupImageUpload('productImageUploadArea', 'productImageInput', (file) => selectedProductFile = file);
     setupImageUpload('profilePicUploadArea', 'profilePicInput', (file) => {
         selectedProfilePicFile = file;
@@ -968,34 +1044,16 @@ document.getElementById('loginPassword').addEventListener('keypress', function(e
         document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
     });
 
-    // Cargar productos iniciales si hay conexión
-    if (window._supabaseReachable === undefined || window._supabaseReachable) {
+    // ✅ Cargar productos SIEMPRE, sin importar si hay sesión
+    if (typeof loadProducts === 'function') {
         loadProducts();
     }
 
     // Cargar carrito desde localStorage
-    loadCartFromLocalStorage();
+    if (typeof loadCartFromLocalStorage === 'function') {
+        loadCartFromLocalStorage();
+    }
 }
-
-// === DELEGACIÓN DE EVENTOS PARA ELEMENTOS DINÁMICOS ===
-document.addEventListener('click', function(e) {
-    if (e.target.id === 'create-catalog-btn') {
-        document.getElementById('catalog-options-modal').style.display = 'flex';
-    } else if (e.target.id === 'backup-btn') {
-        document.getElementById('backup-options-modal').style.display = 'flex';
-    } else if (e.target.id === 'generate-pdf-btn') {
-        hideModal('catalog-options-modal');
-        showExportModal('pdf');
-    } else if (e.target.id === 'generate-jpg-btn') {
-        loadUserProductsForSelection();
-    }
-});
-
-document.addEventListener('change', function(e) {
-    if (e.target.id === 'json-import-input') {
-        handleJsonImport(e);
-    }
-});
 
 // ✅ Ejecutar SOLO cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', initializeApp);
