@@ -52,6 +52,7 @@
     </header>
 
     <main>
+        <!-- SECCIONES (sin cambios) -->
         <section id="home" class="section active-section">
             <div class="hero">
                 <h1>Conecta tu pequeño negocio con el mundo</h1>
@@ -71,22 +72,93 @@
             <div class="products-header">
                 <h2 class="section-title">Productos Destacados</h2>
             </div>
-            <div class="products-grid" id="productsGrid"></div>
-        </section>
-
-        <section id="vendor-page" class="section">
-            <div class="vendor-page-header">
-                <h2 class="section-title">Puesto: <span id="vendorPageTitle"></span></h2>
-                <div class="vendor-actions" style="display: flex; gap: 1rem;">
-                    <a href="#" id="vendorWhatsappBtn" class="btn btn-whatsapp" style="display: none;" target="_blank" rel="noopener noreferrer">
-                        <i class="fab fa-whatsapp"></i> Chatear
-                    </a>
-                    <button class="btn btn-secondary" onclick="showSection('products')">
-                        <i class="fas fa-arrow-left"></i> Volver
-                    </button>
+            <section id="vendor-page" class="section">
+    <div class="vendor-page-header">
+        <button class="btn btn-secondary" onclick="showSection('products')">
+            <i class="fas fa-arrow-left"></i> Volver a productos
+        </button>
+        <h2 class="section-title" id="vendorPageTitle">Tienda del Vendedor</h2>
+        <a href="#" id="vendorWhatsappBtn" class="btn btn-primary" target="_blank" style="display: none;">
+            <i class="fab fa-whatsapp"></i> Contactar por WhatsApp
+        </a>
+    </div>
+    <div class="products-grid" id="vendorProductsGrid"></div>
+</section>
+            <!-- === BARRA DE BÚSQUEDA Y FILTROS === -->
+            <div class="search-filter-container">
+                <div class="filter-main-row">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input 
+                            type="text" 
+                            id="productSearchInput" 
+                            placeholder="Buscar productos..."
+                            onkeyup="filterProducts()"
+                        >
+                        <button class="clear-search-btn" id="clearSearchBtn" onclick="clearSearch()" style="display: none;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="filter-buttons">
+                        <button class="filter-chip active" data-category="all" onclick="filterByCategory('all')">
+                            <i class="fas fa-th"></i> Todos
+                        </button>
+                        
+                        <div class="filter-dropdown" id="categoryDropdown">
+                            <button class="filter-chip dropdown-toggle" id="categoryDropdownBtn">
+                                <i class="fas fa-tag"></i> Categorías <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="dropdown-content" id="categoryDropdownContent">
+                                <button onclick="filterByCategory('artesanias')">
+                                    <i class="fas fa-palette"></i> Artesanías
+                                </button>
+                                <button onclick="filterByCategory('juguetes')">
+                                    <i class="fas fa-dice"></i> Juguetes
+                                </button>
+                                <button onclick="filterByCategory('hogar')">
+                                    <i class="fas fa-home"></i> Hogar
+                                </button>
+                                <button onclick="filterByCategory('tecnologia')">
+                                    <i class="fas fa-laptop"></i> Tecnología
+                                </button>
+                                <button onclick="filterByCategory('moda')">
+                                    <i class="fas fa-tshirt"></i> Moda
+                                </button>
+                                <button onclick="filterByCategory('alimentos')">
+                                    <i class="fas fa-utensils"></i> Alimentos
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-dropdown" id="priceDropdown">
+                            <button class="filter-chip dropdown-toggle" id="priceDropdownBtn">
+                                <i class="fas fa-dollar-sign"></i> Precio <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="dropdown-content" id="priceDropdownContent">
+                                <button onclick="sortByPrice('desc')">
+                                    <i class="fas fa-sort-amount-down"></i> Mayor a menor
+                                </button>
+                                <button onclick="sortByPrice('asc')">
+                                    <i class="fas fa-sort-amount-up"></i> Menor a mayor
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+                
+                <div class="search-results-info">
+                    <span id="resultsCount">Mostrando todos los productos</span>
+                </div>
+            </div>    
+
+            <div class="products-grid" id="productsGrid"></div>
+            
+            <div class="no-results-message" id="noResultsMessage" style="display: none;">
+                <i class="fas fa-search"></i>
+                <h3>No se encontraron productos</h3>
+                <p>Intenta con otra búsqueda o categoría</p>
             </div>
-            <div class="products-grid" id="vendorProductsGrid"></div>
         </section>
 
         <section id="profile" class="section">
@@ -159,17 +231,13 @@
             <div class="products-header" style="margin-top: 3rem;">
                 <h2 class="section-title">Mis Productos</h2>
                 <div class="header-actions">
-                    <!-- === NUEVOS BOTONES === -->
                     <button id="create-catalog-btn" class="btn btn-secondary">
                         <i class="fas fa-file-alt"></i> Crear Catálogo
                     </button>
                     <button id="backup-btn" class="btn btn-secondary">
                         <i class="fas fa-save"></i> Copia de Seguridad
                     </button>
-                    <!-- Input para importar JSON (oculto, se activa desde el modal) -->
                     <input type="file" id="json-import-input" accept=".json" style="display: none;">
-                    
-                    <!-- Botón existente -->
                     <button class="btn btn-primary" onclick="showProductModal()"><i class="fas fa-plus"></i> Nuevo Producto</button>
                 </div>
             </div>
@@ -211,9 +279,9 @@
                 </div>
             </div>
         </section>
-    </main>
-    
-    <!-- Modals and other fixed elements -->
+<!-- DESPUÉS DE </section> DE REGISTER, ANTES DE </main> -->
+
+    <!-- === MODAL DE LOGIN === -->
     <div class="login-modal" id="loginModal">
         <div class="login-box">
             <button type="button" class="close-modal-btn" onclick="hideLogin()"><i class="fas fa-times"></i></button>
@@ -234,6 +302,7 @@
         </div>
     </div>
 
+    <!-- === MODAL DE FOTO DE PERFIL === -->
     <div class="login-modal" id="profilePicModal">
         <div class="login-box">
             <button type="button" class="close-modal-btn" onclick="hideModal('profilePicModal')"><i class="fas fa-times"></i></button>
@@ -259,6 +328,7 @@
         </div>
     </div>
 
+    <!-- === MODAL DE PRODUCTO === -->
     <div class="login-modal" id="productModal">
         <div class="login-box">
             <button type="button" class="close-modal-btn" onclick="hideModal('productModal')"><i class="fas fa-times"></i></button>
@@ -273,6 +343,18 @@
             <div class="form-group">
                 <label for="productPrice">Precio ($)</label>
                 <input type="number" id="productPrice" class="form-control" placeholder="1500">
+            </div>
+            <div class="form-group">
+                <label for="productCategory">Categoría</label>
+                <select id="productCategory" class="form-control">
+                    <option value="otros">Otros</option>
+                    <option value="artesanias">Artesanías</option>
+                    <option value="juguetes">Juguetes</option>
+                    <option value="hogar">Hogar</option>
+                    <option value="tecnologia">Tecnología</option>
+                    <option value="moda">Moda</option>
+                    <option value="alimentos">Alimentos</option>
+                </select>
             </div>
             <div class="form-group">
                 <label for="productDescription">Descripción</label>
@@ -293,6 +375,7 @@
         </div>
     </div>
     
+    <!-- === MODAL DE TEMAS PDF === -->
     <div class="login-modal" id="exportThemeModal">
         <div class="login-box">
             <button type="button" class="close-modal-btn" onclick="hideModal('exportThemeModal')"><i class="fas fa-times"></i></button>
@@ -304,7 +387,7 @@
         </div>
     </div>
 
-    <!-- === NUEVOS MODALES AÑADIDOS AQUÍ === -->
+    <!-- === MODAL DE OPCIONES DE CATÁLOGO === -->
     <div class="login-modal" id="catalog-options-modal">
         <div class="login-box">
             <button type="button" class="close-modal-btn" onclick="hideModal('catalog-options-modal')"><i class="fas fa-times"></i></button>
@@ -323,6 +406,7 @@
         </div>
     </div>
 
+    <!-- === MODAL DE BACKUP === -->
     <div class="login-modal" id="backup-options-modal">
         <div class="login-box">
             <button type="button" class="close-modal-btn" onclick="hideModal('backup-options-modal')"><i class="fas fa-times"></i></button>
@@ -341,6 +425,7 @@
         </div>
     </div>
 
+    <!-- === MODAL DE SELECCIÓN DE PRODUCTO === -->
     <div class="login-modal" id="select-product-modal">
         <div class="login-box" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
             <button type="button" class="close-modal-btn" onclick="hideModal('select-product-modal')"><i class="fas fa-times"></i></button>
@@ -353,7 +438,11 @@
             </div>
         </div>
     </div>
-    <!-- === FIN DE NUEVOS MODALES === -->
+    </main>
+    
+    <!-- Modals and other fixed elements (sin cambios) -->
+    <!-- ... (todos los modales: login, profilePic, product, exportTheme, catalog-options, backup-options, select-product, footer, etc.) ... -->
+    <!-- (Mantén exactamente como en tu HTML original, ya que no se modifican) -->
 
     <footer class="footer">
         <p>Únete a la comunidad de pequeños comerciantes que ya están creciendo con Feria Virtual</p>
@@ -384,46 +473,50 @@
         <span class="lightbox-close" onclick="hideImageLightbox()">&times;</span>
         <img class="lightbox-content" id="lightboxImg">
         
-        <!-- === SPINNER DE CARGA PARA EL LIGHTBOX === -->
         <div class="lightbox-loading" id="lightboxLoadingSpinner">
             <i class="fas fa-spinner fa-spin"></i>
             <p>Cargando imagen...</p>
         </div>
         
-<!-- === NUEVO CONTENEDOR DE BOTONES CENTRADOS === -->
-<div class="lightbox-button-container" id="lightboxButtonContainer">
-    <a id="lightboxWhatsappBtn" class="lightbox-whatsapp-circle-btn" href="#" target="_blank" rel="noopener noreferrer">
-        <i class="fab fa-whatsapp"></i>
-        <span class="whatsapp-btn-text">Chatear por WhatsApp</span>
-    </a>
-    <a id="lightboxStoreBtn" class="lightbox-action-btn store-btn" href="#">
-        <i class="fas fa-store"></i>
-        <span>Ir al Puesto</span>
-    </a>
-</div>
+        <div class="lightbox-button-container" id="lightboxButtonContainer">
+            <a id="lightboxWhatsappBtn" class="lightbox-whatsapp-circle-btn" href="#" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-whatsapp"></i>
+                <span class="whatsapp-btn-text">Chatear por WhatsApp</span>
+            </a>
+            <a id="lightboxStoreBtn" class="lightbox-action-btn store-btn" href="#">
+                <i class="fas fa-store"></i>
+                <span>Ir al Puesto</span>
+            </a>
+        </div>
     </div>
 
     <!-- === PANEL DEL CARRITO DE COMPRAS === -->
     <div class="cart-panel" id="cartPanel">
         <div class="cart-header">
-            <h3><i class="fas fa-shopping-cart"></i> Mi Carrito</h3>
+            <h3><i class="fas fa-shopping-cart"></i> Mis Pedidos por Vendedor</h3>
             <button class="close-cart-btn" onclick="toggleCart()"><i class="fas fa-times"></i></button>
         </div>
         <div class="cart-items" id="cartItemsContainer">
-            <p class="empty-cart-message">Tu carrito está vacío.</p>
+            <p class="empty-cart-message">Tu lista de contactos está vacía.</p>
         </div>
         <div class="cart-footer">
-            <div class="cart-total">
-                <strong>Total:</strong> <span id="cartTotal">$0.00</span>
+            <div class="cart-footer-info">
+                <i class="fas fa-info-circle"></i> Contacta directamente a cada vendedor para coordinar pago y entrega.
             </div>
-            <button class="btn btn-primary" id="checkoutBtn" onclick="proceedToCheckout()">
-                <i class="fas fa-credit-card"></i> Proceder al Pago
+            <button class="btn btn-secondary" onclick="clearCart()" style="width: 100%; margin-top: 1rem;">
+                <i class="fas fa-trash"></i> Vaciar Lista
             </button>
         </div>
     </div>
 
     <!-- === OVERLAY OSCURO PARA EL CARRITO === -->
     <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+
+    <!-- === BADGE FLOTANTE DEL CARRITO PARA MÓVILES === -->
+    <div class="mobile-cart-badge" id="mobileCartBadge" onclick="toggleCart()" style="display: none;">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="mobile-cart-count" id="mobileCartCount">0</span>
+    </div>
 
     <!-- === CONTENEDOR PARA EL CORREDOR ANIMADO === -->
     <div id="runnerOverlay" class="runner-overlay">
@@ -441,16 +534,18 @@
     </div>
 
     <!-- Librerías Externas -->
-    <!-- Firebase scripts removed (migrating to Supabase). If you need Firebase again, re-add the scripts here. -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.1/dist/browser-image-compression.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    
-    <!-- Supabase client (UMD) - required for script.js which initializes the client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
-    <!-- Lógica de la aplicación -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Supabase client (UMD) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
+
+    <!-- ✅ SCRIPTS DIVIDIDOS EN 4 PARTES (EN ORDEN) -->
     <script src="script.js" defer></script>
+    <script src="products.js" defer></script>
+    <script src="cart.js" defer></script>
+    <script src="catalog.js" defer></script>
 </body>
 </html>

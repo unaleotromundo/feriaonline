@@ -1,14 +1,89 @@
+// Niveles de log
+const LOG_LEVELS = {
+  INFO: 'INFO',
+  WARN: 'WARN',
+  ERROR: 'ERROR',
+  DEBUG: 'DEBUG',
+};
+
+// Función para registrar logs
+function log(message, level = LOG_LEVELS.INFO) {
+  const timestamp = new Date().toISOString();
+  const logMessage = `[${timestamp}] [${level}] ${message}`;
+  console.log(logMessage);
+  if (!window.appLogs) {
+    window.appLogs = [];
+  }
+  window.appLogs.push({ timestamp, level, message });
+}
+
+// Capturar errores no manejados
+window.addEventListener('error', (event) => {
+  log(`Error no capturado: ${event.message}`, LOG_LEVELS.ERROR);
+  log(`Archivo: ${event.filename}, Línea: ${event.lineno}, Columna: ${event.colno}`, LOG_LEVELS.ERROR);
+});
+
+log("Inicializando aplicación...", LOG_LEVELS.INFO);
+
+// === FUNCIONES UTILITARIAS GLOBALES ===
+function showRunnerOverlay() {
+    const overlay = document.getElementById('runnerOverlay');
+    if (overlay) overlay.classList.add('active');
+}
+
+function hideRunnerOverlay() {
+    const overlay = document.getElementById('runnerOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
+
+function showGlobalLoadingOverlay(message = 'Cargando...') {
+    const overlay = document.getElementById('globalLoadingOverlay');
+    if (overlay) {
+        const msgEl = overlay.querySelector('p');
+        if (msgEl) msgEl.textContent = message;
+        overlay.style.display = 'flex';
+    }
+}
+
+function hideGlobalLoadingOverlay() {
+    const overlay = document.getElementById('globalLoadingOverlay');
+    if (overlay) overlay.style.display = 'none';
+    hideRunnerOverlay();
+}
+
 // Permitir navegación con flechas del teclado en el lightbox
 document.addEventListener('keydown', function(e) {
     const lightbox = document.getElementById('imageLightbox');
     if (lightbox && lightbox.style.display === 'flex') {
         if (e.key === 'ArrowLeft') {
-            prevProduct();
+            if (typeof prevProduct === 'function') prevProduct();
             e.preventDefault();
         } else if (e.key === 'ArrowRight') {
-            nextProduct();
+            if (typeof nextProduct === 'function') nextProduct();
             e.preventDefault();
         }
+    }
+});
+
+/**
+ * Alterna la visibilidad de un dropdown por su ID
+ */
+window.toggleDropdown = function(dropdownId) {
+    const dropdown = document.getElementById(dropdownId);
+    if (!dropdown) return;
+    const isVisible = dropdown.style.display === 'block';
+    document.querySelectorAll('.dropdown-content').forEach(el => {
+        if (el.id !== dropdownId) el.style.display = 'none';
+    });
+    dropdown.style.display = isVisible ? 'none' : 'block';
+};
+
+// Cerrar dropdowns al hacer clic fuera
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('.filter-dropdown')) {
+        document.querySelectorAll('.dropdown-content').forEach(el => {
+            el.style.display = 'none';
+        });
     }
 });
 
@@ -22,7 +97,6 @@ async function uploadProductImage(file, vendorId) {
         const ext = (file.name || 'img').split('.').pop().toLowerCase();
         const fileName = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
         const path = `products/${vendorId}/${fileName}`;
-        // subida como file (Blob)
         const { error: uploadError } = await sup.storage.from('product-images').upload(path, file, { upsert: true });
         if (uploadError) throw uploadError;
         const { data } = sup.storage.from('product-images').getPublicUrl(path);
@@ -35,27 +109,21 @@ async function uploadProductImage(file, vendorId) {
 
 /**
  * Cierra el modal, panel o lightbox activo cuando se presiona la tecla Esc.
- * Se verifica en orden de prioridad: Lightbox > Carrito > Cualquier Modal > Menú Hamburguesa.
  */
 function closeActiveModalOnEsc(event) {
     if (event.key === 'Escape' || event.key === 'Esc') {
-        // 1. Cerrar Lightbox si está visible
         const lightbox = document.getElementById('imageLightbox');
         if (lightbox && lightbox.style.display === 'flex') {
             hideImageLightbox();
             event.preventDefault();
             return;
         }
-
-        // 2. Cerrar Panel del Carrito si está activo
         const cartPanel = document.getElementById('cartPanel');
         if (cartPanel && cartPanel.classList.contains('active')) {
             toggleCart();
             event.preventDefault();
             return;
         }
-
-        // 3. Cerrar cualquier modal que esté visible (display: flex)
         const modals = document.querySelectorAll('.login-modal');
         for (let modal of modals) {
             if (modal.style.display === 'flex') {
@@ -64,8 +132,6 @@ function closeActiveModalOnEsc(event) {
                 return;
             }
         }
-
-        // 4. Cerrar el menú hamburguesa si está activo
         const navContainer = document.getElementById('navContainer');
         if (navContainer && navContainer.classList.contains('active')) {
             navContainer.classList.remove('active');
@@ -100,7 +166,6 @@ function showInitialLoadingSpinner(message = 'Cargando datos...') {
     } else {
         overlay.style.display = 'flex';
     }
-    // Mensajes animados
     let msgIdx = 0;
     const msgDiv = document.getElementById('initial-loading-message');
     if (window._initialLoadingMsgInterval) clearInterval(window._initialLoadingMsgInterval);
@@ -121,134 +186,56 @@ function hideInitialLoadingSpinner() {
     }
 }
 
-window.generateCatalogJPG = async function() {
-    if (!currentUser) return showToast('Debes iniciar sesión para generar imágenes.', 'error');
-    if (!(await ensureSupabaseAvailable())) return; // short-circuit if Supabase host not reachable
-    showGlobalLoadingOverlay('Generando imágenes del catálogo...');
-    try {
-    const supabaseClient = getSupabase();
-    let q = supabaseClient.from('products').select('*');
-    if (isValidId(currentUser.id)) q = q.eq('vendor_id', currentUser.id);
-    const { data: productsData, error } = await q;
-        if (error) throw error;
-        if (!productsData || productsData.length === 0) {
-            hideGlobalLoadingOverlay();
-            return showToast('No tienes productos para generar imágenes.', 'error');
-        }
-        const products = productsData.map(r => normalizeProductRow(r));
-        // Crear un contenedor temporal para renderizar productos
-        const tempDiv = document.createElement('div');
-        tempDiv.style.position = 'fixed';
-        tempDiv.style.left = '-9999px';
-        tempDiv.style.top = '0';
-        tempDiv.style.width = '800px';
-        tempDiv.style.background = '#fff';
-        tempDiv.style.padding = '20px';
-        tempDiv.innerHTML = '<h2>Catálogo de Productos</h2>';
-        products.forEach((product, idx) => {
-            const prodDiv = document.createElement('div');
-            prodDiv.style.border = '1px solid #ccc';
-            prodDiv.style.margin = '10px 0';
-            prodDiv.style.padding = '10px';
-            prodDiv.innerHTML = `<strong>${idx + 1}. ${product.name || 'Sin nombre'}</strong><br>
-                Precio: $${product.price || 'N/A'}<br>
-                Descripción: ${product.description || ''}<br>`;
-            if (product.imageBase64) {
-                const img = document.createElement('img');
-                img.src = product.imageBase64;
-                img.style.maxWidth = '200px';
-                img.style.display = 'block';
-                prodDiv.appendChild(img);
-            }
-            tempDiv.appendChild(prodDiv);
-        });
-        document.body.appendChild(tempDiv);
-        // Usar html2canvas para capturar el contenedor
-        if (window.html2canvas) {
-            const canvas = await window.html2canvas(tempDiv);
-            const imgData = canvas.toDataURL('image/jpeg');
-            const a = document.createElement('a');
-            a.href = imgData;
-            a.download = `catalogo-feria-virtual-${new Date().toISOString().slice(0, 10)}.jpg`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            showToast('Imagen JPG generada correctamente.', 'success');
-        } else {
-            showToast('No se encontró html2canvas. No se puede generar la imagen.', 'error');
-        }
-        document.body.removeChild(tempDiv);
-    } catch (error) {
-        console.error('Error generando JPG:', error);
-        showToast('Hubo un error al generar la imagen.', 'error');
-    } finally {
-        hideGlobalLoadingOverlay();
-    }
-}
-
-window.generatePdfWithJsPDF = async function() {
-    if (!currentUser) return showToast('Debes iniciar sesión para generar el PDF.', 'error');
-    if (!(await ensureSupabaseAvailable())) return;
-    showGlobalLoadingOverlay('Generando PDF del catálogo...');
-    try {
-    const supabaseClient = getSupabase();
-    let q2 = supabaseClient.from('products').select('*');
-    if (isValidId(currentUser.id)) q2 = q2.eq('vendor_id', currentUser.id);
-    const { data: productsData, error } = await q2;
-        if (error) throw error;
-        if (!productsData || productsData.length === 0) {
-            hideGlobalLoadingOverlay();
-            return showToast('No tienes productos para generar el PDF.', 'error');
-        }
-        const products = productsData.map(r => normalizeProductRow(r));
-        const docPdf = new window.jspdf.jsPDF();
-        docPdf.setFontSize(16);
-        docPdf.text('Catálogo de Productos', 20, 20);
-        let y = 35;
-        products.forEach((product, idx) => {
-            docPdf.setFontSize(12);
-            docPdf.text(`${idx + 1}. ${product.name || 'Sin nombre'}`, 20, y);
-            y += 7;
-            docPdf.text(`Precio: $${product.price || 'N/A'}`, 25, y);
-            y += 7;
-            docPdf.text(`Descripción: ${product.description || ''}`, 25, y);
-            y += 7;
-            if (product.imageBase64) {
-                try {
-                    docPdf.addImage(product.imageBase64, 'JPEG', 150, y - 21, 40, 30);
-                } catch (imgErr) {
-                    // Si la imagen falla, continuar sin ella
-                }
-            }
-            y += 30;
-            if (y > 270) {
-                docPdf.addPage();
-                y = 20;
-            }
-        });
-        docPdf.save(`catalogo-feria-virtual-${new Date().toISOString().slice(0, 10)}.pdf`);
-        showToast('PDF generado correctamente.', 'success');
-    } catch (error) {
-        console.error('Error generando PDF:', error);
-        showToast('Hubo un error al generar el PDF.', 'error');
-    } finally {
-        hideGlobalLoadingOverlay();
-    }
-}
-
-// Feria Virtual - Lógica de la Aplicación
-// Configuración de Supabase (cliente UMD cargado desde index.html)
+// Configuración de Supabase
 const supabaseUrl = 'https://fyierdvjqwtuoilvhfdh.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5aWVyZHZqcXd0dW9pbHZoZmRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkwOTU3NTksImV4cCI6MjA3NDY3MTc1OX0.Fx-edKYpWjGJ2tTNODSkGXXodu0pNp1XmvYkwRd3C_M';
-// Declaramos la variable global pero inicializamos el cliente de Supabase de forma perezosa
-// para evitar que el SDK intente refrescar tokens automáticamente durante problemas de DNS.
-let supabase = null;
 
+let supabase = null;
 function initializeSupabaseClient() {
     if (supabase) return supabase;
     supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey, {
-        auth: { persistSession: true, autoRefreshToken: false, detectSessionInUrl: false }
+        auth: { 
+            persistSession: true, 
+            autoRefreshToken: true, 
+            detectSessionInUrl: false,
+            storage: window.localStorage,
+            storageKey: 'feria-virtual-auth'
+        },
+        global: {
+            headers: {
+                'x-client-info': 'feria-virtual-web'
+            }
+        }
     });
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('Auth state changed:', event, session ? 'Sesión activa' : 'Sin sesión');
+        if (event === 'SIGNED_OUT') {
+            if (currentUser) {
+                console.log('Usuario deslogueado');
+                currentUser = null;
+                isMerchant = false;
+                currentMerchantData = null;
+                updateAuthUI();
+            } 
+        }
+    });
+    const originalFetch = window.fetch;
+    window.fetch = async function(...args) {
+        try {
+            const response = await originalFetch.apply(this, args);
+            if (response.status === 403 && args[0]?.includes?.('supabase.co/auth')) {
+                console.error('❌ Error 403 detectado en llamada auth, limpiando sesión...');
+                cleanupCorruptedSessions();
+                if (currentUser) {
+                    showToast('Tu sesión expiró. Recargando...', 'error');
+                    setTimeout(() => location.reload(), 1500);
+                }
+            }
+            return response;
+        } catch (err) {
+            throw err;
+        }
+    };
     return supabase;
 }
 
@@ -257,15 +244,66 @@ function getSupabase() {
     return supabase;
 }
 
+// Detectar cuando la pestana vuelve a estar activa
+document.addEventListener('visibilitychange', async () => {
+    if (!document.hidden && supabase) {
+        console.log('Pestana activa - verificando sesion...');
+        
+        try {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            
+            if (error) {
+                console.error('Error al obtener sesion:', error);
+                return;
+            }
+            
+            if (session) {
+                console.log('Sesion valida detectada');
+                
+                const expiresAt = session.expires_at * 1000;
+                const now = Date.now();
+                const timeUntilExpiry = expiresAt - now;
+                
+                if (timeUntilExpiry < 5 * 60 * 1000) {
+                    console.log('Refrescando token...');
+                    await supabase.auth.refreshSession();
+                }
+            }
+        } catch (err) {
+            console.error('Error al verificar sesion:', err);
+        }
+    }
+});
+
+// Mantener la conexion activa
+let heartbeatInterval = null;
+
+function startSupabaseHeartbeat() {
+    if (heartbeatInterval) return;
+    
+    heartbeatInterval = setInterval(async () => {
+        if (!supabase) return;
+        
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                await supabase.from('merchants').select('id').limit(1);
+            }
+        } catch (err) {
+            console.error('Heartbeat fallo:', err);
+        }
+    }, 30000);
+}
+
+function stopSupabaseHeartbeat() {
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
+    }
+}
+
 // --- NETWORK / SUPABASE REACHABILITY HELPERS ---
-/**
- * Checks whether the Supabase host is reachable. Uses a short fetch with no-cors to detect DNS/network failures.
- * Returns true if the request did not immediately fail due to network/DNS. This is conservative — false means likely offline or DNS problem.
- */
 async function isSupabaseReachable(timeout = 3000) {
-    // Nota: se mantiene por compatibilidad, pero ahora preferimos hacer la prueba real
-    // usando un intento directo contra Supabase en el botón de reintento. Aquí
-    // simplemente intentamos crear el cliente y devolvemos true.
     try {
         initializeSupabaseClient();
         return true;
@@ -298,12 +336,10 @@ function showSupabaseNetworkBanner(message) {
         btn.disabled = true; btn.textContent = 'Probando...';
         try {
             const sup = getSupabase();
-            // Intento liviano: pedir 1 fila de products (no requiere autenticación si policies lo permiten)
             const { data, error } = await sup.from('products').select('id').limit(1);
             if (error) throw error;
             hideSupabaseNetworkBanner();
             showToast('Conexión a Supabase restablecida.', 'success');
-            // Forzar recarga de productos ahora que la conexión funciona
             loadProducts();
         } catch (err) {
             console.error('Reintento fallido:', err);
@@ -319,10 +355,6 @@ function hideSupabaseNetworkBanner() {
     if (banner) banner.remove();
 }
 
-/**
- * High-level guard used before calling Supabase from UI flows.
- * Returns true when Supabase appears reachable; otherwise shows a friendly message and returns false.
- */
 async function ensureSupabaseAvailable() {
     const reachable = await isSupabaseReachable();
     if (!reachable) {
@@ -342,8 +374,9 @@ let currentMerchantData = null;
 let selectedProductFile = null;
 let selectedProfilePicFile = null;
 let selectedAvatarUrl = null;
-let selectedProductUpload = null; // { publicUrl, path }
-let selectedProfilePicUpload = null; // { publicUrl, path }
+let selectedProductUpload = null;
+let selectedProfilePicUpload = null;
+
 const profileLink = document.getElementById('profileLink');
 const storeLink = document.getElementById('storeLink');
 const authContainer = document.getElementById('authContainer');
@@ -357,31 +390,18 @@ let dataCache = {
     merchants: {}
 };
 
-// Util: normaliza filas de la base (snake_case) a los campos camelCase usados en UI
-function normalizeProductRow(row) {
-    if (!row) return null;
-    return {
-        id: row.id,
-        name: row.name,
-        price: row.price,
-        description: row.description,
-        vendorId: row.vendor_id || row.vendorId || null,
-        vendorName: row.vendor_name || row.vendorName || null,
-        imageBase64: row.image_base64 || row.imageBase64 || null,
-        imageUrl: row.image_url || row.imageUrl || null,
-        imageStoragePath: row.image_storage_path || row.imageStoragePath || null,
-        published: typeof row.published !== 'undefined' ? row.published : true,
-        createdAt: row.created_at || row.createdAt || null
-    };
-}
+/**
+ * Normaliza filas de la base (incluyendo categoría)
+ */
 
-// Util: valida un id para evitar pasar null/undefined/'null' al query de Supabase
+// Util: valida un id
 function isValidId(id) {
-    return id !== null && id !== undefined && id !== '' && id !== 'null';
+    return id && typeof id === 'string' && id.length > 0 && id !== 'undefined' && id !== 'null';
 }
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos en milisegundos
 
-// --- MENSAJES PARA SPINNER DE CARGA INICIAL (APP) ---
+const CACHE_DURATION = 5 * 60 * 1000;
+
+// --- MENSAJES PARA SPINNER ---
 const appLoadingMessages = [
     "Cargando Feria Virtual...",
     "Estableciendo puestos...",
@@ -395,7 +415,6 @@ const appLoadingMessages = [
     "Conectando con la nube..."
 ];
 
-// --- MENSAJES PARA SPINNER DE CARGA DE PRODUCTOS ---
 const productLoadingMessages = [
     "Ordenando las góndolas...",
     "Encendiendo las luces del local...",
@@ -409,106 +428,36 @@ const productLoadingMessages = [
     "¡Casi listo! Un momentito más..."
 ];
 
+
+
 // --- NAVEGACIÓN Y VISIBILIDAD DE SECCIONES ---
 window.showSection = function(sectionId) {
     document.querySelectorAll('.section').forEach(section => section.classList.remove('active-section'));
     const targetSection = document.getElementById(sectionId);
     if (targetSection) targetSection.classList.add('active-section');
     document.getElementById('navContainer').classList.remove('active');
-    document.getElementById('navOverlay').classList.remove('active'); // Cerrar overlay al cambiar de sección
-    if (sectionId === 'products') loadProducts();
-    if (sectionId === 'my-store' && isMerchant) loadMyProducts();
-}
+    document.getElementById('navOverlay').classList.remove('active');
+    
+    // ✅ Verificar que la función existe antes de llamarla
+    if (sectionId === 'products' && typeof loadProducts === 'function') {
+        loadProducts();
+    }
+    if (sectionId === 'my-store' && isMerchant && typeof loadMyProducts === 'function') {
+        loadMyProducts();
+    }
+};
 
-window.showLogin = function() { document.getElementById('loginModal').style.display = 'flex'; }
-window.hideLogin = function() { document.getElementById('loginModal').style.display = 'none'; }
+window.showLogin = function() { document.getElementById('loginModal').style.display = 'flex'; };
+window.hideLogin = function() { document.getElementById('loginModal').style.display = 'none'; };
 
-// --- FUNCIÓN hideModal ACTUALIZADA ---
 window.hideModal = function(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) modal.style.display = 'none';
-    // Asegurarse de que el menú hamburguesa también esté cerrado
     document.getElementById('navContainer').classList.remove('active');
     document.getElementById('navOverlay').classList.remove('active');
-}
+};
 
-window.showProductModal = function(productId = null) {
-    const modal = document.getElementById('productModal');
-    const title = document.getElementById('productModalTitle');
-    resetProductForm();
-    modal.style.display = 'flex';
-    if (productId) {
-        title.textContent = 'Editar Producto';
-        modal.dataset.productId = productId;
-        loadProductForEdit(productId);
-    } else {
-        title.textContent = 'Agregar Nuevo Producto';
-        delete modal.dataset.productId;
-    }
-}
-
-async function loadProducts(containerId = 'productsGrid', filter = {}) {
-    const productsGrid = document.getElementById(containerId);
-    // Mostrar el corredor animado
-    showRunnerOverlay();
-    if (!(await ensureSupabaseAvailable())) { hideRunnerOverlay(); productsGrid.innerHTML = `<div>Error de red. Intenta más tarde.</div>`; return; }
-    try {
-        // Usar Supabase: las columnas en la BD están en snake_case
-    const supabaseClient = getSupabase();
-    let q = supabaseClient.from('products').select('*').eq('published', true);
-        if (isValidId(filter.vendorId)) q = q.eq('vendor_id', filter.vendorId);
-        q = q.order('created_at', { ascending: false });
-    const { data, error } = await q;
-        // Ocultar el corredor
-        hideRunnerOverlay();
-        productsGrid.innerHTML = '';
-        if (error) throw error;
-        if (!data || data.length === 0) {
-            productsGrid.innerHTML = `<div>No hay productos para mostrar.</div>`;
-            return;
-        }
-        data.forEach(row => renderProductCard(productsGrid, normalizeProductRow(row)));
-    } catch (error) {
-        console.error("Error loading products:", error);
-        // Asegurarse de ocultar el overlay incluso si hay error
-        hideRunnerOverlay();
-        const msg = error && (error.message || error.error || JSON.stringify(error));
-        productsGrid.innerHTML = `<div>Error al cargar productos. ${msg ? `(${msg})` : ''}</div>`;
-    }
-}
-
-async function loadMyProducts() {
-    if (!currentUser) return;
-    const productsGrid = document.getElementById('myProductsGrid');
-    // Mostrar el corredor animado
-    showRunnerOverlay();
-    if (!(await ensureSupabaseAvailable())) { hideRunnerOverlay(); productsGrid.innerHTML = `<div>Error de red. Intenta más tarde.</div>`; return; }
-    try {
-    const supabaseClient = getSupabase();
-    const sup = supabaseClient;
-    let q = sup.from('products').select('*');
-    if (isValidId(currentUser.id)) q = q.eq('vendor_id', currentUser.id);
-    q = q.order('created_at', { ascending: false });
-    const { data, error } = await q;
-        if (error) throw error;
-        const products = (data || []).map(r => normalizeProductRow(r));
-        // Ocultar el corredor
-        hideRunnerOverlay();
-        productsGrid.innerHTML = '';
-        if (products.length === 0) {
-            productsGrid.innerHTML = '<div>Aún no has agregado productos.</div>';
-            return;
-        }
-        products.forEach(product => renderMyProductCard(productsGrid, product));
-    } catch (error) {
-        console.error("Error loading user products:", error);
-        // Asegurarse de ocultar el overlay incluso si hay error
-        hideRunnerOverlay();
-        const msg = error && (error.message || error.error || JSON.stringify(error));
-        productsGrid.innerHTML = `<div>Error al cargar tus productos. ${msg ? `(${msg})` : ''}</div>`;
-    }
-}
-
+// --- REGISTRO Y LOGIN ---
 window.registerMerchant = async function() {
     const name = document.getElementById('regName').value.trim();
     const email = document.getElementById('regEmail').value.trim();
@@ -517,16 +466,14 @@ window.registerMerchant = async function() {
     const phone = document.getElementById('regPhone').value.trim();
     const description = document.getElementById('regDescription').value.trim();
     const msgEl = document.getElementById('registerMessage');
-    const registerBtn = document.querySelector('#register .btn-primary'); // Selecciono el botón "Registrarme"
+    const registerBtn = document.querySelector('#register .btn-primary');
     if (!name || !email || !password || !business) return showMessage(msgEl, 'Por favor completa todos los campos requeridos.', 'error');
     if (password.length < 6) return showMessage(msgEl, 'La contraseña debe tener al menos 6 caracteres.', 'error');
-    // --- INICIO DE LA CARGA ---
     startButtonLoading(registerBtn, 'Registrando...');
     try {
         if (!(await ensureSupabaseAvailable())) return stopButtonLoading(registerBtn);
-        // Crear usuario en Supabase
-    const supabaseClient = getSupabase();
-    const { data: signData, error: signError } = await supabaseClient.auth.signUp({ email, password });
+        const supabaseClient = getSupabase();
+        const { data: signData, error: signError } = await supabaseClient.auth.signUp({ email, password });
         if (signError) throw signError;
         const userId = signData?.user?.id;
         const { error: insertError } = await supabase.from('merchants').insert([{ id: userId, name, email, business, phone, description, created_at: new Date().toISOString() }]);
@@ -545,23 +492,21 @@ window.registerMerchant = async function() {
         } catch (e) {}
         showMessage(msgEl, userMsg, 'error');
     } finally {
-        // --- FIN DE LA CARGA (SIEMPRE se ejecuta, incluso si hay error) ---
         stopButtonLoading(registerBtn);
     }
-}
+};
 
 window.login = async function() {
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
     const msgEl = document.getElementById('loginMessage');
-    const loginBtn = document.querySelector('#loginModal .btn-primary'); // El botón de login en el modal
+    const loginBtn = document.querySelector('#loginModal .btn-primary');
     if (!email || !password) return showMessage(msgEl, 'Por favor completa todos los campos.', 'error');
-    // --- INICIO DE LA CARGA ---
     startButtonLoading(loginBtn, 'Iniciando...');
     try {
         if (!(await ensureSupabaseAvailable())) return stopButtonLoading(loginBtn);
-    const supabaseClient = getSupabase();
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        const supabaseClient = getSupabase();
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) throw error;
         let userMsg = '¡Bienvenido!';
         showMessage(msgEl, userMsg, 'success');
@@ -575,23 +520,22 @@ window.login = async function() {
         try { if (error && error.message) userMsg = `${userMsg} ${error.message}`; } catch (e) {}
         showMessage(msgEl, userMsg, 'error');
     } finally {
-        // --- FIN DE LA CARGA ---
         stopButtonLoading(loginBtn);
     }
-}
+};
 
-window.logout = async function() { await supabase.auth.signOut(); }
+window.logout = async function() { await supabase.auth.signOut(); };
 
 async function updateUserProfile(userId) {
     try {
-    if (!(await ensureSupabaseAvailable())) return;
-    const supabaseClient = getSupabase();
-    const { data: merchant, error: merchantError } = await supabaseClient.from('merchants').select('*').eq('id', userId).single();
-    if (merchantError) throw merchantError;
-    currentMerchantData = merchant;
-    let productsQuery = supabaseClient.from('products').select('*');
-    if (isValidId(userId)) productsQuery = productsQuery.eq('vendor_id', userId);
-    const { data: products, error: productsError } = await productsQuery;
+        if (!(await ensureSupabaseAvailable())) return;
+        const supabaseClient = getSupabase();
+        const { data: merchant, error: merchantError } = await supabaseClient.from('merchants').select('*').eq('id', userId).single();
+        if (merchantError) throw merchantError;
+        currentMerchantData = merchant;
+        let productsQuery = supabaseClient.from('products').select('*');
+        if (isValidId(userId)) productsQuery = productsQuery.eq('vendor_id', userId);
+        const { data: products, error: productsError } = await productsQuery;
         if (productsError) throw productsError;
         document.getElementById('userName').textContent = currentMerchantData.name;
         document.getElementById('userEmail').textContent = currentMerchantData.email;
@@ -614,6 +558,13 @@ async function updateUserProfile(userId) {
 function setupImageUpload(areaId, inputId, fileVariableSetter) {
     const uploadArea = document.getElementById(areaId);
     const fileInput = document.getElementById(inputId);
+    
+    // ✅ AGREGAR ESTA VERIFICACIÓN
+    if (!uploadArea || !fileInput) {
+        console.warn(`setupImageUpload: elementos no encontrados (${areaId}, ${inputId})`);
+        return;
+    }
+    
     uploadArea.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -624,14 +575,11 @@ function setupImageUpload(areaId, inputId, fileVariableSetter) {
                 uploadArea.innerHTML = `<img src="${event.target.result}" class="preview-image" loading="lazy">`;
             };
             reader.readAsDataURL(file);
-            // Iniciar subida inmediata en background para mejorar UX
             (async () => {
                 try {
-                    // Reset previous upload info
                     if (inputId.includes('product')) selectedProductUpload = null;
                     if (inputId.includes('profile')) selectedProfilePicUpload = null;
                     if (!(await ensureSupabaseAvailable())) return;
-                    // Inyectar estilos del spinner si no existen
                     if (!document.getElementById('upload-spinner-styles')) {
                         const style = document.createElement('style');
                         style.id = 'upload-spinner-styles';
@@ -642,25 +590,19 @@ function setupImageUpload(areaId, inputId, fileVariableSetter) {
                         `;
                         document.head.appendChild(style);
                     }
-                    // Indicar subida en UI con spinner
                     const prev = uploadArea.innerHTML;
                     uploadArea.innerHTML = `<div class="uploading-placeholder"><div class="small-spinner"></div><div style="font-size:0.9em">Subiendo...</div></div>`;
-                    // Comprimir según tipo
                     const opts = inputId.includes('product') ? { maxSizeMB: 0.5, maxWidthOrHeight: 800 } : { maxSizeMB: 0.2, maxWidthOrHeight: 400 };
                     const compressed = await imageCompression(file, opts);
                     const supId = currentUser?.id || 'anonymous';
                     const uploadResult = await uploadProductImage(compressed, supId);
                     if (uploadResult) {
                         const publicUrl = uploadResult.publicUrl;
-                        // Guardar resultado para que saveProduct/useProfile lo aproveche
                         if (inputId.includes('product')) selectedProductUpload = uploadResult;
                         if (inputId.includes('profile')) selectedProfilePicUpload = uploadResult;
-                        // Actualizar preview a la URL pública
                         uploadArea.innerHTML = `<img src="${publicUrl}" class="preview-image" loading="lazy">`;
-                        // Almacenar como imagen existente en el área para compatibilidad
                         uploadArea.dataset.existingImage = publicUrl;
                     } else {
-                        // fallback: restaurar preview (ya lo hizo FileReader), y dejar selectedProductFile para subir on-save
                         uploadArea.innerHTML = prev;
                     }
                 } catch (err) {
@@ -669,253 +611,6 @@ function setupImageUpload(areaId, inputId, fileVariableSetter) {
             })();
         }
     });
-}
-
-async function loadProductForEdit(productId) {
-    try {
-    if (!(await ensureSupabaseAvailable())) return;
-    const supabaseClient = getSupabase();
-    const { data: row, error } = await supabaseClient.from('products').select('*').eq('id', productId).single();
-        if (error) throw error;
-        const product = normalizeProductRow(row);
-        document.getElementById('productName').value = product.name;
-        document.getElementById('productPrice').value = product.price;
-        document.getElementById('productDescription').value = product.description;
-        if (product.imageBase64) {
-            document.getElementById('productImageUploadArea').innerHTML = `<img src="${product.imageBase64}" class="preview-image">`;
-            document.getElementById('productImageUploadArea').dataset.existingImage = product.imageBase64;
-        }
-    } catch (error) { console.error("Error loading product for edit:", error); } 
-}
-
-window.saveProduct = async function() {
-    const isEditing = !!document.getElementById('productModal').dataset.productId;
-    const productData = { name: document.getElementById('productName').value, price: parseFloat(document.getElementById('productPrice').value), description: document.getElementById('productDescription').value, vendorId: currentUser.id, vendorName: document.getElementById('userBusiness').textContent };
-    let imageBase64 = document.getElementById('productImageUploadArea').dataset.existingImage || null;
-    let imageUrl = null;
-    let imageStoragePath = null;
-    // Si la subida inmediata en background ya completó, reutilizar ese resultado
-    if (selectedProductUpload) {
-        imageUrl = selectedProductUpload.publicUrl;
-        imageStoragePath = selectedProductUpload.path;
-    } else if (selectedProductFile) {
-        // comprimir y subir en el momento (fallback)
-        const compressedFile = await imageCompression(selectedProductFile, { maxSizeMB: 0.5, maxWidthOrHeight: 800 });
-        const upload = await uploadProductImage(compressedFile, currentUser?.id || 'anonymous');
-        if (upload) {
-            imageUrl = upload.publicUrl;
-            imageStoragePath = upload.path;
-        } else {
-            // fallback a base64 si falla upload
-            imageBase64 = await new Promise(resolve => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.readAsDataURL(compressedFile);
-            });
-        }
-    }
-    productData.imageBase64 = imageBase64;
-    productData.imageUrl = imageUrl;
-    productData.imageStoragePath = imageStoragePath;
-    const dbProduct = {
-        name: productData.name,
-        price: productData.price,
-        description: productData.description,
-        vendor_id: productData.vendorId,
-        vendor_name: productData.vendorName,
-        image_base64: productData.imageBase64,
-        image_url: productData.imageUrl,
-        image_storage_path: productData.imageStoragePath,
-        published: true
-    };
-    if (!isEditing) dbProduct.created_at = new Date().toISOString();
-    // --- INICIO DE LA CARGA ---
-    const saveBtn = document.querySelector('#productModal .btn-primary'); // El botón "Guardar Producto" en el modal
-    startButtonLoading(saveBtn, 'Guardando...');
-    try {
-        if (!(await ensureSupabaseAvailable())) { stopButtonLoading(saveBtn); return; }
-        const supabaseClient = getSupabase();
-        if (isEditing) {
-            const productId = document.getElementById('productModal').dataset.productId;
-            const { error } = await supabaseClient.from('products').update(dbProduct).eq('id', productId);
-            if (error) throw error;
-        } else {
-            const { error } = await supabaseClient.from('products').insert([dbProduct]);
-            if (error) throw error;
-        }
-        showToast('Producto guardado.', 'success');
-        hideModal('productModal');
-        loadMyProducts();
-    } catch (error) {
-        console.error("Error saving product:", error);
-        const msg = error && (error.message || error.error || JSON.stringify(error));
-        showToast(`Error al guardar el producto. ${msg ? msg : ''}`, 'error');
-    } finally {
-        // --- FIN DE LA CARGA ---
-        stopButtonLoading(saveBtn);
-    }
-}
-
-function resetProductForm() {
-    document.getElementById('productName').value = '';
-    document.getElementById('productPrice').value = '';
-    document.getElementById('productDescription').value = '';
-    document.getElementById('productImageUploadArea').innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic o arrastra una imagen aquí</p>';
-    document.getElementById('productImageInput').value = '';
-    delete document.getElementById('productImageUploadArea').dataset.existingImage;
-    selectedProductFile = null;
-    selectedProductUpload = null;
-}
-
-function renderProductCard(container, product) {
-    const card = document.createElement('div');
-    card.className = 'product-card';
-    // Preferir imageUrl (Storage) y hacer fallback a imageBase64
-    const imgSrc = product.imageUrl || product.imageBase64 || '';
-    const hasImage = !!imgSrc;
-    const escapedProductJson = JSON.stringify(product).replace(/"/g, '&quot;');
-    // Construir el link del vendedor evitando pasar 'null' como id
-    let vendorLinkHtml = '';
-    try {
-        const safeVendorName = (product.vendorName || '').replace(/'/g, "\\'");
-        if (isValidId(product.vendorId)) {
-            vendorLinkHtml = `<a href="#" onclick="event.preventDefault(); showVendorPage('${product.vendorId}', '${safeVendorName}')">${product.vendorName || ''}</a>`;
-        } else {
-            // vendorId no válido: pasamos null y delegamos la lógica en showVendorPage para buscar por nombre
-            vendorLinkHtml = `<a href="#" onclick="event.preventDefault(); showVendorPage(null, '${safeVendorName}')">${product.vendorName || ''}</a>`;
-        }
-    } catch (e) {
-        vendorLinkHtml = `${product.vendorName || ''}`;
-    }
-
-    card.innerHTML = `
-        <div class="product-image" ${hasImage ? `style="background-image: url('${imgSrc}')" onclick="showImageLightbox('${imgSrc}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}', id: '${product.id}' })"` : ''}>
-            ${!hasImage ? '<i class="fas fa-shopping-bag"></i>' : ''}
-            <!-- === BOTÓN DE CARRITO EN LA IMAGEN (ESQUINA SUPERIOR DERECHA) === -->
-            <button class="btn-add-to-cart-overlay" onclick="event.stopPropagation(); addToCartWithAnimation(this, ${escapedProductJson})">
-                <i class="fas fa-cart-plus"></i>
-            </button>
-        </div>
-        <div class="product-info">
-            <h3 class="product-title">${product.name}</h3>
-            <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
-            <p class="product-description">${product.description || ''}</p>
-            <div class="product-actions">
-                <div class="product-vendor">
-                    <i class="fas fa-store"></i>
-                    ${vendorLinkHtml}
-                    <!-- === BOTÓN DE CARRITO PEQUEÑO A LA DERECHA DEL NOMBRE === -->
-                    <button class="btn-add-to-cart-minimal" onclick="event.stopPropagation(); addToCartWithAnimation(this, ${escapedProductJson})">
-                        <i class="fas fa-cart-plus"></i>
-                    </button>
-                </div>
-            </div>
-        </div>`;
-    container.appendChild(card);
-}
-
-function renderMyProductCard(container, product) {
-    const card = document.createElement('div');
-    card.className = 'product-card';
-    const imgSrc = product.imageUrl || product.imageBase64 || '';
-    const hasImage = !!imgSrc;
-    const escapedProductJson = JSON.stringify(product).replace(/"/g, '&quot;');
-    card.innerHTML = `
-        <div class="product-image" style="${hasImage ? `background-image: url('${imgSrc}')` : ''}" ${hasImage ? `onclick="showImageLightbox('${imgSrc}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}', id: '${product.id}' })"` : ''}>
-            <!-- === BOTÓN DE CARRITO EN LA IMAGEN (ESQUINA SUPERIOR DERECHA) === -->
-            <button class="btn-add-to-cart-overlay" onclick="event.stopPropagation(); addToCartWithAnimation(this, ${escapedProductJson})">
-                <i class="fas fa-cart-plus"></i>
-            </button>
-        </div>
-        <div class="product-info">
-            <h3 class="product-title">${product.name}</h3>
-            <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
-            <div class="product-actions">
-                <button class="action-btn" onclick="showProductModal('${product.id}')"><i class="fas fa-edit"></i></button>
-                <!-- BOTÓN DE ELIMINAR REMOVIDO POR PETICIÓN DEL USUARIO -->
-                <button class="action-btn" onclick="toggleProductStatus('${product.id}', ${!product.published})"><i class="fas fa-eye${product.published ? '' : '-slash'}"></i></button>
-                <!-- === BOTÓN DE CARRITO PEQUEÑO === -->
-                <button class="btn-add-to-cart-minimal" onclick="addToCartWithAnimation(this, ${escapedProductJson})">
-                    <i class="fas fa-cart-plus"></i>
-                </button>
-            </div>
-        </div>`;
-    container.appendChild(card);
-}
-
-// window.deleteProduct = async function(id) { if (confirm('¿Eliminar producto?')) { await supabase.from('products').delete().eq('id', id); loadMyProducts(); showToast('Producto eliminado.'); } }
-window.toggleProductStatus = async function(id, status) { 
-    try {
-        if (!(await ensureSupabaseAvailable())) return;
-    const supabaseClient = getSupabase();
-    const { error } = await supabaseClient.from('products').update({ published: status }).eq('id', id);
-        if (error) throw error;
-        loadMyProducts();
-    } catch (err) { console.error('Error toggling product status:', err); }
-}
-
-window.showVendorPage = async function(vendorId, vendorName) {
-    showSection('vendor-page');
-    document.getElementById('vendorPageTitle').textContent = vendorName;
-    const whatsappBtn = document.getElementById('vendorWhatsappBtn');
-    whatsappBtn.style.display = 'none';
-    try {
-        if (!(await ensureSupabaseAvailable())) return showToast('No se puede conectar a Supabase para cargar la página del vendedor.', 'error');
-    const supabaseClient = getSupabase();
-    let merchant = null;
-    try {
-        if (isValidId(vendorId)) {
-            const { data: mdata, error } = await supabaseClient.from('merchants').select('*').eq('id', vendorId).single();
-            if (!error && mdata) merchant = mdata;
-        } else if (vendorName) {
-            // Intentar buscar merchant por nombre (primero exacto, luego ilike)
-            const nameTrim = vendorName.trim();
-            if (nameTrim) {
-                // Intentar exact match
-                const { data: exact, error: exactErr } = await supabaseClient.from('merchants').select('*').eq('business', nameTrim).limit(1).single();
-                if (!exactErr && exact) merchant = exact;
-                else {
-                    // Intentar búsqueda por nombre (ilike)
-                    const { data: ilikeData, error: ilikeErr } = await supabaseClient.from('merchants').select('*').ilike('business', `%${nameTrim}%`).limit(1);
-                    if (!ilikeErr && ilikeData && ilikeData.length > 0) merchant = ilikeData[0];
-                }
-            }
-        }
-    } catch (e) {
-        console.error('Error fetching merchant by id/name fallback:', e);
-    }
-        if (merchant && merchant.phone) {
-            const phone = merchant.phone.replace(/[^0-9]/g, '');
-            if (phone) {
-                whatsappBtn.href = `https://wa.me/${phone}`;
-                whatsappBtn.style.display = 'inline-flex';
-            }
-        }
-// --- NUEVO: LÓGICA PARA EXPANDIR EL BOTÓN DE WHATSAPP EN DISPOSITIVOS TÁCTILES ---
-const whatsappBtnElement = document.getElementById('lightboxWhatsappBtn');
-if (whatsappBtnElement) {
-    // Remover clase 'expanded' de cualquier botón de WhatsApp previo
-    const allWhatsappBtns = document.querySelectorAll('.lightbox-action-btn.whatsapp-btn');
-    allWhatsappBtns.forEach(btn => btn.classList.remove('expanded'));
-
-    // Agregar evento 'click' para dispositivos táctiles
-    whatsappBtnElement.addEventListener('click', function() {
-        // Agregar la clase 'expanded' a este botón
-        this.classList.add('expanded');
-    });
-
-    // Opcional: Si quieres que se contraiga al hacer clic fuera del botón, puedes agregar un listener al lightbox
-    const lightbox = document.getElementById('imageLightbox');
-    lightbox.addEventListener('click', function(e) {
-        // Si el clic no fue en el botón de WhatsApp ni en su ícono/texto, contraerlo
-        if (!e.target.closest('.lightbox-action-btn.whatsapp-btn')) {
-            whatsappBtnElement.classList.remove('expanded');
-        }
-    });
-}
-// --- FIN DE LA LÓGICA PARA MÓVILES ---
-    } catch (error) { console.error("Error fetching vendor phone:", error); }
-    loadProducts('vendorProductsGrid', { vendorId: vendorId });
 }
 
 window.toggleStoreEditMode = function(isEditing) {
@@ -927,17 +622,16 @@ window.toggleStoreEditMode = function(isEditing) {
         document.getElementById('storeName').value = currentMerchantData.business;
         document.getElementById('storeDescription').value = currentMerchantData.description;
     }
-}
+};
 
 window.saveStoreInfo = async function() {
     const newData = { business: document.getElementById('storeName').value, description: document.getElementById('storeDescription').value };
-    // --- INICIO DE LA CARGA ---
-    const saveBtn = document.querySelector('#storeFormFooter .btn-primary'); // El botón "Guardar Cambios" del puesto
+    const saveBtn = document.querySelector('#storeFormFooter .btn-primary');
     startButtonLoading(saveBtn, 'Guardando...');
     try {
         if (!(await ensureSupabaseAvailable())) { stopButtonLoading(saveBtn); return; }
-    const supabaseClient = getSupabase();
-    const { error } = await supabaseClient.from('merchants').update(newData).eq('id', currentUser.id);
+        const supabaseClient = getSupabase();
+        const { error } = await supabaseClient.from('merchants').update(newData).eq('id', currentUser.id);
         if (error) throw error;
         await updateUserProfile(currentUser.id); 
         toggleStoreEditMode(false);
@@ -946,10 +640,9 @@ window.saveStoreInfo = async function() {
         console.error("Error updating store info:", error);
         showToast('Error al actualizar la información.', 'error');
     } finally {
-        // --- FIN DE LA CARGA ---
         stopButtonLoading(saveBtn);
     }
-}
+};
 
 window.toggleProfileEditMode = function(isEditing) {
     const card = document.getElementById('profileCard');
@@ -961,20 +654,19 @@ window.toggleProfileEditMode = function(isEditing) {
         const currentPhone = document.getElementById('userPhone').textContent;
         document.getElementById('userPhoneInput').value = currentPhone === 'No especificado' ? '' : currentPhone;
     }
-}
+};
 
 window.saveProfileInfo = async function() {
     const newData = {
         name: document.getElementById('userNameInput').value.trim(),
         phone: document.getElementById('userPhoneInput').value.trim()
     };
-    // --- INICIO DE LA CARGA ---
-    const saveBtn = document.querySelector('#profileFormFooter .btn-primary'); // El botón "Guardar Cambios" del perfil
+    const saveBtn = document.querySelector('#profileFormFooter .btn-primary');
     startButtonLoading(saveBtn, 'Actualizando...');
     try {
         if (!(await ensureSupabaseAvailable())) { stopButtonLoading(saveBtn); return; }
-    const supabaseClient = getSupabase();
-    const { error } = await supabaseClient.from('merchants').update(newData).eq('id', currentUser.id);
+        const supabaseClient = getSupabase();
+        const { error } = await supabaseClient.from('merchants').update(newData).eq('id', currentUser.id);
         if (error) throw error;
         await updateUserProfile(currentUser.id);
         toggleProfileEditMode(false);
@@ -983,21 +675,19 @@ window.saveProfileInfo = async function() {
         console.error("Error updating profile:", error);
         showToast('Error al actualizar el perfil.', 'error');
     } finally {
-        // --- FIN DE LA CARGA ---
         stopButtonLoading(saveBtn);
     }
-}
+};
 
 window.showProfilePicModal = function() {
     document.getElementById('profilePicModal').style.display = 'flex';
     selectedProfilePicFile = null;
     selectedAvatarUrl = null;
     document.getElementById('profilePicUploadArea').innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic para subir</p>';
-}
+};
 
 window.saveProfilePic = async function() {
     let picUrl = null;
-    // Preferir subida inmediata a Storage
     if (selectedProfilePicUpload) {
         picUrl = selectedProfilePicUpload.publicUrl;
     } else if (selectedProfilePicFile) {
@@ -1026,7 +716,6 @@ window.saveProfilePic = async function() {
             if (error) throw error;
             await updateUserProfile(currentUser.id);
             hideModal('profilePicModal');
-            // limpiar upload temporal
             selectedProfilePicUpload = null;
             showToast('Foto de perfil actualizada.', 'success');
         } catch (err) {
@@ -1036,7 +725,7 @@ window.saveProfilePic = async function() {
     } else {
         showToast('No seleccionaste ninguna imagen.', 'error');
     }
-}
+};
 
 function populateAvatars() {
     const container = document.getElementById('avatarSelection');
@@ -1058,647 +747,48 @@ function populateAvatars() {
     });
 }
 
-// --- COPIA DE SEGURIDAD (IMPORT/EXPORT JSON) ---
-window.exportCatalogToJSON = async function() {
-    if (!currentUser) return showToast('Debes iniciar sesión para exportar tu catálogo.', 'error');
-    hideModal('backup-options-modal');
-    showToast('Preparando la exportación...', 'success');
-    try {
-        if (!(await ensureSupabaseAvailable())) return showToast('No se puede conectar a Supabase para exportar.', 'error');
-    const supabaseClient = getSupabase();
-    let productsQuery = supabaseClient.from('products').select('*');
-    if (isValidId(currentUser.id)) productsQuery = productsQuery.eq('vendor_id', currentUser.id);
-    const { data: productsData, error } = await productsQuery;
-        if (error) throw error;
-        if (!productsData || productsData.length === 0) return showToast('No tienes productos para exportar.', 'error');
-        const productsToExport = productsData.map(d => ({ name: d.name, price: d.price, description: d.description, imageBase64: d.image_base64 || null, published: typeof d.published === 'boolean' ? d.published : true }));
-        const jsonString = JSON.stringify(productsToExport, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `catalogo-feria-virtual-${new Date().toISOString().slice(0, 10)}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showToast('Catálogo exportado correctamente.', 'success');
-    } catch (error) {
-        console.error("Error exportando a JSON:", error);
-        showToast('Hubo un error al exportar el catálogo.', 'error');
+// --- UTILIDADES Y FUNCIONES AUXILIARES ---
+function showMessage(element, message, type) {
+    element.textContent = message;
+    element.className = `login-message login-${type}`;
+    element.style.display = 'block';
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+        toast.addEventListener('animationend', () => toast.remove());
+    }, 3000);
+}
+
+window.toggleChatbot = function toggleChatbot() {
+    const ctn = document.getElementById('chatbotContainer');
+    const isOpen = ctn.classList.toggle('visible');
+    if (typeof gsap !== 'undefined') {
+        gsap.to(ctn, { scale: isOpen ? 1 : 0.9, opacity: isOpen ? 1 : 0, duration: 0.3 });
+    } else {
+         ctn.style.opacity = isOpen ? '1' : '0';
     }
-}
-
-window.handleJsonImport = function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    hideModal('backup-options-modal');
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            const products = JSON.parse(e.target.result);
-            if (!Array.isArray(products) || products.length === 0) {
-                showToast('El archivo no contiene productos para importar.', 'error');
-                return;
-            }
-            if (confirm(`¿Estás seguro de que deseas importar ${products.length} productos a tu catálogo? Esta acción no se puede deshacer.`)) {
-                importCatalogFromJSON(products);
-            }
-        } catch (error) {
-            console.error("Error al parsear el archivo JSON:", error);
-            showToast('El archivo seleccionado no es un JSON válido.', 'error');
-        } finally {
-            event.target.value = '';
-        }
-    };
-    reader.readAsText(file);
-}
-
-async function importCatalogFromJSON(products) {
-    if (!Array.isArray(products) || products.length === 0) return showToast('El archivo no contiene productos para importar.', 'error');
-    showToast(`Importando ${products.length} productos...`, 'success');
-    try {
-        if (!(await ensureSupabaseAvailable())) return showToast('No se puede conectar a Supabase para importar.', 'error');
-        const rows = products.map(p => ({ name: p.name, price: p.price || 0, description: p.description || '', image_base64: p.imageBase64 || null, published: typeof p.published === 'boolean' ? p.published : true, vendor_id: currentUser.id, vendor_name: currentMerchantData.business, created_at: new Date().toISOString() }));
-    const supabaseClient = getSupabase();
-    const { error } = await supabaseClient.from('products').insert(rows);
-        if (error) throw error;
-        showToast(`${products.length} productos importados correctamente.`, 'success');
-        loadMyProducts();
-        updateUserProfile(currentUser.id);
-    } catch (error) {
-        console.error("Error durante la importación masiva:", error);
-        showToast('Ocurrió un error durante la importación.', 'error');
-    }
-}
-
-// --- GENERACIÓN DE CATÁLOGOS ---
-const PDF_THEMES = {
-    naturaleza: { name: 'Naturaleza', icon: 'fa-leaf', headerColor: '#22c55e', accentColor: '#16a34a' },
-    gastronomia: { name: 'Gastronomía', icon: 'fa-utensils', headerColor: '#f97316', accentColor: '#ea580c' },
-    juguetes: { name: 'Juguetes', icon: 'fa-shapes', headerColor: '#3b82f6', accentColor: '#2563eb' },
-    moda: { name: 'Moda', icon: 'fa-tshirt', headerColor: '#ec4899', accentColor: '#db2777' },
-    tecnologia: { name: 'Tecnología', icon: 'fa-microchip', headerColor: '#6366f1', accentColor: '#4f46e5' },
-    artesania: { name: 'Artesanía', icon: 'fa-palette', headerColor: '#a855f7', accentColor: '#9333ea' },
-    minimalista: { name: 'Minimalista', icon: 'fa-dot-circle', headerColor: '#6b7280', accentColor: '#4b5563' },
-    elegante: { name: 'Elegante', icon: 'fa-gem', headerColor: '#d97706', accentColor: '#b45309' }
 };
 
-window.showExportModal = function(exportType) {
-    if (!currentUser) return showToast('Debes iniciar sesión para crear un catálogo.', 'error');
-    const grid = document.getElementById('themeSelectionGrid');
-    grid.innerHTML = '';
-    document.getElementById('exportModalTitle').textContent = `Elige un Diseño para tu Catálogo PDF`;
-    for (const key in PDF_THEMES) {
-        const theme = PDF_THEMES[key];
-        const card = document.createElement('div');
-        card.className = 'theme-card';
-        card.innerHTML = `<i class="fas ${theme.icon}"></i><span>${theme.name}</span>`;
-        card.onclick = () => generatePdfWithJsPDF(key);
-        grid.appendChild(card);
-    }
-    document.getElementById('exportThemeModal').style.display = 'flex';
+function startButtonLoading(button, loadingText = 'Cargando...') {
+    if (!button) return;
+    button.dataset.originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
+    button.style.opacity = '0.7';
 }
 
-async function generatePdfWithJsPDF(themeKey) {
-    hideModal('exportThemeModal');
-    const loadingOverlay = document.getElementById('globalLoadingOverlay');
-    try {
-        loadingOverlay.style.display = 'flex';
-    let pdfQuery = supabase.from('products').select('*').eq('published', true).order('created_at', { ascending: false });
-    if (isValidId(currentUser.id)) pdfQuery = supabase.from('products').select('*').eq('vendor_id', currentUser.id).eq('published', true).order('created_at', { ascending: false });
-    const { data: productsData, error } = await pdfQuery;
-        if (error) throw error;
-        if (!productsData || productsData.length === 0) {
-            showToast('No tienes productos publicados para incluir.', 'error');
-            return;
-        }
-        const products = productsData.map(r => normalizeProductRow(r));
-        const theme = PDF_THEMES[themeKey];
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
-        const margin = 15;
-        const gutter = 10;
-        const contentWidth = pageWidth - (margin * 2);
-        const columnWidth = (contentWidth - (gutter * 2)) / 3;
-        let currentY = margin;
-        let columnIndex = 0;
-        const addHeader = () => {
-            currentY = margin;
-            doc.setFontSize(28); doc.setTextColor(theme.headerColor);
-            doc.text(String(currentMerchantData.business || ''), pageWidth / 2, currentY, { align: 'center' });
-            currentY += 10;
-            doc.setFontSize(11); doc.setTextColor('#666');
-            const descLines = doc.splitTextToSize(String(currentMerchantData.description || ''), contentWidth - 40);
-            doc.text(descLines, pageWidth / 2, currentY, { align: 'center' });
-            currentY += (descLines.length * 5) + 8;
-            doc.setDrawColor(theme.headerColor); doc.setLineWidth(0.5);
-            doc.line(margin, currentY, pageWidth - margin, currentY);
-            currentY += 10;
-        };
-        const addFooter = (pageNumber) => {
-            const footerY = pageHeight - 10;
-            doc.setFontSize(9); doc.setTextColor('#999');
-            doc.text(`Catálogo de ${currentMerchantData.business} | Página ${pageNumber}`, pageWidth / 2, footerY, { align: 'center' });
-        };
-        addHeader();
-        let pageCount = 1;
-        addFooter(pageCount);
-        for (const product of products) {
-            const productBlockHeight = 140;
-            if (columnIndex > 2) { columnIndex = 0; currentY += productBlockHeight; }
-            if (currentY + productBlockHeight > pageHeight - margin) {
-                doc.addPage(); pageCount++; addHeader(); addFooter(pageCount);
-                currentY = doc.internal.pageSize.getHeight() - pageHeight + 48;
-                columnIndex = 0;
-            }
-            const columnX = margin + (columnIndex * (columnWidth + gutter));
-            if (product.imageBase64) {
-                try {
-                    const format = product.imageBase64.substring("image/".length, product.imageBase64.indexOf(";base64")).toUpperCase();
-                    if (['JPG', 'JPEG', 'PNG'].includes(format)) {
-                        const img = new Image();
-                        img.src = product.imageBase64;
-                        await new Promise(r => { img.onload = r; img.onerror = r; });
-                        const boxW = columnWidth, boxH = 80;
-                        let w = img.width, h = img.height;
-                        if (w > boxW) { h = (boxW / w) * h; w = boxW; }
-                        if (h > boxH) { w = (boxH / h) * w; h = boxH; }
-                        const x = columnX + (boxW - w) / 2;
-                        const y = currentY + (boxH - h) / 2;
-                        doc.addImage(product.imageBase64, format, x, y, w, h);
-                    }
-                } catch (e) { console.error("Error al añadir imagen:", e); }
-            }
-            let textY = currentY + 90;
-            doc.setFontSize(18); doc.setTextColor(theme.headerColor);
-            doc.text(doc.splitTextToSize(String(product.name || ''), columnWidth), columnX, textY);
-            textY += (doc.splitTextToSize(String(product.name || ''), columnWidth).length * 7) + 3;
-            doc.setFontSize(20); doc.setTextColor(theme.accentColor);
-            doc.text(`$${(product.price || 0).toFixed(2)}`, columnX, textY);
-            textY += 10;
-            doc.setFontSize(11); doc.setTextColor('#333');
-            doc.text(doc.splitTextToSize(String(product.description || ''), columnWidth), columnX, textY);
-            columnIndex++;
-        }
-        doc.save(`catalogo-${currentMerchantData.business.replace(/\s+/g, '-')}.pdf`);
-    } catch (error) {
-        console.error("Error generando PDF:", error);
-        showToast("Hubo un error al generar el catálogo.", "error");
-    } finally {
-        loadingOverlay.style.display = 'none';
-    }
-}
-
-// === NUEVAS FUNCIONES PARA FICHA DE PRODUCTO (JPG) ===
-async function getProductsByVendor(vendorId) {
-    if (!(await ensureSupabaseAvailable())) return [];
-    const supabaseClient = getSupabase();
-    let q = supabaseClient.from('products').select('*').order('created_at', { ascending: false });
-    if (isValidId(vendorId)) q = q.eq('vendor_id', vendorId);
-    const { data, error } = await q;
-    if (error) { console.error('Error fetching products by vendor:', error); return []; }
-    return (data || []).map(r => normalizeProductRow(r));
-}
-
-async function loadUserProductsForSelection() {
-    if (!currentUser) return;
-    hideModal('catalog-options-modal');
-    const container = document.getElementById('product-selection-list');
-    container.innerHTML = '<p>Cargando tus productos...</p>';
-    document.getElementById('select-product-modal').style.display = 'flex';
-    try {
-    if (!(await ensureSupabaseAvailable())) { container.innerHTML = '<p>Error de red. Intenta más tarde.</p>'; return; }
-    const products = await getProductsByVendor(currentUser.id);
-        container.innerHTML = '';
-        if (products.length === 0) {
-            container.innerHTML = '<p>No tienes productos para seleccionar.</p>';
-            return;
-        }
-        products.forEach(product => {
-            const productElement = document.createElement('div');
-            productElement.className = 'product-selection-item';
-            productElement.innerHTML = `
-                <img src="${product.imageBase64 || 'https://placehold.co/120x80/e2e8f0/a0aec0?text=Sin+Imagen'}" alt="${product.name}" loading="lazy">
-                <p>${product.name}</p>
-            `;
-            productElement.onclick = () => {
-                generateProductJPG(product);
-                hideModal('select-product-modal');
-            };
-            container.appendChild(productElement);
-        });
-    } catch (error) {
-        console.error("Error loading products for selection:", error);
-        container.innerHTML = '<p>Error al cargar productos.</p>';
-    }
-}
-
-/**
- * Genera una imagen JPG de un solo producto usando un canvas.
- * @param {object} product El objeto del producto.
- */
-async function generateProductJPG(product) {
-    showToast('Generando ficha de producto...', 'success');
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const canvasWidth = 800, canvasHeight = 800;
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-    // Fondo y membretado
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-    const themeCyan = getComputedStyle(document.documentElement).getPropertyValue('--cyan').trim();
-    ctx.fillStyle = themeCyan || '#06b6d4';
-    ctx.fillRect(0, 0, canvasWidth, 100);
-    ctx.font = 'bold 36px "Segoe UI", sans-serif';
-    ctx.fillStyle = 'white';
-    ctx.textAlign = 'center';
-    ctx.fillText(currentMerchantData.business || "Mi Tienda", canvasWidth / 2, 65);
-    // Imagen del producto
-    const productImage = new Image();
-    productImage.crossOrigin = "anonymous";
-    productImage.src = product.imageBase64 || 'https://placehold.co/700x400/e2e8f0/a0aec0?text=Producto+sin+imagen';
-    productImage.onload = () => {
-        // --- INICIO DE LA LÓGICA DE ESCALADO PROPORCIONAL ---
-        const boxX = 50, boxY = 120, boxWidth = 700, boxHeight = 400;
-        const imgRatio = productImage.width / productImage.height;
-        const boxRatio = boxWidth / boxHeight;
-        let finalWidth, finalHeight;
-        if (imgRatio > boxRatio) {
-            finalWidth = boxWidth;
-            finalHeight = finalWidth / imgRatio;
-        } else {
-            finalHeight = boxHeight;
-            finalWidth = finalHeight * imgRatio;
-        }
-        const finalX = boxX + (boxWidth - finalWidth) / 2;
-        const finalY = boxY + (boxHeight - finalHeight) / 2;
-        ctx.drawImage(productImage, finalX, finalY, finalWidth, finalHeight);
-        // --- FIN DE LA LÓGICA DE ESCALADO ---
-        // Textos
-        ctx.fillStyle = '#333333';
-        ctx.textAlign = 'left';
-        ctx.font = 'bold 32px "Segoe UI", sans-serif';
-        ctx.fillText(product.name, 50, 580);
-        const themeSuccess = getComputedStyle(document.documentElement).getPropertyValue('--success').trim();
-        ctx.font = 'bold 48px "Segoe UI", sans-serif';
-        ctx.fillStyle = themeSuccess || '#10b981';
-        ctx.textAlign = 'right';
-        ctx.fillText(`$${(product.price || 0).toFixed(2)}`, 750, 580);
-        ctx.font = '20px "Segoe UI", sans-serif';
-        ctx.fillStyle = '#555555';
-        ctx.textAlign = 'left';
-        wrapText(ctx, product.description || 'Sin descripción.', 50, 630, 700, 24);
-        // Descarga
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = `ficha-${product.name.replace(/\s+/g, '-')}.jpg`;
-        link.click();
-    };
-    productImage.onerror = () => showToast("Error al cargar la imagen del producto.", "error");
-}
-
-function wrapText(context, text, x, y, maxWidth, lineHeight) {
-    const words = text.split(' ');
-    let line = '';
-    for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' ';
-        const metrics = context.measureText(testLine);
-        if (metrics.width > maxWidth && n > 0) {
-            context.fillText(line, x, y);
-            line = words[n] + ' ';
-            y += lineHeight;
-        } else {
-            line = testLine;
-        }
-    }
-    context.fillText(line, x, y);
-}
-
-// --- UTILIDADES Y FUNCIONES AUXILIARES ---
-// --- Lightbox con navegación entre productos del mismo vendedor ---
-let currentVendorProducts = [];
-let currentProductIndex = 0;
-
-window.showImageLightbox = async function(imageBase64, productData = null) {
-    if (!productData || !productData.vendorId) {
-        console.warn("No se recibió información del producto.");
-        return;
-    }
-    // --- MOSTRAR SPINNER DE CARGA INMEDIATAMENTE ---
-    const loadingSpinner = document.getElementById('lightboxLoadingSpinner');
-    const lightboxImg = document.getElementById('lightboxImg');
-    const lightbox = document.getElementById('imageLightbox');
-    loadingSpinner.style.display = 'flex';
-    lightboxImg.classList.add('loading');
-    lightbox.style.display = 'flex'; // Mostramos el lightbox inmediatamente
-    try {
-        // 1. Cargar TODOS los productos del mismo vendedor desde Supabase
-    if (!(await ensureSupabaseAvailable())) throw new Error('Supabase unreachable');
-    const supabaseClient = getSupabase();
-    const { data, error } = await supabaseClient.from('products').select('*').eq('vendor_id', productData.vendorId).eq('published', true).order('created_at', { ascending: false });
-        if (error) throw error;
-        currentVendorProducts = (data || []).map(r => normalizeProductRow(r));
-        // 2. Encontrar el índice del producto actual
-        currentProductIndex = currentVendorProducts.findIndex(p => p.imageBase64 === imageBase64);
-        if (currentProductIndex === -1) {
-            currentProductIndex = 0; // Si no lo encuentra, empieza por el primero
-        }
-    // 3. Mostrar el producto actual en el lightbox
-    await showCurrentProductInLightbox();
-    // 4. Configurar los eventos de swipe
-    setupSwipeGestures();
-    } catch (error) {
-        console.error("Error al cargar productos del vendedor:", error);
-        showToast('Error al cargar productos.', 'error');
-    } finally {
-        // --- OCULTAR SPINNER DE CARGA ---
-        loadingSpinner.style.display = 'none';
-        lightboxImg.classList.remove('loading');
-    }
-}
-
-/**
- * Muestra el producto actual en el lightbox y actualiza los botones de WhatsApp e Ir al Puesto.
- */
-/**
- * Muestra el producto actual en el lightbox y actualiza los botones de WhatsApp e Ir al Puesto.
- */
-async function showCurrentProductInLightbox() {
-    const product = currentVendorProducts[currentProductIndex];
-    if (!product) return;
-
-    const img = document.getElementById('lightboxImg');
-    // Aplicar efecto fade a la imagen
-    img.classList.remove('lightbox-img-visible');
-    img.classList.add('lightbox-img-fade');
-    setTimeout(() => {
-        img.src = product.imageBase64 || '';
-        img.onload = () => {
-            img.classList.remove('lightbox-img-fade');
-            img.classList.add('lightbox-img-visible');
-        };
-        img.onerror = () => {
-            img.classList.remove('lightbox-img-fade');
-            img.classList.add('lightbox-img-visible');
-        };
-    }, 50);
-
-    const lightbox = document.getElementById('imageLightbox');
-    lightbox.style.display = 'flex';
-
-    // --- CONFIGURAR EL CARRITO FLOTANTE ---
-    const floatingCartBtn = document.createElement('div');
-    floatingCartBtn.className = 'floating-cart-btn';
-    floatingCartBtn.innerHTML = '<i class="fas fa-shopping-cart"></i>';
-    floatingCartBtn.title = 'Agregar al carrito';
-    floatingCartBtn.onclick = function(event) {
-        event.stopPropagation();
-        addToCartWithAnimation(this, product);
-    };
-    // Quitamos cualquier carrito flotante anterior
-    const existingCartBtn = document.querySelector('.floating-cart-btn');
-    if (existingCartBtn) existingCartBtn.remove();
-    // Añadimos el nuevo carrito flotante
-    lightbox.appendChild(floatingCartBtn);
-    // --- FIN DE LA CONFIGURACIÓN DEL CARRITO FLOTANTE ---
-
-    // --- Configurar el botón "Ir al Puesto" ---
-    const storeBtn = document.getElementById('lightboxStoreBtn');
-    if (product.vendorId && product.vendorName) {
-        storeBtn.style.display = 'flex';
-        storeBtn.onclick = function(event) {
-            event.preventDefault();
-            hideImageLightbox();
-            showVendorPage(product.vendorId, product.vendorName);
-        };
-    } else {
-        storeBtn.style.display = 'none';
-        storeBtn.onclick = function(event) {
-            event.preventDefault();
-            showToast('Información del vendedor no disponible.', 'error');
-        };
-    }
-    // --- FIN DE LA MODIFICACIÓN PARA EL BOTÓN DE PUESTO ---
-
-    // --- Configurar el botón de WhatsApp ---
-    const whatsappBtn = document.getElementById('lightboxWhatsappBtn');
-
-    // === NUEVO: MOSTRAR EL CÍRCULO CON EL ÍCONO INMEDIATAMENTE ===
-    whatsappBtn.style.display = 'flex'; // Mostrar el botón de inmediato
-    whatsappBtn.href = '#'; // Enlace temporal
-    whatsappBtn.innerHTML = `
-        <i class="fab fa-whatsapp"></i>
-        <span class="whatsapp-btn-text">Chatear por WhatsApp</span>
-    `;
-
-    // === NUEVO: DESACTIVAR LA EXPANSIÓN HASTA QUE ESTÉ LISTO ===
-    // Removemos temporalmente las clases que permiten la expansión
-    whatsappBtn.classList.remove('lightbox-whatsapp-circle-btn');
-    whatsappBtn.classList.add('lightbox-whatsapp-circle-btn--loading');
-
-    // === NUEVO: ESTILOS TEMPORALES PARA EL ESTADO "CARGANDO" ===
-    const style = document.createElement('style');
-    style.id = 'whatsapp-loading-style';
-    style.innerHTML = `
-        .lightbox-whatsapp-circle-btn--loading {
-            position: absolute !important;
-            top: 20px !important;
-            left: 20px !important;
-            z-index: 1003 !important;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background-color: #25D366;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            font-weight: 700;
-            box-shadow: 0 4px 8px rgba(37, 211, 102, 0.3);
-            transition: all 0.3s ease;
-            overflow: hidden;
-        }
-        .lightbox-whatsapp-circle-btn--loading i {
-            font-size: 24px;
-            margin: 0;
-        }
-        .lightbox-whatsapp-circle-btn--loading .whatsapp-btn-text {
-            display: none; /* Ocultar texto completamente en este estado */
-        }
-    `;
-    document.head.appendChild(style);
-
-    // Ahora, intentamos cargar la información del vendedor (guardando contra ids inválidos)
-    if (isValidId(product.vendorId)) {
-        try {
-            const supClient = getSupabase();
-            const { data: vendor, error } = await supClient.from('merchants').select('*').eq('id', product.vendorId).single();
-            if (error || !vendor) {
-                setupFallbackWhatsapp(whatsappBtn);
-            } else if (vendor.phone) {
-                const phone = vendor.phone.replace(/[^0-9]/g, '');
-                if (phone) {
-                    const productName = product.name || 'un producto';
-                    const productPrice = product.price ? `$${parseFloat(product.price).toFixed(2)}` : 'precio no especificado';
-                    const baseMessage = `Hola, vi tu producto "${productName}" en Feria Virtual. ¿Me podrías dar más información? Precio: ${productPrice}.`;
-                    const message = encodeURI(baseMessage);
-                    whatsappBtn.href = `https://wa.me/${phone}?text=${message}`;
-                    whatsappBtn.classList.remove('lightbox-whatsapp-circle-btn--loading');
-                    whatsappBtn.classList.add('lightbox-whatsapp-circle-btn');
-                    const tempStyle = document.getElementById('whatsapp-loading-style');
-                    if (tempStyle) tempStyle.remove();
-                } else {
-                    setupFallbackWhatsapp(whatsappBtn);
-                }
-            } else {
-                setupFallbackWhatsapp(whatsappBtn);
-            }
-        } catch (err) {
-            console.error('Error fetching vendor phone (await):', err);
-            setupFallbackWhatsapp(whatsappBtn);
-        }
-    } else {
-        setupFallbackWhatsapp(whatsappBtn);
-    }
-    // --- FIN DE LA CONFIGURACIÓN DEL BOTÓN DE WHATSAPP ---
-}
-
-/**
- * Configura el comportamiento de fallback para el botón de WhatsApp.
- * @param {HTMLElement} whatsappBtn - El botón de WhatsApp.
- */
-function setupFallbackWhatsapp(whatsappBtn) {
-    whatsappBtn.href = '#';
-    whatsappBtn.onclick = function(event) {
-        event.preventDefault();
-        showToast('No se pudo cargar el contacto del vendedor. Inténtalo más tarde.', 'error');
-    };
-
-    // Activar la expansión con el mensaje de error
-    whatsappBtn.classList.remove('lightbox-whatsapp-circle-btn--loading');
-    whatsappBtn.classList.add('lightbox-whatsapp-circle-btn');
-
-    // Eliminar el estilo temporal
-    const tempStyle = document.getElementById('whatsapp-loading-style');
-    if (tempStyle) tempStyle.remove();
-}
-/**
- * Configura los eventos táctiles y de mouse para navegar entre productos.
- */
-function setupSwipeGestures() {
-    const lightboxImg = document.getElementById('lightboxImg');
-    let startX = 0;
-    let endX = 0;
-    // Evento para touch (móviles)
-    lightboxImg.addEventListener('touchstart', (e) => {
-        startX = e.touches[0].clientX;
-    }, { passive: true });
-    lightboxImg.addEventListener('touchend', (e) => {
-        endX = e.changedTouches[0].clientX;
-        handleSwipe();
-    }, { passive: true });
-    // Evento para mouse (desktop)
-    lightboxImg.addEventListener('mousedown', (e) => {
-        startX = e.clientX;
-    });
-    lightboxImg.addEventListener('mouseup', (e) => {
-        endX = e.clientX;
-        handleSwipe();
-    });
-    function handleSwipe() {
-        const diff = startX - endX;
-        const threshold = 50; // Umbral mínimo para considerar un swipe
-        if (Math.abs(diff) > threshold) {
-            if (diff > 0) {
-                // Swipe a la izquierda -> Siguiente producto
-                nextProduct();
-            } else {
-                // Swipe a la derecha -> Producto anterior
-                prevProduct();
-            }
-        }
-    }
-}
-
-/**
- * Muestra el producto anterior.
- */
-function prevProduct() {
-    if (currentVendorProducts.length > 1) {
-        currentProductIndex = (currentProductIndex - 1 + currentVendorProducts.length) % currentVendorProducts.length;
-        showCurrentProductInLightbox();
-    }
-}
-
-/**
- * Muestra el siguiente producto.
- */
-function nextProduct() {
-    if (currentVendorProducts.length > 1) {
-        currentProductIndex = (currentProductIndex + 1) % currentVendorProducts.length;
-        showCurrentProductInLightbox();
-    }
-}
-
-window.hideImageLightbox = function() {
-    document.getElementById('imageLightbox').style.display = 'none';
-}
-
-/**
- * Muestra el overlay de carga global con un mensaje personalizado o aleatorio según el tipo.
- * @param {string} message - Mensaje a mostrar. Si es 'app' o 'productos', se usa un mensaje aleatorio de la lista correspondiente.
- */
-function showGlobalLoadingOverlay(message = 'Cargando...') {
-    // Siempre mostramos el corredor animado para cualquier tipo de carga
-    showRunnerOverlay();
-    // Mantenemos la lógica de mensajes para otros propósitos si es necesario
-    const overlay = document.getElementById('globalLoadingOverlay');
-    if (!overlay) return;
-    let msg = message;
-    if (message === 'app') {
-        const arr = typeof appLoadingMessages !== 'undefined' ? appLoadingMessages : ['Cargando...'];
-        msg = arr[Math.floor(Math.random() * arr.length)];
-    } else if (message === 'productos') {
-        const arr = typeof productLoadingMessages !== 'undefined' ? productLoadingMessages : ['Cargando productos...'];
-        msg = arr[Math.floor(Math.random() * arr.length)];
-    }
-    const msgEl = overlay.querySelector('span') || overlay.querySelector('p');
-    if (msgEl) msgEl.textContent = msg;
-    overlay.style.display = 'flex';
-}
-
-function hideGlobalLoadingOverlay() {
-    const overlay = document.getElementById('globalLoadingOverlay');
-    if (overlay) overlay.style.display = 'none';
-    // También ocultamos el corredor
-    hideRunnerOverlay();
-}
-
-// --- NUEVAS FUNCIONES PARA EL CORREDOR ANIMADO ---
-/**
- * Muestra el overlay del corredor animado.
- */
-function showRunnerOverlay() {
-    const overlay = document.getElementById('runnerOverlay');
-    if (overlay) {
-        overlay.classList.add('active');
-    }
-}
-
-/**
- * Oculta el overlay del corredor animado.
- */
-function hideRunnerOverlay() {
-    const overlay = document.getElementById('runnerOverlay');
-    if (overlay) {
-        overlay.classList.remove('active');
-    }
+function stopButtonLoading(button) {
+    if (!button) return;
+    button.disabled = false;
+    button.innerHTML = button.dataset.originalText || 'Guardar';
+    button.style.opacity = '1';
+    delete button.dataset.originalText;
 }
 
 function updateAuthUI() {
@@ -1724,363 +814,188 @@ function updateAuthUI() {
     }
 }
 
-function showMessage(element, message, type) { element.textContent = message; element.className = `login-message login-${type}`; element.style.display = 'block'; }
-function showToast(message, type = 'success') {
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-        toast.classList.add('fade-out');
-        toast.addEventListener('animationend', () => toast.remove());
-    }, 3000);
-}
 
-window.toggleChatbot = function toggleChatbot() {
-    const ctn = document.getElementById('chatbotContainer');
-    const isOpen = ctn.classList.toggle('visible');
-    if (typeof gsap !== 'undefined') {
-        gsap.to(ctn, { scale: isOpen ? 1 : 0.9, opacity: isOpen ? 1 : 0, duration: 0.3 });
-    } else {
-         ctn.style.opacity = isOpen ? '1' : '0';
+// === DELEGACIÓN DE EVENTOS PARA BOTONES DINÁMICOS ===
+document.addEventListener('click', function(e) {
+    if (e.target.id === 'create-catalog-btn') {
+        document.getElementById('catalog-options-modal').style.display = 'flex';
+    } else if (e.target.id === 'backup-btn') {
+        document.getElementById('backup-options-modal').style.display = 'flex';
+    } else if (e.target.id === 'generate-pdf-btn') {
+        hideModal('catalog-options-modal');
+        showExportModal('pdf');
+    } else if (e.target.id === 'generate-jpg-btn') {
+        loadUserProductsForSelection();
     }
-};
+});
 
-// --- NUEVAS FUNCIONES UTILITARIAS PARA BLOQUEO DE BOTONES ---
-/**
- * Activa el estado de carga en un botón.
- * @param {HTMLButtonElement} button - El botón a bloquear.
- * @param {string} [loadingText='Cargando...'] - Texto opcional a mostrar.
- */
-function startButtonLoading(button, loadingText = 'Cargando...') {
-    if (!button) return;
-    // Guardamos el texto y el HTML original para restaurarlo después
-    button.dataset.originalText = button.innerHTML;
-    button.disabled = true; // ¡IMPORTANTE! Bloquea el botón
-    button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
-    button.style.opacity = '0.7'; // Opcional: da feedback visual de que está deshabilitado
-}
-
-/**
- * Restaura un botón a su estado original después de la carga.
- * @param {HTMLButtonElement} button - El botón a restaurar.
- */
-function stopButtonLoading(button) {
-    if (!button) return;
-    button.disabled = false;
-    button.innerHTML = button.dataset.originalText || 'Guardar'; // Valor por defecto por si falla
-    button.style.opacity = '1';
-    delete button.dataset.originalText; // Limpiamos
-}
-
-// --- CARRITO DE COMPRAS ---
-let shoppingCart = [];
-
-/**
- * Agrega un producto al carrito con animación visual.
- * @param {HTMLElement} button - El botón que fue clickeado (para la animación).
- * @param {Object} product - El objeto del producto a agregar.
- */
-function addToCartWithAnimation(button, product) {
-    // 1. Aplicar efecto de rebote al carrito flotante
-    button.classList.add('bounce');
-    setTimeout(() => button.classList.remove('bounce'), 600);
-    // 2. Buscamos si el producto ya está en el carrito
-    const existingItem = shoppingCart.find(item => item.id === product.id);
-    if (existingItem) {
-        // Si ya existe, incrementamos la cantidad
-        existingItem.quantity += 1;
-    } else {
-        // Si es nuevo, lo agregamos con cantidad 1
-        shoppingCart.push({
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            imageBase64: product.imageBase64,
-            vendorId: product.vendorId,
-            vendorName: product.vendorName,
-            quantity: 1
-        });
+document.addEventListener('change', function(e) {
+    if (e.target.id === 'json-import-input') {
+        handleJsonImport(e);
     }
-    // 3. Actualizamos la interfaz
-    updateCartUI();
-    // 4. Crear y mostrar animación de confirmación
-    createCartConfirmationAnimation(button);
-    // 5. Mostrar toast de confirmación
-    showToast(`${product.name} agregado al carrito.`, 'success');
-}
+});
 
-/**
- * Crea una animación visual que simula que el producto vuela hacia el ícono del carrito.
- * @param {HTMLElement} sourceElement - El elemento desde donde inicia la animación.
- */
-function createCartConfirmationAnimation(sourceElement) {
-    // Obtener posición del botón clickeado
-    const rect = sourceElement.getBoundingClientRect();
-    // Crear elemento de animación
-    const animationElement = document.createElement('div');
-    animationElement.className = 'cart-confirmation-animation';
-    animationElement.innerHTML = '<i class="fas fa-cart-plus" style="font-size: 24px; color: var(--primary);"></i>';
-    animationElement.style.position = 'fixed';
-    animationElement.style.left = `${rect.left + rect.width / 2}px`;
-    animationElement.style.top = `${rect.top + rect.height / 2}px`;
-    animationElement.style.transform = 'translate(-50%, -50%)';
-    document.body.appendChild(animationElement);
-    // Obtener posición del ícono del carrito
-    const cartIcon = document.getElementById('cartIcon');
-    if (cartIcon) {
-        const cartRect = cartIcon.getBoundingClientRect();
-        const cartX = cartRect.left + cartRect.width / 2;
-        const cartY = cartRect.top + cartRect.height / 2;
-        // Aplicar animación
-        animationElement.style.transition = 'all 0.6s ease-out';
-        setTimeout(() => {
-            animationElement.style.left = `${cartX}px`;
-            animationElement.style.top = `${cartY}px`;
-            animationElement.style.transform = 'translate(-50%, -50%) scale(0.5)';
-            animationElement.style.opacity = '0';
-        }, 10);
-        // Hacer que el ícono del carrito rebote
-        cartIcon.classList.add('bounce');
-        setTimeout(() => cartIcon.classList.remove('bounce'), 600);
-    }
-    // Eliminar el elemento de animación después de que termine
-    setTimeout(() => {
-        if (animationElement.parentNode) {
-            animationElement.parentNode.removeChild(animationElement);
+// === FUNCIONES DE COMPATIBILIDAD PARA NAVEGACIÓN ENTRE MÓDULOS ===
+// Este código permite que script.js y products.js se comuniquen correctamente
+
+// Exponer loadProducts globalmente si no existe
+if (typeof window.loadProductsWrapper === 'undefined') {
+    window.loadProductsWrapper = function(containerId = 'productsGrid', filter = {}) {
+        // Verificar que la función existe en products.js
+        if (typeof loadProducts === 'function') {
+            return loadProducts(containerId, filter);
+        } else {
+            console.warn('loadProducts no está disponible aún');
         }
-    }, 600);
+    };
 }
 
-/**
- * Función de respaldo para mantener compatibilidad (llama a la nueva función).
- * @param {Object} product - El objeto del producto a agregar.
- */
-function addToCart(product) {
-    // Buscamos cualquier botón de carrito en la página para usarlo como origen de la animación
-    const anyCartButton = document.querySelector('.btn-add-to-cart-overlay, .btn-add-to-cart-minimal') || document.body;
-    addToCartWithAnimation(anyCartButton, product);
-}
-
-/**
- * Elimina un producto del carrito.
- * @param {string} productId - El ID del producto a eliminar.
- */
-function removeFromCart(productId) {
-    shoppingCart = shoppingCart.filter(item => item.id !== productId);
-    updateCartUI();
-}
-
-/**
- * Actualiza la cantidad de un producto en el carrito.
- * @param {string} productId - El ID del producto.
- * @param {number} newQuantity - La nueva cantidad (debe ser >= 1).
- */
-function updateCartItemQuantity(productId, newQuantity) {
-    if (newQuantity < 1) {
-        removeFromCart(productId);
-        return;
-    }
-    const item = shoppingCart.find(item => item.id === productId);
-    if (item) {
-        item.quantity = newQuantity;
-        updateCartUI();
-    }
-}
-
-/**
- * Actualiza toda la interfaz del carrito: contador, items y total.
- */
-function updateCartUI() {
-    // Actualizar el contador en el ícono
-    const itemCount = shoppingCart.reduce((total, item) => total + item.quantity, 0);
-    document.getElementById('cartItemCount').textContent = itemCount;
-    // Actualizar la lista de items
-    const container = document.getElementById('cartItemsContainer');
-    if (shoppingCart.length === 0) {
-        container.innerHTML = '<p class="empty-cart-message">Tu carrito está vacío.</p>';
-    } else {
-        container.innerHTML = '';
-        shoppingCart.forEach(item => {
-            const itemElement = document.createElement('div');
-            itemElement.className = 'cart-item';
-            itemElement.innerHTML = `
-                <div class="cart-item-image" style="background-image: url('${item.imageBase64 || 'https://placehold.co/80x80/e2e8f0/a0aec0?text=No+Img'}')"></div>
-                <div class="cart-item-details">
-                    <h4 class="cart-item-title">${item.name}</h4>
-                    <p class="cart-item-price">$${(item.price || 0).toFixed(2)}</p>
-                    <div class="cart-item-quantity">
-                        <button onclick="updateCartItemQuantity('${item.id}', ${item.quantity - 1})">-</button>
-                        <span>${item.quantity}</span>
-                        <button onclick="updateCartItemQuantity('${item.id}', ${item.quantity + 1})">+</button>
-                    </div>
-                </div>
-            `;
-            container.appendChild(itemElement);
-        });
-    }
-    // Actualizar el total
-    const total = shoppingCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    document.getElementById('cartTotal').textContent = `$${total.toFixed(2)}`;
-}
-
-/**
- * Alterna la visibilidad del panel del carrito.
- */
-function toggleCart() {
-    const panel = document.getElementById('cartPanel');
-    const overlay = document.getElementById('cartOverlay');
-    panel.classList.toggle('active');
-    overlay.classList.toggle('active');
-}
-
-/**
- * Procesa el pago (por ahora solo muestra un mensaje).
- */
-function proceedToCheckout() {
-    if (shoppingCart.length === 0) {
-        showToast('Tu carrito está vacío.', 'error');
-        return;
-    }
-    // Aquí iría la lógica para procesar el pago
-    // Por ejemplo, redirigir a una pasarela de pago o mostrar un formulario
-    showToast('¡Función de pago aún no implementada! Contacta directamente al vendedor por WhatsApp.', 'info');
-    // Opcional: puedes cerrar el carrito después de hacer clic
-    // toggleCart();
+// Exponer loadMyProducts globalmente si no existe
+if (typeof window.loadMyProductsWrapper === 'undefined') {
+    window.loadMyProductsWrapper = function() {
+        // Verificar que la función existe en products.js
+        if (typeof loadMyProducts === 'function') {
+            return loadMyProducts();
+        } else {
+            console.warn('loadMyProducts no está disponible aún');
+        }
+    };
 }
 
 // --- INICIALIZACIÓN DE LA APLICACIÓN ---
+
 async function initializeApp() {
-    // --- MOSTRAR SPINNER DE CARGA INICIAL ---
     showInitialLoadingSpinner('Cargando datos y autenticando...');
-    // Obtener usuario actual y sus datos
     try {
-        // Comprobar conectividad con Supabase antes de hacer llamadas pesadas
         const supReachable = await isSupabaseReachable();
         window._supabaseReachable = supReachable;
         if (!supReachable) {
-            showSupabaseNetworkBanner('No se puede conectar a Supabase. Revisa tu conexión a Internet o la URL configurada.');
-            // No hacemos return: continuamos con la inicialización local (listeners y UI) pero evitamos llamadas a Supabase
+            showSupabaseNetworkBanner('No se puede conectar a Supabase. Revisa tu conexion a Internet o la URL configurada.');
         }
         if (supReachable) {
-            // Inicializar cliente Supabase ahora que confirmamos reachability
             initializeSupabaseClient();
             const supabaseClient = getSupabase();
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (user) {
-                // Verificar si es merchant
                 const { data: merchant, error } = await supabaseClient.from('merchants').select('*').eq('id', user.id).single();
                 if (!error && merchant) {
-                    currentUser = { id: user.id, email: user.email }; isMerchant = true;
+                    currentUser = { id: user.id, email: user.email }; 
+                    isMerchant = true;
                     await updateUserProfile(user.id);
                     showSection('profile');
                 } else {
-                    isMerchant = false; currentUser = null; currentMerchantData = null;
+                    isMerchant = false; 
+                    currentUser = null; 
+                    currentMerchantData = null;
+                    showSection('home');
                 }
             } else {
-                currentUser = null; isMerchant = false; currentMerchantData = null;
+                currentUser = null; 
+                isMerchant = false; 
+                currentMerchantData = null;
                 showSection('home');
             }
         } else {
-            currentUser = null; isMerchant = false; currentMerchantData = null;
+            currentUser = null; 
+            isMerchant = false; 
+            currentMerchantData = null;
             showSection('home');
         }
     } catch (e) {
         console.error('Error checking auth state:', e);
     }
-    // Escuchar cambios de auth (login/logout)
-    const _sup = getSupabase();
-    if (_sup && _sup.auth && typeof _sup.auth.onAuthStateChange === 'function') {
-        _sup.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN') {
-            try {
-                const user = session.user;
-                currentUser = { id: user.id, email: user.email };
-                // Comprobar si el usuario es merchant en la tabla 'merchants'
-                const sup = getSupabase();
-                const { data: merchant, error: merchantError } = await sup.from('merchants').select('*').eq('id', user.id).single();
-                if (!merchantError && merchant) {
-                    isMerchant = true;
-                    await updateUserProfile(user.id);
-                    // Si la vista actual es 'my-store' o 'profile', cargar productos del merchant
-                    const activeSection = document.querySelector('.section.active-section');
-                    if (activeSection && (activeSection.id === 'my-store' || activeSection.id === 'profile')) {
-                        loadMyProducts();
-                    }
-                    showSection('profile');
-                } else {
-                    isMerchant = false;
-                    currentMerchantData = null;
-                    showSection('home');
-                }
-            } catch (e) {
-                console.error('Error handling SIGNED_IN auth event:', e);
-            }
-        } else if (event === 'SIGNED_OUT') {
-            currentUser = null; isMerchant = false; currentMerchantData = null;
-            showSection('home');
+
+    // ELIMINAR TODO EL BLOQUE DE _sup.auth.onAuthStateChange
+    // Y REEMPLAZARLO CON ESTAS 2 LINEAS:
+    hideInitialLoadingSpinner();
+    updateAuthUI();
+
+    // El resto del codigo sigue igual...
+    document.getElementById('loginPassword').addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            login();
         }
-        updateAuthUI();
-        hideInitialLoadingSpinner();
-        });
-    } else {
-        // No hay cliente o el método no existe; ocultar spinner para no bloquear la UI
-        hideInitialLoadingSpinner();
-    }
+    });
 
-// --- EVENT LISTENER PARA INICIAR SESIÓN CON ENTER ---
+// El listener ya esta configurado en initializeSupabaseClient()
+// Solo ocultamos el spinner
+hideInitialLoadingSpinner();
+updateAuthUI();
+
+    // Eventos que SÍ existen al cargar la página
 document.getElementById('loginPassword').addEventListener('keypress', function(event) {
-    if (event.key === 'Enter') {
-        login();
-    }
-});
-
-    // --- EVENT LISTENER GLOBAL PARA CERRAR CON ESC ---
+        if (event.key === 'Enter') {
+            login();
+        }
+    });
     document.addEventListener('keydown', closeActiveModalOnEsc);
-
-    document.getElementById('create-catalog-btn').addEventListener('click', () => document.getElementById('catalog-options-modal').style.display = 'flex');
-    document.getElementById('backup-btn').addEventListener('click', () => document.getElementById('backup-options-modal').style.display = 'flex');
-    document.getElementById('generate-pdf-btn').addEventListener('click', () => {
-        hideModal('catalog-options-modal');
-        showExportModal('pdf');
-    });
-    document.getElementById('generate-jpg-btn').addEventListener('click', loadUserProductsForSelection);
-    document.getElementById('json-import-input').addEventListener('change', handleJsonImport);
-    setupImageUpload('productImageUploadArea', 'productImageInput', (file) => selectedProductFile = file);
-    setupImageUpload('profilePicUploadArea', 'profilePicInput', (file) => {
-        selectedProfilePicFile = file;
-        selectedAvatarUrl = null;
-        document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
-    });
-    const themeToggle = document.getElementById('themeToggle');
-    const applyTheme = (theme) => { document.body.dataset.theme = theme; localStorage.setItem('theme', theme); };
-    themeToggle.addEventListener('click', () => applyTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
-    applyTheme(localStorage.getItem('theme') || 'light');
-    // Solo cargar productos si Supabase está disponible (evita errores en caso de DNS/Red)
-    if (window._supabaseReachable === undefined || window._supabaseReachable) {
-        loadProducts();
-    }
-    populateAvatars();
-
-    // --- NUEVO: EVENT LISTENER PARA CERRAR EL MENÚ HAMBURGUESA ---
     document.getElementById('hamburgerMenu').addEventListener('click', function() {
         document.getElementById('navContainer').classList.toggle('active');
         document.getElementById('navOverlay').classList.toggle('active');
     });
-
-    // Cerrar al hacer clic en el overlay
     document.getElementById('navOverlay').addEventListener('click', function() {
         document.getElementById('navContainer').classList.remove('active');
         document.getElementById('navOverlay').classList.remove('active');
     });
-
-    // Cerrar al hacer clic en cualquier enlace de navegación
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', function() {
             document.getElementById('navContainer').classList.remove('active');
             document.getElementById('navOverlay').classList.remove('active');
         });
     });
+
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        const applyTheme = (theme) => { 
+            document.body.dataset.theme = theme; 
+            localStorage.setItem('theme', theme); 
+        };
+        themeToggle.addEventListener('click', () => {
+            const newTheme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+            applyTheme(newTheme);
+        });
+        applyTheme(localStorage.getItem('theme') || 'light');
+    }
+
+    // Avatar
+    populateAvatars();
+
+    // Uploads
+    setupImageUpload('productImageUploadArea', 'productImageInput', (file) => selectedProductFile = file);
+    setupImageUpload('profilePicUploadArea', 'profilePicInput', (file) => {
+        selectedProfilePicFile = file;
+        selectedAvatarUrl = null;
+        document.querySelectorAll('.avatar-item').forEach(el => el.style.borderColor = 'transparent');
+    });
+
+    // Cargar productos iniciales si hay conexión
+    if (window._supabaseReachable === undefined || window._supabaseReachable) {
+        loadProducts();
+    }
+
+    // Cargar carrito desde localStorage
+    loadCartFromLocalStorage();
 }
 
-initializeApp();
+// === DELEGACIÓN DE EVENTOS PARA ELEMENTOS DINÁMICOS ===
+document.addEventListener('click', function(e) {
+    if (e.target.id === 'create-catalog-btn') {
+        document.getElementById('catalog-options-modal').style.display = 'flex';
+    } else if (e.target.id === 'backup-btn') {
+        document.getElementById('backup-options-modal').style.display = 'flex';
+    } else if (e.target.id === 'generate-pdf-btn') {
+        hideModal('catalog-options-modal');
+        showExportModal('pdf');
+    } else if (e.target.id === 'generate-jpg-btn') {
+        loadUserProductsForSelection();
+    }
+});
+
+document.addEventListener('change', function(e) {
+    if (e.target.id === 'json-import-input') {
+        handleJsonImport(e);
+    }
+});
+
+// ✅ Ejecutar SOLO cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', initializeApp);

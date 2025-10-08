@@ -1,3 +1,0 @@
-SUPA URL:   https://gkddymcuajakvghffava.supabase.co
-
-API KEY:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdrZGR5bWN1YWpha3ZnaGZmYXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NzUyNDksImV4cCI6MjA3MzQ1MTI0OX0.12aqVrRdAGaSq6eEm5xcwqkPpNyEdQdA77t8MeKhWKw
