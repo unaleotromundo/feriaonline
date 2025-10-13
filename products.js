@@ -2,6 +2,7 @@
 // Variables específicas de productos
 let currentVendorProducts = [];
 let currentProductIndex = 0;
+let searchDebounceTimer = null;
 
 /**
  * Sube una imagen al bucket 'product-images' y devuelve { publicUrl, path }
@@ -56,35 +57,30 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
         console.warn(`Container ${containerId} no encontrado`);
         return;
     }
-    
+
+    // ✅ Reiniciar mapa global de productos
+    window.allProductsMap = {};
+
     showRunnerOverlay();
-    
-    // ✅ VERIFICACIÓN MEJORADA: No bloquear si no hay conexión, intentar de todas formas
     const isReachable = await ensureSupabaseAvailable();
     if (!isReachable) {
         console.warn('Supabase no alcanzable, intentando de todas formas...');
     }
-    
+
     try {
         const supabaseClient = getSupabase();
-        
-        // ✅ Query público - no requiere autenticación
         let q = supabaseClient
             .from('products')
             .select('*')
             .eq('published', true);
-        
         if (isValidId(filter.vendorId)) {
             q = q.eq('vendor_id', filter.vendorId);
         }
-        
         q = q.order('created_at', { ascending: false });
-        
         const { data, error } = await q;
-        
         hideRunnerOverlay();
         productsGrid.innerHTML = '';
-        
+
         if (error) {
             console.error("Error loading products:", error);
             productsGrid.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
@@ -94,7 +90,7 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
             </div>`;
             return;
         }
-        
+
         if (!data || data.length === 0) {
             productsGrid.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
                 <i class="fas fa-shopping-bag" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
@@ -102,7 +98,7 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
             </div>`;
             return;
         }
-        
+
         // ✅ Normalizar y renderizar productos
         data.forEach(row => {
             const product = normalizeProductRow(row);
@@ -110,7 +106,6 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
                 renderProductCard(productsGrid, product);
             }
         });
-        
     } catch (error) {
         console.error("Error loading products:", error);
         hideRunnerOverlay();
@@ -122,46 +117,37 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
     }
 }
 
+updateFavoriteUI();
+
 async function loadMyProducts() {
     if (!currentUser) {
         console.warn('No hay usuario logueado para cargar productos');
         return;
     }
-    
     const productsGrid = document.getElementById('myProductsGrid');
     if (!productsGrid) return;
-    
     showRunnerOverlay();
-    
     if (!(await ensureSupabaseAvailable())) { 
         hideRunnerOverlay(); 
         productsGrid.innerHTML = `<div>Error de red. Intenta más tarde.</div>`; 
         return; 
     }
-    
     try {
         const supabaseClient = getSupabase();
         let q = supabaseClient.from('products').select('*');
-        
         if (isValidId(currentUser.id)) {
             q = q.eq('vendor_id', currentUser.id);
         }
-        
         q = q.order('created_at', { ascending: false });
-        
         const { data, error } = await q;
         if (error) throw error;
-        
         const products = (data || []).map(r => normalizeProductRow(r));
-        
         hideRunnerOverlay();
         productsGrid.innerHTML = '';
-        
         if (products.length === 0) {
             productsGrid.innerHTML = '<div>Aún no has agregado productos.</div>';
             return;
         }
-        
         products.forEach(product => renderMyProductCard(productsGrid, product));
     } catch (error) {
         console.error("Error loading user products:", error);
@@ -173,30 +159,28 @@ async function loadMyProducts() {
 function renderProductCard(container, product) {
     const card = document.createElement('div');
     card.className = 'product-card';
-    
     const imgSrc = product.imageUrl || product.imageBase64 || '';
     const hasImage = !!imgSrc;
-    
+
     // ✅ Escapar correctamente el JSON para evitar errores
     const escapedProductJson = JSON.stringify(product)
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
-    
     // ✅ Manejo seguro del nombre del vendedor
     const safeVendorName = (product.vendorName || 'Vendedor')
         .replace(/'/g, "\\'")
         .replace(/"/g, '\\"');
-    
+
     let vendorLinkHtml = '';
-    
     if (isValidId(product.vendorId)) {
         vendorLinkHtml = `<a href="#" onclick="event.preventDefault(); showVendorPage('${product.vendorId}', '${safeVendorName}')">${product.vendorName}</a>`;
     } else {
         vendorLinkHtml = `<span>${product.vendorName}</span>`;
     }
-    
+
     card.innerHTML = `
-        <div class="product-image" ${hasImage ? `style="background-image: url('${imgSrc}')" onclick="showImageLightbox('${imgSrc}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId || ''}', id: '${product.id}', category: '${product.category}' })"` : ''}>
+        <div class="product-image" 
+             ${hasImage ? `style="background-image: url('${imgSrc}')" onclick="showImageLightbox('${imgSrc}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId || ''}', id: '${product.id}', category: '${product.category}' })"` : ''}>
             ${!hasImage ? '<i class="fas fa-shopping-bag"></i>' : ''}
             <button class="btn-add-to-cart-overlay" onclick="event.stopPropagation(); addToCartWithAnimation(this, ${escapedProductJson})">
                 <i class="fas fa-cart-plus"></i>
@@ -207,17 +191,19 @@ function renderProductCard(container, product) {
             <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
             <p class="product-description">${product.description || ''}</p>
             <div class="product-category">${product.category !== 'otros' ? `<span class="category-tag">${product.category}</span>` : ''}</div>
-            <div class="product-actions">
-                <div class="product-vendor">
-                    <i class="fas fa-store"></i>
-                    ${vendorLinkHtml}
-                    <button class="btn-add-to-cart-minimal" onclick="event.stopPropagation(); addToCartWithAnimation(this, ${escapedProductJson})">
-                        <i class="fas fa-cart-plus"></i>
-                    </button>
-                </div>
-            </div>
+	    <div class="product-actions">
+            <div class="product-vendor">
+        <i class="fas fa-store"></i>
+        ${vendorLinkHtml}
+<button class="btn-favorite" data-product-id="${product.id}">
+            ${isFavorite(product.id) ? '<i class="fas fa-heart"></i>' : '<i class="far fa-heart"></i>'}
+        </button>
+        <button class="btn-add-to-cart-minimal" onclick="event.stopPropagation(); addToCartWithAnimation(this, ${escapedProductJson})">
+            <i class="fas fa-cart-plus"></i>
+        </button>
+    </div>
+</div>
         </div>`;
-    
     container.appendChild(card);
 }
 
@@ -227,10 +213,15 @@ function renderMyProductCard(container, product) {
     card.className = 'product-card';
     const imgSrc = product.imageUrl || product.imageBase64 || '';
     const hasImage = !!imgSrc;
-    
+
+    // ✅ Usar <img loading="lazy"> en lugar de background-image
+    const imgTag = hasImage 
+        ? `<img src="${imgSrc}" loading="lazy" alt="${product.name}" class="product-grid-img">`
+        : '<i class="fas fa-shopping-bag"></i>';
+
     card.innerHTML = `
-        <div class="product-image" style="${hasImage ? `background-image: url('${imgSrc}')` : ''}" ${hasImage ? `onclick="showImageLightbox('${imgSrc}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId}', id: '${product.id}', category: '${product.category}', isMyProduct: true })"` : ''}>
-            ${!hasImage ? '<i class="fas fa-shopping-bag"></i>' : ''}
+        <div class="product-image-container">
+            ${imgTag}
         </div>
         <div class="product-info">
             <h3 class="product-title">${product.name}</h3>
@@ -297,6 +288,12 @@ async function loadProductForEdit(productId) {
 }
 
 window.saveProduct = async function() {
+    const saveBtn = document.querySelector('#productModal .btn-primary');
+    // ✅ Deshabilitar inmediatamente el botón para evitar doble envío
+    if (saveBtn.disabled) return; // Si ya está deshabilitado, no hacer nada
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
     const isEditing = !!document.getElementById('productModal').dataset.productId;
     const productData = { 
         name: document.getElementById('productName').value.trim(),
@@ -306,54 +303,55 @@ window.saveProduct = async function() {
         vendorId: currentUser.id,
         vendorName: document.getElementById('userBusiness').textContent
     };
+
     if (!productData.name || !productData.price || isNaN(productData.price)) {
         showToast('Por favor completa el nombre y precio del producto.', 'error');
+        // ✅ Rehabilitar botón si hay error de validación
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = 'Guardar Producto';
         return;
     }
+
     let imageBase64 = document.getElementById('productImageUploadArea').dataset.existingImage || null;
     let imageUrl = null;
     let imageStoragePath = null;
-    if (selectedProductUpload) {
-        imageUrl = selectedProductUpload.publicUrl;
-        imageStoragePath = selectedProductUpload.path;
-    } else if (selectedProductFile) {
-        const compressedFile = await imageCompression(selectedProductFile, { maxSizeMB: 0.5, maxWidthOrHeight: 800 });
-        const upload = await uploadProductImage(compressedFile, currentUser?.id || 'anonymous');
-        if (upload) {
-            imageUrl = upload.publicUrl;
-            imageStoragePath = upload.path;
-        } else {
-            imageBase64 = await new Promise(resolve => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.readAsDataURL(compressedFile);
-            });
-        }
-    }
-    productData.imageBase64 = imageBase64;
-    productData.imageUrl = imageUrl;
-    productData.imageStoragePath = imageStoragePath;
 
-    const dbProduct = {
-        name: productData.name,
-        price: productData.price,
-        description: productData.description,
-        category: productData.category,
-        vendor_id: productData.vendorId,
-        vendor_name: productData.vendorName,
-        image_url: productData.imageUrl,
-        image_storage_path: productData.imageStoragePath,
-        published: true
-    };
-    if (!isEditing) dbProduct.created_at = new Date().toISOString();
-
-    const saveBtn = document.querySelector('#productModal .btn-primary');
-    startButtonLoading(saveBtn, 'Guardando...');
     try {
-        if (!(await ensureSupabaseAvailable())) { 
-            stopButtonLoading(saveBtn); 
-            return; 
+        if (selectedProductUpload) {
+            imageUrl = selectedProductUpload.publicUrl;
+            imageStoragePath = selectedProductUpload.path;
+        } else if (selectedProductFile) {
+            const compressedFile = await imageCompression(selectedProductFile, { maxSizeMB: 0.5, maxWidthOrHeight: 800 });
+            const upload = await uploadProductImage(compressedFile, currentUser?.id || 'anonymous');
+            if (upload) {
+                imageUrl = upload.publicUrl;
+                imageStoragePath = upload.path;
+            } else {
+                imageBase64 = await new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.readAsDataURL(compressedFile);
+                });
+            }
         }
+
+        const dbProduct = {
+            name: productData.name,
+            price: productData.price,
+            description: productData.description,
+            category: productData.category,
+            vendor_id: productData.vendorId,
+            vendor_name: productData.vendorName,
+            image_url: imageUrl,
+            image_storage_path: imageStoragePath,
+            published: true
+        };
+        if (!isEditing) dbProduct.created_at = new Date().toISOString();
+
+        if (!(await ensureSupabaseAvailable())) {
+            throw new Error('No se puede conectar a Supabase.');
+        }
+
         const supabaseClient = getSupabase();
         if (isEditing) {
             const productId = document.getElementById('productModal').dataset.productId;
@@ -363,19 +361,23 @@ window.saveProduct = async function() {
             const { error } = await supabaseClient.from('products').insert([dbProduct]);
             if (error) throw error;
         }
+
         showToast('Producto guardado.', 'success');
         hideModal('productModal');
         loadMyProducts();
         if (document.getElementById('products').classList.contains('active-section')) {
             loadProducts();
         }
+
     } catch (error) {
         console.error("Error saving product:", error);
         showToast(`Error al guardar el producto. ${error.message || ''}`, 'error');
     } finally {
-        stopButtonLoading(saveBtn);
+        // ✅ Siempre rehabilitar el botón al final
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = 'Guardar Producto';
     }
-}
+};
 
 window.toggleProductStatus = async function(id, status) { 
     try {
@@ -397,15 +399,12 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
         console.warn("No se recibió información del producto.");
         return;
     }
-    
     const loadingSpinner = document.getElementById('lightboxLoadingSpinner');
     const lightboxImg = document.getElementById('lightboxImg');
     const lightbox = document.getElementById('imageLightbox');
-    
     loadingSpinner.style.display = 'flex';
     lightboxImg.classList.add('loading');
     lightbox.style.display = 'flex';
-    
     try {
         if (!(await ensureSupabaseAvailable())) throw new Error('Supabase unreachable');
         const supabaseClient = getSupabase();
@@ -415,24 +414,17 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
             .eq('vendor_id', productData.vendorId)
             .eq('published', true)
             .order('created_at', { ascending: false });
-        
         if (error) throw error;
-        
         currentVendorProducts = (data || []).map(r => normalizeProductRow(r));
-        
         currentProductIndex = currentVendorProducts.findIndex(p => p.id === productData.id);
-        
         if (currentProductIndex === -1) {
             currentProductIndex = currentVendorProducts.findIndex(p => 
                 p.imageBase64 === imageBase64 || p.imageUrl === imageBase64
             );
         }
-        
         if (currentProductIndex === -1) {
             currentProductIndex = 0;
         }
-        
-        // ✅ Pasar si es producto propio
         await showCurrentProductInLightbox(productData.isMyProduct);
         setupSwipeGestures();
     } catch (error) {
@@ -444,31 +436,57 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
     }
 }
 
-// ✅ MODIFICADO: Oculta botones WhatsApp e "Ir al Puesto" si es mi producto
+// ✅ MODIFICADO: Agrega botón de favoritos y cambia texto del botón de puesto
 async function showCurrentProductInLightbox(isMyProduct = false) {
     const product = currentVendorProducts[currentProductIndex];
     if (!product) return;
+
     const img = document.getElementById('lightboxImg');
+    const productNameEl = document.getElementById('lightboxProductName');
+    const productPriceEl = document.getElementById('lightboxProductPrice');
+    const productDescEl = document.getElementById('lightboxProductDescription');
+    const overlayInfo = document.getElementById('lightboxOverlayInfo');
+    const lightbox = document.getElementById('imageLightbox');
+
+    if (!img || !productNameEl || !productPriceEl || !productDescEl || !overlayInfo || !lightbox) {
+        console.error('❌ Elementos del lightbox no encontrados');
+        return;
+    }
+
+    // Mostrar datos del producto
+    productNameEl.textContent = product.name || 'Producto sin nombre';
+    productPriceEl.textContent = `$${(product.price || 0).toFixed(2)}`;
+    productDescEl.textContent = product.description || 'Sin descripción';
+
+    if (product.description && product.description.trim() !== '') {
+        overlayInfo.style.display = 'block';
+        overlayInfo.style.opacity = '0';
+        overlayInfo.style.visibility = 'hidden';
+    } else {
+        overlayInfo.style.display = 'none';
+    }
+
+    // Cargar imagen
     img.classList.remove('lightbox-img-visible');
     img.classList.add('lightbox-img-fade');
     setTimeout(() => {
         img.src = product.imageUrl || product.imageBase64 || '';
-        img.onload = () => {
+        img.alt = product.name || 'Producto';
+        img.onload = img.onerror = () => {
             img.classList.remove('lightbox-img-fade');
             img.classList.add('lightbox-img-visible');
-        };
-        img.onerror = () => {
-            img.classList.remove('lightbox-img-fade');
-            img.classList.add('lightbox-img-visible');
+            if (overlayInfo.style.display === 'block') {
+                overlayInfo.style.opacity = '1';
+                overlayInfo.style.visibility = 'visible';
+            }
         };
     }, 50);
-    const lightbox = document.getElementById('imageLightbox');
+
     lightbox.style.display = 'flex';
 
-    // ✅ Solo mostrar botón de carrito si NO es mi producto
-    const existingCartBtn = document.querySelector('.floating-cart-btn');
+    // === BOTÓN DE CARRITO (solo si no es mi producto) ===
+    const existingCartBtn = lightbox.querySelector('.floating-cart-btn');
     if (existingCartBtn) existingCartBtn.remove();
-    
     if (!isMyProduct) {
         const floatingCartBtn = document.createElement('div');
         floatingCartBtn.className = 'floating-cart-btn';
@@ -481,98 +499,75 @@ async function showCurrentProductInLightbox(isMyProduct = false) {
         lightbox.appendChild(floatingCartBtn);
     }
 
-    // ✅ Ocultar botón "Ir al Puesto" si es mi producto
+    // === BOTÓN DE FAVORITOS (siempre visible) ===
+    const existingFavBtn = lightbox.querySelector('.floating-favorite-btn');
+    if (existingFavBtn) existingFavBtn.remove();
+
+    const floatingFavBtn = document.createElement('div');
+    floatingFavBtn.className = 'floating-favorite-btn';
+    floatingFavBtn.innerHTML = isFavorite(product.id) 
+        ? '<i class="fas fa-heart"></i>' 
+        : '<i class="far fa-heart"></i>';
+    floatingFavBtn.title = isFavorite(product.id) ? 'Quitar de favoritos' : 'Agregar a favoritos';
+    floatingFavBtn.onclick = function(event) {
+        event.stopPropagation();
+        toggleFavorite(product.id);
+        // Actualizar visualmente
+        const isNowFav = isFavorite(product.id);
+        floatingFavBtn.innerHTML = isNowFav 
+            ? '<i class="fas fa-heart"></i>' 
+            : '<i class="far fa-heart"></i>';
+        floatingFavBtn.title = isNowFav ? 'Quitar de favoritos' : 'Agregar a favoritos';
+    };
+    lightbox.appendChild(floatingFavBtn);
+
+    // === BOTÓN "IR A ESTE PUESTO" ===
     const storeBtn = document.getElementById('lightboxStoreBtn');
-    if (isMyProduct) {
-        storeBtn.style.display = 'none';
-    } else if (product.vendorId && product.vendorName) {
-        storeBtn.style.display = 'flex';
-        storeBtn.onclick = function(event) {
-            event.preventDefault();
-            hideImageLightbox();
-            showVendorPage(product.vendorId, product.vendorName);
-        };
-    } else {
-        storeBtn.style.display = 'none';
+    if (storeBtn) {
+        if (isMyProduct) {
+            storeBtn.style.display = 'none';
+        } else if (product.vendorId && product.vendorName) {
+            storeBtn.style.display = 'flex';
+            storeBtn.textContent = 'Ir a este puesto'; // ✅ Texto actualizado
+            storeBtn.onclick = function(event) {
+                event.preventDefault();
+                hideImageLightbox();
+                showVendorPage(product.vendorId, product.vendorName);
+            };
+        } else {
+            storeBtn.style.display = 'none';
+        }
     }
 
-    // ✅ Ocultar botón de WhatsApp si es mi producto
+    // === BOTÓN DE WHATSAPP (sin cambios) ===
     const whatsappBtn = document.getElementById('lightboxWhatsappBtn');
-    
+    if (!whatsappBtn) return;
     if (isMyProduct) {
         whatsappBtn.style.display = 'none';
-        return; // Salir temprano si es mi producto
+        return;
     }
-    
-    // Si NO es mi producto, cargar WhatsApp normalmente
     whatsappBtn.style.display = 'flex';
     whatsappBtn.href = '#';
-    whatsappBtn.innerHTML = `<i class="fab fa-whatsapp"></i><span class="whatsapp-btn-text">Chatear por WhatsApp</span>`;
-    whatsappBtn.classList.remove('lightbox-whatsapp-circle-btn');
-    whatsappBtn.classList.add('lightbox-whatsapp-circle-btn--loading');
-
-    const style = document.createElement('style');
-    style.id = 'whatsapp-loading-style';
-    style.innerHTML = `
-        .lightbox-whatsapp-circle-btn--loading {
-            position: absolute !important;
-            top: 20px !important;
-            left: 20px !important;
-            z-index: 1003 !important;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background-color: #25D366;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            font-weight: 700;
-            box-shadow: 0 4px 8px rgba(37, 211, 102, 0.3);
-            transition: all 0.3s ease;
-            overflow: hidden;
-        }
-        .lightbox-whatsapp-circle-btn--loading i {
-            font-size: 24px;
-            margin: 0;
-        }
-        .lightbox-whatsapp-circle-btn--loading .whatsapp-btn-text {
-            display: none;
-        }
-    `;
-    document.head.appendChild(style);
+    whatsappBtn.innerHTML = `<i class="fab fa-whatsapp"></i><span class="whatsapp-btn-text">Contactar vendedor</span>`;
+    whatsappBtn.classList.remove('lightbox-whatsapp-modern-btn--loading');
+    whatsappBtn.classList.add('lightbox-whatsapp-modern-btn');
 
     if (isValidId(product.vendorId)) {
         try {
             const supClient = getSupabase();
             const { data: vendor, error } = await supClient.from('merchants').select('*').eq('id', product.vendorId).single();
-            if (error || !vendor) {
-                setupFallbackWhatsapp(whatsappBtn);
-            } else if (vendor.phone) {
+            if (!error && vendor?.phone) {
                 const phone = vendor.phone.replace(/[^0-9]/g, '');
                 if (phone) {
                     const productName = product.name || 'un producto';
                     const productPrice = product.price ? `$${parseFloat(product.price).toFixed(2)}` : 'precio no especificado';
                     const baseMessage = `Hola, vi tu producto "${productName}" en Feria Virtual. ¿Me podrías dar más información? Precio: ${productPrice}. Categoría: ${product.category || 'otros'}.`;
-                    const message = encodeURI(baseMessage);
-                    whatsappBtn.href = `https://wa.me/${phone}?text=${message}`;
-                    whatsappBtn.classList.remove('lightbox-whatsapp-circle-btn--loading');
-                    whatsappBtn.classList.add('lightbox-whatsapp-circle-btn');
-                    const tempStyle = document.getElementById('whatsapp-loading-style');
-                    if (tempStyle) tempStyle.remove();
-                } else {
-                    setupFallbackWhatsapp(whatsappBtn);
+                    whatsappBtn.href = `https://wa.me/${phone}?text=${encodeURIComponent(baseMessage)}`;
                 }
-            } else {
-                setupFallbackWhatsapp(whatsappBtn);
             }
         } catch (err) {
             console.error('Error fetching vendor phone:', err);
-            setupFallbackWhatsapp(whatsappBtn);
         }
-    } else {
-        setupFallbackWhatsapp(whatsappBtn);
     }
 }
 
@@ -655,8 +650,9 @@ async function loadUserProductsForSelection() {
         products.forEach(product => {
             const productElement = document.createElement('div');
             productElement.className = 'product-selection-item';
+            const imgSrc = product.imageUrl || product.imageBase64 || 'https://placehold.co/120x80/e2e8f0/a0aec0?text=Sin+Imagen';
             productElement.innerHTML = `
-                <img src="${product.imageUrl || product.imageBase64 || 'https://placehold.co/120x80/e2e8f0/a0aec0?text=Sin+Imagen'}" alt="${product.name}" loading="lazy">
+                <img src="${imgSrc}" alt="${product.name}" loading="lazy">
                 <p>${product.name} (${product.category})</p>
             `;
             productElement.onclick = () => {
@@ -687,7 +683,6 @@ async function generateProductJPG(product) {
     ctx.fillStyle = 'white';
     ctx.textAlign = 'center';
     ctx.fillText(currentMerchantData.business || "Mi Tienda", canvasWidth / 2, 65);
-
     const productImage = new Image();
     productImage.crossOrigin = "anonymous";
     productImage.src = product.imageUrl || product.imageBase64 || 'https://placehold.co/700x400/e2e8f0/a0aec0?text=Producto+sin+imagen';
@@ -706,7 +701,6 @@ async function generateProductJPG(product) {
         const finalX = boxX + (boxWidth - finalWidth) / 2;
         const finalY = boxY + (boxHeight - finalHeight) / 2;
         ctx.drawImage(productImage, finalX, finalY, finalWidth, finalHeight);
-
         ctx.fillStyle = '#333333';
         ctx.textAlign = 'left';
         ctx.font = 'bold 32px "Segoe UI", sans-serif';
@@ -716,7 +710,6 @@ async function generateProductJPG(product) {
         ctx.fillStyle = themeSuccess || '#10b981';
         ctx.textAlign = 'right';
         ctx.fillText(`${(product.price || 0).toFixed(2)}`, 750, 580);
-
         if (product.category && product.category !== 'otros') {
             ctx.font = '20px "Segoe UI", sans-serif';
             ctx.fillStyle = '#555555';
@@ -730,7 +723,6 @@ async function generateProductJPG(product) {
             ctx.textAlign = 'left';
             wrapText(ctx, product.description || 'Sin descripción.', 50, 630, 700, 24);
         }
-
         const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
         const link = document.createElement('a');
         link.href = dataUrl;
@@ -761,50 +753,65 @@ function wrapText(context, text, x, y, maxWidth, lineHeight) {
 window.showVendorPage = async function(vendorId, vendorName) {
     showSection('vendor-page');
     document.getElementById('vendorPageTitle').textContent = vendorName || 'Tienda del Vendedor';
+
+    const vendorLogo = document.getElementById('vendorLogo');
+    const vendorLogoPlaceholder = document.getElementById('vendorLogoPlaceholder');
+    const vendorDescription = document.getElementById('vendorDescription');
     const whatsappBtn = document.getElementById('vendorWhatsappBtn');
+
+    // ✅ Reset inicial
+    vendorLogo.style.display = 'none';
+    vendorLogoPlaceholder.style.display = 'inline-block';
+    vendorDescription.textContent = 'Descripción del puesto...';
     whatsappBtn.style.display = 'none';
-    
+
     try {
         if (!(await ensureSupabaseAvailable())) {
             showToast('No se puede conectar para cargar la página del vendedor.', 'error');
             return;
         }
-        
         const supabaseClient = getSupabase();
         let merchant = null;
-        
-        try {
-            if (isValidId(vendorId)) {
-                const { data: mdata, error } = await supabaseClient.from('merchants').select('*').eq('id', vendorId).single();
-                if (!error && mdata) merchant = mdata;
-            } else if (vendorName) {
-                const nameTrim = vendorName.trim();
-                if (nameTrim) {
-                    const { data: exact, error: exactErr } = await supabaseClient.from('merchants').select('*').eq('business', nameTrim).limit(1).single();
-                    if (!exactErr && exact) merchant = exact;
-                    else {
-                        const { data: ilikeData, error: ilikeErr } = await supabaseClient.from('merchants').select('*').ilike('business', `%${nameTrim}%`).limit(1);
-                        if (!ilikeErr && ilikeData && ilikeData.length > 0) merchant = ilikeData[0];
-                    }
-                }
-            }
-        } catch (e) {
-            console.error('Error fetching merchant by id/name fallback:', e);
+
+        if (isValidId(vendorId)) {
+            const { data: mdata, error } = await supabaseClient.from('merchants').select('*').eq('id', vendorId).single();
+            if (!error && mdata) merchant = mdata;
         }
-        
-        if (merchant && merchant.phone) {
-            const phone = merchant.phone.replace(/[^0-9]/g, '');
-            if (phone) {
-                whatsappBtn.href = `https://wa.me/${phone}`;
-                whatsappBtn.style.display = 'inline-flex';
+
+        if (merchant) {
+            // ✅ Mostrar logo si existe
+            if (merchant.store_logo) {
+                vendorLogo.src = merchant.store_logo;
+                vendorLogo.style.display = 'block';
+                vendorLogoPlaceholder.style.display = 'none';
+            } else {
+                vendorLogo.style.display = 'none';
+                vendorLogoPlaceholder.style.display = 'inline-block';
+            }
+
+            // ✅ Mostrar descripción
+            vendorDescription.textContent = merchant.description || 'Este vendedor aún no ha agregado una descripción.';
+
+            // ✅ WhatsApp
+            if (merchant.phone) {
+                const phone = merchant.phone.replace(/[^0-9]/g, '');
+                if (phone) {
+                    whatsappBtn.href = `https://wa.me/${phone}`;
+                    whatsappBtn.style.display = 'inline-flex';
+                }
             }
         }
     } catch (error) { 
-        console.error("Error fetching vendor phone:", error); 
+        console.error("Error fetching vendor data:", error); 
     }
-    
-    loadProducts('vendorProductsGrid', { vendorId: vendorId });
+
+// Dentro de showVendorPage, al final:
+loadProducts('vendorProductsGrid', { vendorId: vendorId });
+
+// ✅ Actualizar favoritos después de que los productos se rendericen
+setTimeout(updateFavoriteUI, 100);
 }
+
 
 // === BÚSQUEDA Y FILTRADO ===
 let currentCategory = 'all';
@@ -818,13 +825,21 @@ window.filterByCategory = function(category) {
     applyFilters();
 }
 
+// ✅ FUNCIÓN CON DEBOUNCE CORRECTO
 window.filterProducts = function() {
-    const searchInput = document.getElementById('productSearchInput');
-    currentSearchText = searchInput.value.trim().toLowerCase();
-    const clearBtn = document.getElementById('clearSearchBtn');
-    clearBtn.style.display = currentSearchText ? 'flex' : 'none';
-    applyFilters();
-}
+    console.log("🔍 filterProducts ejecutada");
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+        console.log("✅ applyFilters llamado (debounce OK)");
+        const searchInput = document.getElementById('productSearchInput');
+        currentSearchText = searchInput.value.trim().toLowerCase();
+        const clearBtn = document.getElementById('clearSearchBtn');
+        clearBtn.style.display = currentSearchText ? 'flex' : 'none';
+        applyFilters();
+    }, 500);
+};
+
+
 
 window.clearSearch = function() {
     document.getElementById('productSearchInput').value = '';
@@ -837,32 +852,23 @@ async function applyFilters() {
     const productsGrid = document.getElementById('productsGrid');
     const noResultsMessage = document.getElementById('noResultsMessage');
     const resultsCount = document.getElementById('resultsCount');
-    
     if (!productsGrid) return;
-    
     showRunnerOverlay();
-    
     try {
         if (!(await ensureSupabaseAvailable())) {
             hideRunnerOverlay();
             productsGrid.innerHTML = `<div>Error de red. Intenta más tarde.</div>`;
             return;
         }
-        
         const supabaseClient = getSupabase();
         let q = supabaseClient.from('products').select('*').eq('published', true);
-        
         if (currentCategory !== 'all') {
             q = q.eq('category', currentCategory);
         }
-        
         q = q.order('created_at', { ascending: false });
-        
         const { data, error } = await q;
         if (error) throw error;
-        
         let products = (data || []).map(r => normalizeProductRow(r));
-        
         if (currentSearchText) {
             products = products.filter(product => {
                 const name = (product.name || '').toLowerCase();
@@ -873,9 +879,7 @@ async function applyFilters() {
                        vendor.includes(currentSearchText);
             });
         }
-        
         hideRunnerOverlay();
-        
         if (products.length === 0) {
             productsGrid.style.display = 'none';
             noResultsMessage.style.display = 'flex';
@@ -898,36 +902,26 @@ async function applyFilters() {
 
 // === MANEJO DE DROPDOWNS ===
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Inicializando dropdowns...');
-    
     const categoryDropdownBtn = document.getElementById('categoryDropdownBtn');
     const priceDropdownBtn = document.getElementById('priceDropdownBtn');
     const categoryDropdown = document.getElementById('categoryDropdown');
     const priceDropdown = document.getElementById('priceDropdown');
-    
     if (categoryDropdownBtn) {
-        console.log('Botón de categorías encontrado');
         categoryDropdownBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Click en categorías');
             categoryDropdown.classList.toggle('open');
             priceDropdown.classList.remove('open');
         });
     }
-    
     if (priceDropdownBtn) {
-        console.log('Botón de precio encontrado');
         priceDropdownBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Click en precio');
             priceDropdown.classList.toggle('open');
             categoryDropdown.classList.remove('open');
         });
     }
-    
-    // Cerrar dropdowns al hacer click fuera
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.filter-dropdown')) {
             document.querySelectorAll('.filter-dropdown').forEach(el => {
@@ -935,54 +929,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
-    
-    // ✅ DELEGACIÓN CORRECTA: Capturar clicks en botones de categoría
-    const categoryContent = document.getElementById('categoryDropdownContent');
-    if (categoryContent) {
-        categoryContent.addEventListener('click', (e) => {
-            const button = e.target.closest('button');
-            if (button) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                // Extraer categoría del onclick
-                const onclickAttr = button.getAttribute('onclick');
-                if (onclickAttr) {
-                    const match = onclickAttr.match(/filterByCategory\('(.+?)'\)/);
-                    if (match) {
-                        const category = match[1];
-                        console.log('🎯 Ejecutando filterByCategory:', category);
-                        filterByCategory(category);
-                        categoryDropdown.classList.remove('open');
-                    }
-                }
-            }
-        });
-    }
-    
-    // ✅ DELEGACIÓN CORRECTA: Capturar clicks en botones de precio
-    const priceContent = document.getElementById('priceDropdownContent');
-    if (priceContent) {
-        priceContent.addEventListener('click', (e) => {
-            const button = e.target.closest('button');
-            if (button) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                // Extraer orden del onclick
-                const onclickAttr = button.getAttribute('onclick');
-                if (onclickAttr) {
-                    const match = onclickAttr.match(/sortByPrice\('(.+?)'\)/);
-                    if (match) {
-                        const order = match[1];
-                        console.log('🎯 Ejecutando sortByPrice:', order);
-                        sortByPrice(order);
-                        priceDropdown.classList.remove('open');
-                    }
-                }
-            }
-        });
-    }
 });
 
 // Variable global para guardar el orden actual
@@ -990,41 +936,27 @@ let currentPriceOrder = null;
 
 // Función de ordenamiento por precio
 window.sortByPrice = async function(order) {
-    console.log('💰 sortByPrice llamado con orden:', order);
     currentPriceOrder = order;
-    
     const productsGrid = document.getElementById('productsGrid');
     const noResultsMessage = document.getElementById('noResultsMessage');
     const resultsCount = document.getElementById('resultsCount');
-    
     if (!productsGrid) return;
-    
     showRunnerOverlay();
-    
     try {
         if (!(await ensureSupabaseAvailable())) {
             hideRunnerOverlay();
             productsGrid.innerHTML = `<div>Error de red. Intenta más tarde.</div>`;
             return;
         }
-        
         const supabaseClient = getSupabase();
         let q = supabaseClient.from('products').select('*').eq('published', true);
-        
-        // Aplicar filtro de categoría si existe
         if (currentCategory !== 'all') {
             q = q.eq('category', currentCategory);
         }
-        
-        // Ordenar por precio según el orden seleccionado
         q = q.order('price', { ascending: order === 'asc' });
-        
         const { data, error } = await q;
         if (error) throw error;
-        
         let products = (data || []).map(r => normalizeProductRow(r));
-        
-        // Aplicar búsqueda por texto si existe
         if (currentSearchText) {
             products = products.filter(product => {
                 const name = (product.name || '').toLowerCase();
@@ -1035,9 +967,7 @@ window.sortByPrice = async function(order) {
                        vendor.includes(currentSearchText);
             });
         }
-        
         hideRunnerOverlay();
-        
         if (products.length === 0) {
             productsGrid.style.display = 'none';
             noResultsMessage.style.display = 'flex';
@@ -1045,13 +975,10 @@ window.sortByPrice = async function(order) {
         } else {
             productsGrid.style.display = 'grid';
             noResultsMessage.style.display = 'none';
-            
             const orderText = order === 'asc' ? 'menor a mayor precio' : 'mayor a menor precio';
             const categoryText = currentCategory === 'all' ? 'todos los productos' : `categoría "${currentCategory}"`;
             const searchText = currentSearchText ? ` con "${currentSearchText}"` : '';
-            
             resultsCount.textContent = `Mostrando ${products.length} producto${products.length !== 1 ? 's' : ''} en ${categoryText}${searchText} (${orderText})`;
-            
             productsGrid.innerHTML = '';
             products.forEach(product => renderProductCard(productsGrid, product));
         }
@@ -1061,3 +988,90 @@ window.sortByPrice = async function(order) {
         productsGrid.innerHTML = `<div>Error al cargar productos.</div>`;
     }
 }
+
+// === FAVORITOS ===
+let favorites = JSON.parse(localStorage.getItem('feriaVirtualFavorites') || '[]');
+
+function toggleFavorite(productId) {
+    const index = favorites.indexOf(productId);
+    const isFavorited = index === -1;
+
+    // Actualizar array de favoritos
+    if (isFavorited) {
+        favorites.push(productId);
+    } else {
+        favorites.splice(index, 1);
+    }
+    localStorage.setItem('feriaVirtualFavorites', JSON.stringify(favorites));
+
+    // ✅ Actualizar el botón específico en el DOM (sin recargar toda la grilla)
+    const btn = document.querySelector(`.btn-favorite[data-product-id="${productId}"]`);
+    if (btn) {
+        const icon = btn.querySelector('i');
+        if (isFavorited) {
+            btn.classList.add('active');
+            icon.className = 'fas fa-heart'; // lleno
+        } else {
+            btn.classList.remove('active');
+            icon.className = 'far fa-heart'; // vacío
+        }
+    }
+
+    // Opcional: notificación
+    // showToast(isFavorited ? 'Agregado a favoritos' : 'Eliminado de favoritos', 'info');
+}function isFavorite(productId) {
+    return favorites.includes(productId);
+}
+
+function updateFavoriteUI() {
+    // Solo en secciones activas
+    const activeSections = document.querySelectorAll('.section.active-section');
+    if (activeSections.length === 0) return;
+
+    activeSections.forEach(section => {
+        const favoriteButtons = section.querySelectorAll('.btn-favorite');
+        favoriteButtons.forEach(btn => {
+            const id = btn.dataset.productId;
+            if (id && isFavorite(id)) {
+                btn.classList.add('active');
+                const icon = btn.querySelector('i');
+                if (icon) icon.className = 'fas fa-heart';
+            } else {
+                btn.classList.remove('active');
+                const icon = btn.querySelector('i');
+                if (icon) icon.className = 'far fa-heart';
+            }
+        });
+    });
+}
+
+// === DELEGACIÓN SEGURA DE EVENTOS PARA CARRITO Y FAVORITOS ===
+document.addEventListener('click', function(e) {
+    // Carrito
+    const addToCartBtn = e.target.closest('.btn-add-to-cart-overlay, .btn-add-to-cart-minimal');
+    if (addToCartBtn) {
+        e.stopPropagation();
+        const productId = addToCartBtn.dataset.productId;
+        const product = window.allProductsMap?.[productId];
+        if (product && typeof window.addToCartWithAnimation === 'function') {
+            window.addToCartWithAnimation(addToCartBtn, product);
+        }
+    }
+
+    // Favoritos
+    const favoriteBtn = e.target.closest('.btn-favorite');
+    if (favoriteBtn) {
+        e.stopPropagation();
+        const productId = favoriteBtn.dataset.productId;
+        if (productId) {
+            toggleFavorite(productId);
+            // Actualizar visualmente al instante
+            const isNowFav = isFavorite(productId);
+            favoriteBtn.classList.toggle('active', isNowFav);
+            const icon = favoriteBtn.querySelector('i');
+            if (icon) {
+                icon.className = isNowFav ? 'fas fa-heart' : 'far fa-heart';
+            }
+        }
+    }
+});

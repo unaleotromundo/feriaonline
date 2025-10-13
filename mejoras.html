@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🎯 Plan de Mejoras - Feria Virtual</title>
+  <style>
+    :root {
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-600: #475569;
+      --slate-800: #1e293b;
+      --blue-50: #eff6ff;
+      --blue-100: #dbeafe;
+      --blue-300: #93c5fd;
+      --blue-600: #2563eb;
+      --red-100: #fee2e2;
+      --red-300: #fecaca;
+      --red-800: #991b1b;
+      --orange-100: #ffedd5;
+      --orange-300: #fed7aa;
+      --orange-800: #c2410c;
+      --yellow-100: #fef9c3;
+      --yellow-300: #fde047;
+      --yellow-800: #854d0e;
+      --green-500: #10b981;
+      --emerald-600: #059669;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(to bottom right, var(--slate-50), var(--blue-50));
+      color: var(--slate-800);
+      line-height: 1.6;
+      padding: 1.5rem;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .header-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .header-card h1 {
+      font-size: 1.875rem; /* 30px */
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .header-card p {
+      color: var(--slate-600);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+    }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      background: white;
+      color: var(--slate-600);
+      cursor: default;
+      opacity: 0.7;
+    }
+
+    .tab.active {
+      background: var(--blue-600);
+      color: white;
+      opacity: 1;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+
+    .improvement-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      transition: box-shadow 0.2s;
+    }
+
+    .improvement-card:hover {
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    }
+
+    .card-content {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .icon-placeholder {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--blue-100);
+      color: var(--blue-600);
+      border-radius: 12px;
+      font-size: 1.25rem;
+    }
+
+    .text-content {
+      flex: 1;
+    }
+
+    .card-title {
+      font-size: 1.25rem; /* 20px */
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .priority-badge {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-weight: 700;
+      border: 1px solid;
+    }
+
+    .priority-critica {
+      background: var(--red-100);
+      color: var(--red-800);
+      border-color: var(--red-300);
+    }
+
+    .priority-alta {
+      background: var(--orange-100);
+      color: var(--orange-800);
+      border-color: var(--orange-300);
+    }
+
+    .priority-media {
+      background: var(--yellow-100);
+      color: var(--yellow-800);
+      border-color: var(--yellow-300);
+    }
+
+    .priority-baja {
+      background: var(--blue-100);
+      color: var(--blue-600);
+      border-color: var(--blue-300);
+    }
+
+    .card-description {
+      color: var(--slate-600);
+      margin-bottom: 1rem;
+    }
+
+    details {
+      background: var(--slate-100);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    summary {
+      list-style: none;
+      font-weight: 600;
+      color: var(--slate-800);
+      cursor: pointer;
+      padding: 0.25rem 0;
+    }
+
+    summary:hover {
+      color: var(--blue-600);
+    }
+
+    summary::after {
+      content: " ▼";
+      font-size: 0.8em;
+      opacity: 0.6;
+    }
+
+    details[open] summary::after {
+      content: " ▲";
+    }
+
+    pre {
+      margin-top: 0.75rem;
+      padding: 1rem;
+      background: #1e293b;
+      color: #4ade80;
+      border-radius: 12px;
+      overflow-x: auto;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.875rem;
+      line-height: 1.4;
+    }
+
+    .quick-wins {
+      background: linear-gradient(to right, var(--green-500), var(--emerald-600));
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2);
+      padding: 1.5rem;
+      color: white;
+      margin-top: 2rem;
+    }
+
+    .quick-wins h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .quick-wins ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .quick-wins li {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+      align-items: flex-start;
+    }
+
+    .quick-wins li:last-child {
+      margin-bottom: 0;
+    }
+
+    @media (max-width: 768px) {
+      .card-content {
+        flex-direction: column;
+      }
+      .icon-placeholder {
+        align-self: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header-card">
+      <h1>🎯 Plan de Mejoras - Feria Virtual</h1>
+      <p>Recomendaciones priorizadas para hacer tu plataforma más profesional y práctica</p>
+    </div>
+
+    <!-- Tabs (estáticos, solo informativos) -->
+    <div class="tabs">
+      <div class="tab active">👥 UX/UI</div>
+      <div class="tab">📦 Funcionalidades</div>
+      <div class="tab">📈 Rendimiento</div>
+      <div class="tab">⚠️ Seguridad</div>
+    </div>
+
+    <!-- Contenido: UX/UI -->
+    <div class="improvement-card">
+      <div class="card-content">
+        <div class="icon-placeholder">👥</div>
+        <div class="text-content">
+          <div class="card-title">
+            Onboarding para nuevos usuarios
+            <span class="priority-badge priority-alta">Alta</span>
+          </div>
+          <p class="card-description">Tour guiado para comerciantes que se registran por primera vez</p>
+          <details>
+            <summary>Ver código de ejemplo</summary>
+            <pre>// Agregar en initializeApp()
+if (isFirstVisit) {
+  showOnboardingTour();
+}
+
+function showOnboardingTour() {
+  const steps = [
+    { element: '#register', title: '¡Bienvenido!', text: 'Registra tu puesto aquí' },
+    { element: '#products', title: 'Explora', text: 'Descubre productos locales' },
+    { element: '#cartIcon', title: 'Carrito', text: 'Guarda productos para contactar' }
+  ];
+  // Implementar con una librería como Intro.js o Driver.js
+}</pre>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <div class="improvement-card">
+      <div class="card-content">
+        <div class="icon-placeholder">👁️</div>
+        <div class="text-content">
+          <div class="card-title">
+            Vista previa antes de publicar productos
+            <span class="priority-badge priority-alta">Alta</span>
+          </div>
+          <p class="card-description">Mostrar cómo se verá el producto antes de guardarlo</p>
+          <details>
+            <summary>Ver código de ejemplo</summary>
+            <pre>// En el modal de producto
+<button onclick="previewProduct()">
+  <i class="fas fa-eye"></i> Vista Previa
+</button>
+
+function previewProduct() {
+  const tempProduct = {
+    name: document.getElementById('productName').value,
+    price: document.getElementById('productPrice').value,
+    // ... resto de datos
+  };
+  // Renderizar en un modal temporal
+}</pre>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <div class="improvement-card">
+      <div class="card-content">
+        <div class="icon-placeholder">🛒</div>
+        <div class="text-content">
+          <div class="card-title">
+            Confirmación visual al agregar al carrito
+            <span class="priority-badge priority-media">Media</span>
+          </div>
+          <p class="card-description">Toast mejorado con imagen del producto</p>
+          <details>
+            <summary>Ver código de ejemplo</summary>
+            <pre>function showCartToast(product) {
+  const toast = document.createElement('div');
+  toast.className = 'cart-toast';
+  toast.innerHTML = \`
+    <img src="\${product.imageUrl}" alt="">
+    <div>
+      <strong>\${product.name}</strong>
+      <p>Agregado al carrito</p>
+    </div>
+    <button onclick="toggleCart()">Ver carrito</button>
+  \`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.classList.add('show'), 10);
+}</pre>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <div class="improvement-card">
+      <div class="card-content">
+        <div class="icon-placeholder">❤️</div>
+        <div class="text-content">
+          <div class="card-title">
+            Favoritos/Lista de deseos
+            <span class="priority-badge priority-media">Media</span>
+          </div>
+          <p class="card-description">Permitir guardar productos sin agregarlos al carrito</p>
+          <details>
+            <summary>Ver código de ejemplo</summary>
+            <pre>// Agregar botón de favorito en cada producto
+<button class="btn-favorite" onclick="toggleFavorite('\${product.id}')">
+  <i class="fas fa-heart"></i>
+</button>
+
+// Sistema de favoritos con localStorage
+let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+
+function toggleFavorite(productId) {
+  if (favorites.includes(productId)) {
+    favorites = favorites.filter(id => id !== productId);
+  } else {
+    favorites.push(productId);
+  }
+  localStorage.setItem('favorites', JSON.stringify(favorites));
+  updateFavoriteUI();
+}</pre>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <!-- Funcionalidades -->
+    <div class="improvement-card">
+      <div class="card-content">
+        <div class="icon-placeholder">⭐</div>
+        <div class="text-content">
+          <div class="card-title">
+            Sistema de valoraciones y reseñas
+            <span class="priority-badge priority-alta">Alta</span>
+          </div>
+          <p class="card-description">Permitir a los usuarios calificar productos y vendedores</p>
+          <details>
+            <summary>Ver código de ejemplo</summary>
+            <pre>// Nueva tabla en Supabase: product_reviews
+{
+  id: uuid,
+  product_id: uuid,
+  user_email: text,
+  rating: integer (1-5),
+  comment: text,
+  created_at: timestamp
+}
+
+// Mostrar estrellas en productos
+<div class="product-rating">
+  <span class="stars">★★★★☆</span>
+  <span class="rating-count">(24 reseñas)</span>
+</div></pre>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <div class="improvement-card">
+      <div class="card-content">
+        <div class="icon-placeholder">🔔</div>
+        <div class="text-content">
+          <div class="card-title">
+            Notificaciones push (opcional)
+            <span class="priority-badge priority-alta">Alta</span>
+          </div>
+          <p class="card-description">Alertar sobre nuevos productos de vendedores favoritos</p>
+          <details>
+            <summary>Ver código de ejemplo</summary>
+            <pre>// Pedir permiso para notificaciones
+if ('Notification' in window) {
+  Notification.requestPermission().then(permission => {
+    if (permission === 'granted') {
+      // Guardar token de notificación
+      subscribeToVendor(vendorId);
+    }
+  });
+}</pre>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <div class="improvement-card">
+      <div class="card-content">
+        <div class="icon-placeholder">📤</div>
+        <div class="text-content">
+          <div class="card-title">
+            Compartir productos en redes sociales
+            <span class="priority-badge priority-media">Media</span>
+          </div>
+          <p class="card-description">Botones para compartir en WhatsApp, Facebook, Twitter</p>
+          <details>
+            <summary>Ver código de ejemplo</summary>
+            <pre>function shareProduct(product) {
+  const url = window.location.origin + '?product=' + product.id;
+  const text = \`Mira este producto: \${product.name} por $\${product.price}\`;
+  
+  // WhatsApp
+  window.open(\`https://wa.me/?text=\${encodeURIComponent(text + ' ' + url)}\`);
+  
+  // Web Share API (móviles)
+  if (navigator.share) {
+    navigator.share({ title: product.name, text, url });
+  }
+}</pre>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <div class="improvement-card">
+      <div class="card-content">
+        <div class="icon-placeholder">💬</div>
+        <div class="text-content">
+          <div class="card-title">
+            Chat en vivo (Chatbot mejorado)
+            <span class="priority-badge priority-media">Media</span>
+          </div>
+          <p class="card-description">Asistente para ayudar a encontrar productos</p>
+          <details>
+            <summary>Ver código de ejemplo</summary>
+            <pre>// Ya tienes Botpress, mejorar las respuestas:
+// 1. Buscar productos por texto
+// 2. Recomendar categorías
+// 3. Ayuda con el registro
+// 4. FAQs automatizadas</pre>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <div class="improvement-card">
+      <div class="card-content">
+        <div class="icon-placeholder">📦</div>
+        <div class="text-content">
+          <div class="card-title">
+            Historial de pedidos
+            <span class="priority-badge priority-baja">Baja</span>
+          </div>
+          <p class="card-description">Guardar qué productos contactó cada usuario</p>
+          <details>
+            <summary>Ver código de ejemplo</summary>
+            <pre>// Nueva tabla: order_history
+{
+  id: uuid,
+  user_email: text,
+  vendor_id: uuid,
+  products: jsonb,
+  contacted_at: timestamp
+}
+
+// Guardar cuando se contacta por WhatsApp
+function saveOrderHistory(vendorId, items) {
+  supabase.from('order_history').insert({
+    user_email: currentUser?.email || 'anonymous',
+    vendor_id: vendorId,
+    products: items,
+    contacted_at: new Date().toISOString()
+  });
+}</pre>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rendimiento -->
+    <div class="improvement-card">
+      <div class="card-content">
+        <div class="icon-placeholder">📈</div>
+        <div class="text-content">
+          <div class="card-title">
+            Lazy loading de imágenes
+            <span class="priority-badge priority-alta">Alta</span>
+          </div>
+          <p class="card-description">Cargar imágenes solo cuando sean visibles</p>
+          <details>
+            <summary>Ver código de ejemplo</summary>
+            <pre>// Ya tienes loading="lazy" en algunas imágenes, aplicarlo a TODAS
+
+// Además, agregar Intersection Observer para productos
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const img = entry.target;
+      img.src = img.dataset.src;
+      observer.unobserve(img);
+    }
+  });
+});
+
+document.querySelectorAll('.product-image[data-src]').forEach(img => {
+  observer.observe(img);
+});</pre>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <div class="improvement-card">
+      <div class="card-content">
+        <div class="icon-placeholder">📥</div>
+        <div class="text-content">
+          <div class="card-title">
+            Caché de productos
+            <span class="priority-badge priority-alta">Alta</span>
+          </div>
+          <p class="card-description">No recargar productos si ya están en memoria</p>
+          <details>
+            <summary>Ver código de ejemplo</summary>
+            <pre>// Ya tienes dataCache, pero no lo usas efectivamente
+async function loadProducts(containerId = 'productsGrid', filter = {}) {
+  const cacheKey = JSON.stringify(filter);
+  const cached = dataCache.products[cacheKey];
+  
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    console.log('📦 Usando productos en caché');
+    renderProducts(cached.data);
+    return;
+  }
+  
+  // Cargar de Supabase solo si no hay caché válido
+  const { data } = await supabase.from('products').select('*');
+  dataCache.products[cacheKey] = { data, timestamp: Date.now() };
+  renderProducts(data);
+}</pre>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <div class="improvement-card">
+      <div class="card-content">
+        <div class="icon-placeholder">🔍</div>
+        <div class="text-content">
+          <div class="card-title">
+            Paginación de productos
+            <span class="priority-badge priority-media">Media</span>
+          </div>
+          <p class="card-description">Cargar productos de 20 en 20 en lugar de todos</p>
+          <details>
+            <summary>Ver código de ejemplo</summary>
+            <pre>let currentPage = 1;
+const PRODUCTS_PER_PAGE = 20;
+
+async function loadProducts(page = 1) {
+  const from = (page - 1) * PRODUCTS_PER_PAGE;
+  const to = from + PRODUCTS_PER_PAGE - 1;
+  
+  const { data, count } = await supabase
+    .from('products')
+    .select('*', { count: 'exact' })
+    .range(from, to);
+  
+  renderProducts(data);
+  renderPagination(count);
+}
+
+// Botones de paginación
+function renderPagination(totalCount) {
+  const totalPages = Math.ceil(totalCount / PRODUCTS_PER_PAGE);
+  // Crear botones 1, 2, 3... Anterior, Siguiente
+}</pre>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <div class="improvement-card">
+      <div class="card-content">
+        <div class="icon-placeholder">📤</div>
+        <div class="text-content">
+          <div class="card-title">
+            Service Worker para modo offline
+            <span class="priority-badge priority-media">Media</span>
+          </div>
+          <p class="card-description">Funcionar sin internet (mostrar productos en caché)</p>
+          <details>
+            <summary>Ver código de ejemplo</summary>
+            <pre>// service-worker.js
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open('feria-v1').then(cache => {
+      return cache.addAll([
+        '/',
+        '/style.css',
+        '/script.js',
+        '/products.js',
+        '/cart.js',
+        '/catalog.js'
+      ]);
+    })
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then(response => {
+      return response || fetch(event.request);
+    })
+  );
+});
+
+// Registrar en index.html
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js');
+}</pre>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seguridad -->
+    <div class="improvement-card">
+      <div class="card-content">
+        <div class="icon-placeholder">⚠️</div>
+        <div class="text-content">
+          <div class="card-title">
+            Validación de inputs
+            <span class="priority-badge priority-critica">Crítica</span>
+          </div>
+          <p class="card-description">Sanitizar todos los datos del usuario</p>
+          <details>
+            <summary>Ver código de ejemplo</summary>
+            <pre>// Crear función de sanitización
+function sanitizeInput(input) {
+  const div = document.createElement('div');
+  div.textContent = input;
+  return div.innerHTML;
+}
+
+// Aplicar en todos los formularios
+const productName = sanitizeInput(document.getElementById('productName').value);
+
+// Validar precios
+function validatePrice(price) {
+  const num = parseFloat(price);
+  if (isNaN(num) || num < 0) {
+    throw new Error('Precio inválido');
+  }
+  return num;
+}</pre>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <div class="improvement-card">
+      <div class="card-content">
+        <div class="icon-placeholder">⚠️</div>
+        <div class="text-content">
+          <div class="card-title">
+            Rate limiting
+            <span class="priority-badge priority-alta">Alta</span>
+          </div>
+          <p class="card-description">Limitar peticiones a Supabase para evitar abusos</p>
+          <details>
+            <summary>Ver código de ejemplo</summary>
+            <pre>// Implementar throttle/debounce
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
+
+// Aplicar en búsqueda
+const debouncedSearch = debounce(filterProducts, 300);
+document.getElementById('productSearchInput').oninput = debouncedSearch;</pre>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <div class="improvement-card">
+      <div class="card-content">
+        <div class="icon-placeholder">⚠️</div>
+        <div class="text-content">
+          <div class="card-title">
+            Verificación de email
+            <span class="priority-badge priority-media">Media</span>
+          </div>
+          <p class="card-description">Confirmar email antes de permitir publicar</p>
+          <details>
+            <summary>Ver código de ejemplo</summary>
+            <pre>// Supabase ya tiene esto con confirmEmail: true
+// Mostrar mensaje si no está verificado
+if (!currentUser.email_verified) {
+  showToast('Por favor verifica tu email para publicar productos', 'warning');
+  // Bloquear botón de nuevo producto
+}</pre>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Wins -->
+    <div class="quick-wins">
+      <h2>✅ Quick Wins - Implementa Hoy</h2>
+      <ul>
+        <li>✅ Corregir encoding UTF-8 en todos los archivos (reemplaza "Ã" por caracteres correctos)</li>
+        <li>✅ Agregar loading="lazy" a TODAS las imágenes de productos</li>
+        <li>✅ Implementar debounce en el buscador para reducir queries</li>
+        <li>✅ Agregar meta tags Open Graph para compartir en redes sociales</li>
+        <li>✅ Crear página de "Cómo funciona" para nuevos usuarios</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

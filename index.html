@@ -7,7 +7,7 @@
     <!-- Estilos externos -->
     <link rel="stylesheet" href="style.css">
     <!-- Iconos de Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css  ">
 </head>
 <body>
     <header class="header">
@@ -32,12 +32,9 @@
                 <i class="fas fa-store"></i>
                 <span>Mi Puesto</span>
             </a>
-            <div id="authContainer">
-                <a href="#" class="nav-link" onclick="showLogin()">
-                    <i class="fas fa-sign-in-alt"></i>
-                    <span>Iniciar sesión</span>
-                </a>
-            </div>
+<div id="authContainer">
+    <!-- Se reemplaza dinámicamente por updateAuthUI() -->
+</div>
             <!-- === ÍCONO DEL CARRITO === -->
             <a href="#" class="cart-icon" id="cartIcon" onclick="event.preventDefault(); toggleCart();">
                 <i class="fas fa-shopping-cart"></i>
@@ -51,235 +48,269 @@
         <div id="navOverlay"></div>
     </header>
 
-    <main>
-        <!-- SECCIONES (sin cambios) -->
-        <section id="home" class="section active-section">
-            <div class="hero">
-                <h1>Conecta tu pequeño negocio con el mundo</h1>
-                <p>Una feria virtual donde los comerciantes pueden mostrar sus productos y los clientes pueden descubrir tesoros locales</p>
-                <div class="buttons">
-                    <button class="btn btn-primary" onclick="showSection('register')">
-                        <i class="fas fa-store"></i> Registrar mi puesto
-                    </button>
-                    <button class="btn btn-secondary" onclick="showSection('products')">
-                        <i class="fas fa-search"></i> Explorar productos
+<main>
+    <!-- SECCIONES -->
+    <section id="home" class="section active-section">
+        <div class="hero">
+            <h1>Conecta tu pequeño negocio con el mundo</h1>
+            <p>Una feria virtual donde los comerciantes pueden mostrar sus productos y los clientes pueden descubrir tesoros locales</p>
+            <div class="buttons">
+                <button class="btn btn-primary" onclick="showSection('register')">
+                    <i class="fas fa-store"></i> Registrar mi puesto
+                </button>
+                <button class="btn btn-secondary" onclick="showSection('products')">
+                    <i class="fas fa-search"></i> Explorar productos
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section id="products" class="section">
+        <div class="products-header">
+            <h2 class="section-title">Productos Destacados</h2>
+        </div>
+        
+        <!-- BARRA DE BÚSQUEDA Y FILTROS -->
+        <div class="search-filter-container">
+            <div class="filter-main-row">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input 
+                        type="text" 
+                        id="productSearchInput" 
+                        placeholder="Buscar productos..."
+                        onkeyup="filterProducts()"
+                    >
+                    <button class="clear-search-btn" id="clearSearchBtn" onclick="clearSearch()" style="display: none;">
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
+                
+                <div class="filter-buttons">
+                    <button class="filter-chip active" data-category="all" onclick="filterByCategory('all')">
+                        <i class="fas fa-th"></i> Todos
+                    </button>
+                    
+                    <div class="filter-dropdown" id="categoryDropdown">
+                        <button class="filter-chip dropdown-toggle" id="categoryDropdownBtn">
+                            <i class="fas fa-tag"></i> Categorías <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="dropdown-content" id="categoryDropdownContent">
+                            <button onclick="filterByCategory('artesanias')">
+                                <i class="fas fa-palette"></i> Artesanías
+                            </button>
+                            <button onclick="filterByCategory('juguetes')">
+                                <i class="fas fa-dice"></i> Juguetes
+                            </button>
+                            <button onclick="filterByCategory('hogar')">
+                                <i class="fas fa-home"></i> Hogar
+                            </button>
+                            <button onclick="filterByCategory('tecnologia')">
+                                <i class="fas fa-laptop"></i> Tecnología
+                            </button>
+                            <button onclick="filterByCategory('moda')">
+                                <i class="fas fa-tshirt"></i> Moda
+                            </button>
+                            <button onclick="filterByCategory('alimentos')">
+                                <i class="fas fa-utensils"></i> Alimentos
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-dropdown" id="priceDropdown">
+                        <button class="filter-chip dropdown-toggle" id="priceDropdownBtn">
+                            <i class="fas fa-dollar-sign"></i> Precio <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="dropdown-content" id="priceDropdownContent">
+                            <button onclick="sortByPrice('desc')">
+                                <i class="fas fa-sort-amount-down"></i> Mayor a menor
+                            </button>
+                            <button onclick="sortByPrice('asc')">
+                                <i class="fas fa-sort-amount-up"></i> Menor a mayor
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </section>
+            
+            <div class="search-results-info">
+                <span id="resultsCount">Mostrando todos los productos</span>
+            </div>
+        </div>    
 
-        <section id="products" class="section">
-            <div class="products-header">
-                <h2 class="section-title">Productos Destacados</h2>
-            </div>
-            <section id="vendor-page" class="section">
-    <div class="vendor-page-header">
-        <button class="btn btn-secondary" onclick="showSection('products')">
-            <i class="fas fa-arrow-left"></i> Volver a productos
-        </button>
-        <h2 class="section-title" id="vendorPageTitle">Tienda del Vendedor</h2>
-        <a href="#" id="vendorWhatsappBtn" class="btn btn-primary" target="_blank" style="display: none;">
+        <div class="products-grid" id="productsGrid"></div>
+        
+        <div class="no-results-message" id="noResultsMessage" style="display: none;">
+            <i class="fas fa-search"></i>
+            <h3>No se encontraron productos</h3>
+            <p>Intenta con otra búsqueda o categoría</p>
+        </div>
+    </section>
+
+<!-- === SECCIÓN DEL PUESTO DEL VENDEDOR (ACTUALIZADA) === -->
+<section id="vendor-page" class="section">
+    <div class="vendor-header">
+        <div class="vendor-logo-container">
+            <img id="vendorLogo" src="" alt="Logo del puesto" style="max-width: 150px; max-height: 150px; display: none; border-radius: var(--border-radius-xl);">
+            <i id="vendorLogoPlaceholder" class="fas fa-store" style="font-size: 4rem; color: var(--text-secondary);"></i>
+        </div>
+        <h2 class="vendor-title" id="vendorPageTitle">Tienda del Vendedor</h2>
+        <p class="vendor-description" id="vendorDescription">Descripción del puesto...</p>
+        <a href="#" id="vendorWhatsappBtn" class="btn btn-primary" target="_blank" style="display: none; margin-top: 1rem;">
             <i class="fab fa-whatsapp"></i> Contactar por WhatsApp
         </a>
     </div>
-    <div class="products-grid" id="vendorProductsGrid"></div>
+    <div class="products-grid" id="vendorProductsGrid">
+        <!-- Los productos del vendedor se cargarán aquí -->
+    </div>
 </section>
-            <!-- === BARRA DE BÚSQUEDA Y FILTROS === -->
-            <div class="search-filter-container">
-                <div class="filter-main-row">
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input 
-                            type="text" 
-                            id="productSearchInput" 
-                            placeholder="Buscar productos..."
-                            onkeyup="filterProducts()"
-                        >
-                        <button class="clear-search-btn" id="clearSearchBtn" onclick="clearSearch()" style="display: none;">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="filter-buttons">
-                        <button class="filter-chip active" data-category="all" onclick="filterByCategory('all')">
-                            <i class="fas fa-th"></i> Todos
-                        </button>
-                        
-                        <div class="filter-dropdown" id="categoryDropdown">
-                            <button class="filter-chip dropdown-toggle" id="categoryDropdownBtn">
-                                <i class="fas fa-tag"></i> Categorías <i class="fas fa-chevron-down"></i>
-                            </button>
-                            <div class="dropdown-content" id="categoryDropdownContent">
-                                <button onclick="filterByCategory('artesanias')">
-                                    <i class="fas fa-palette"></i> Artesanías
-                                </button>
-                                <button onclick="filterByCategory('juguetes')">
-                                    <i class="fas fa-dice"></i> Juguetes
-                                </button>
-                                <button onclick="filterByCategory('hogar')">
-                                    <i class="fas fa-home"></i> Hogar
-                                </button>
-                                <button onclick="filterByCategory('tecnologia')">
-                                    <i class="fas fa-laptop"></i> Tecnología
-                                </button>
-                                <button onclick="filterByCategory('moda')">
-                                    <i class="fas fa-tshirt"></i> Moda
-                                </button>
-                                <button onclick="filterByCategory('alimentos')">
-                                    <i class="fas fa-utensils"></i> Alimentos
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="filter-dropdown" id="priceDropdown">
-                            <button class="filter-chip dropdown-toggle" id="priceDropdownBtn">
-                                <i class="fas fa-dollar-sign"></i> Precio <i class="fas fa-chevron-down"></i>
-                            </button>
-                            <div class="dropdown-content" id="priceDropdownContent">
-                                <button onclick="sortByPrice('desc')">
-                                    <i class="fas fa-sort-amount-down"></i> Mayor a menor
-                                </button>
-                                <button onclick="sortByPrice('asc')">
-                                    <i class="fas fa-sort-amount-up"></i> Menor a mayor
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="search-results-info">
-                    <span id="resultsCount">Mostrando todos los productos</span>
-                </div>
-            </div>    
 
-            <div class="products-grid" id="productsGrid"></div>
-            
-            <div class="no-results-message" id="noResultsMessage" style="display: none;">
-                <i class="fas fa-search"></i>
-                <h3>No se encontraron productos</h3>
-                <p>Intenta con otra búsqueda o categoría</p>
-            </div>
-        </section>
-
-        <section id="profile" class="section">
-            <h2 class="section-title">Mi Perfil</h2>
-            <div class="profile-container">
-                <div class="profile-card" id="profileCard">
-                    <button id="editProfileBtn" class="edit-btn-container" onclick="toggleProfileEditMode(true)">
-                        <i class="fas fa-pencil-alt"></i>
-                    </button>
-                    <div class="profile-header">
-                        <div class="profile-pic" id="profilePicContainer" onclick="if(document.getElementById('profileCard').classList.contains('edit-mode')) showProfilePicModal();">
-                            <i class="fas fa-user"></i>
-                            <div class="profile-pic-edit-overlay">
-                                <i class="fas fa-camera"></i>
-                            </div>
-                        </div>
-                        <div class="profile-info">
-                            <h2 id="userName">Nombre del Comerciante</h2>
-                            <input type="text" id="userNameInput" class="form-control editable">
-                            <p id="userEmail">correo@ejemplo.com</p>
-                        </div>
-                    </div>
-                    <div class="profile-details">
-                        <div class="detail-item">
-                            <h3>Información de contacto</h3>
-                            <p><i class="fas fa-phone"></i> <span id="userPhone"></span></p>
-                            <input type="text" id="userPhoneInput" class="form-control editable" placeholder="Ej: 5491112345678">
-                        </div>
-                        <div class="detail-item">
-                            <h3>Mi negocio</h3>
-                            <p><i class="fas fa-store"></i> <span id="userBusiness"></span></p>
-                        </div>
-                        <div class="detail-item">
-                            <h3>Estadísticas</h3>
-                            <p><i class="fas fa-box"></i> <span id="userProducts">0</span> productos publicados</p>
-                        </div>
-                        <div class="detail-item">
-                            <h3>Miembro desde</h3>
-                            <p><i class="fas fa-calendar"></i> <span id="userSince"></span></p>
-                        </div>
-                    </div>
-                    <div id="profileFormFooter" class="form-footer" style="display: none;">
-                        <button class="btn btn-secondary" onclick="toggleProfileEditMode(false)">Cancelar</button>
-                        <button class="btn btn-primary" onclick="saveProfileInfo()">Guardar Cambios</button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="my-store" class="section">
-            <h2 class="section-title">Gestión de mi Puesto</h2>
-            <div class="form-container" id="storeFormContainer">
-                <button id="editStoreBtn" class="edit-btn-container" onclick="toggleStoreEditMode(true)">
+    <section id="profile" class="section">
+        <h2 class="section-title">Mi Perfil</h2>
+        <div class="profile-container">
+            <div class="profile-card" id="profileCard">
+                <button id="editProfileBtn" class="edit-btn-container" onclick="toggleProfileEditMode(true)">
                     <i class="fas fa-pencil-alt"></i>
                 </button>
-                <h3 class="form-title">Información del Puesto</h3>
-                <div class="form-group">
-                    <label for="storeName">Nombre del puesto</label>
-                    <input type="text" id="storeName" class="form-control" readonly>
+                <div class="profile-header">
+                    <div class="profile-pic" id="profilePicContainer" onclick="if(document.getElementById('profileCard').classList.contains('edit-mode')) showProfilePicModal();">
+                        <i class="fas fa-user"></i>
+                        <div class="profile-pic-edit-overlay">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                    </div>
+                    <div class="profile-info">
+                        <h2 id="userName">Nombre del Comerciante</h2>
+                        <input type="text" id="userNameInput" class="form-control editable">
+                        <p id="userEmail">correo@ejemplo.com</p>
+                    </div>
+<div class="detail-item">
+    <button class="btn btn-secondary" onclick="logout()" style="width: 100%; margin-top: 0.5rem;">
+        <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+    </button>
+</div>
                 </div>
-                <div class="form-group">
-                    <label for="storeDescription">Descripción</label>
-                    <textarea id="storeDescription" class="form-control" rows="3" readonly></textarea>
+                <div class="profile-details">
+                    <div class="detail-item">
+                        <h3>Información de contacto</h3>
+                        <p><i class="fas fa-phone"></i> <span id="userPhone"></span></p>
+                        <input type="text" id="userPhoneInput" class="form-control editable" placeholder="Ej: 5491112345678">
+                    </div>
+                    <div class="detail-item">
+                        <h3>Mi negocio</h3>
+                        <p><i class="fas fa-store"></i> <span id="userBusiness"></span></p>
+                    </div>
+                    <div class="detail-item">
+                        <h3>Estadísticas</h3>
+                        <p><i class="fas fa-box"></i> <span id="userProducts">0</span> productos publicados</p>
+                    </div>
+                    <div class="detail-item">
+                        <h3>Miembro desde</h3>
+                        <p><i class="fas fa-calendar"></i> <span id="userSince"></span></p>
+                    </div>
                 </div>
-                <div id="storeFormFooter" class="form-footer" style="display: none;">
-                    <button class="btn btn-secondary" onclick="toggleStoreEditMode(false)">Cancelar</button>
-                    <button class="btn btn-primary" onclick="saveStoreInfo()">Guardar Cambios</button>
+                <div id="profileFormFooter" class="form-footer" style="display: none;">
+                    <button class="btn btn-secondary" onclick="toggleProfileEditMode(false)">Cancelar</button>
+                    <button class="btn btn-primary" onclick="saveProfileInfo()">Guardar Cambios</button>
                 </div>
             </div>
-            <div class="products-header" style="margin-top: 3rem;">
-                <h2 class="section-title">Mis Productos</h2>
-                <div class="header-actions">
-                    <button id="create-catalog-btn" class="btn btn-secondary">
-                        <i class="fas fa-file-alt"></i> Crear Catálogo
-                    </button>
-                    <button id="backup-btn" class="btn btn-secondary">
-                        <i class="fas fa-save"></i> Copia de Seguridad
-                    </button>
-                    <input type="file" id="json-import-input" accept=".json" style="display: none;">
-                    <button class="btn btn-primary" onclick="showProductModal()"><i class="fas fa-plus"></i> Nuevo Producto</button>
-                </div>
-            </div>
-            <div class="products-grid" id="myProductsGrid"></div>
-        </section>
+        </div>
+    </section>
 
-        <section id="register" class="section">
-            <h2 class="section-title">Registro de Comerciante</h2>
-            <div class="form-container">
-                <h3 class="form-title">Crea tu cuenta de comerciante</h3>
-                <div id="registerMessage" class="login-message"></div>
-                <div class="form-group">
-                    <label for="regName">Nombre completo</label>
-                    <input type="text" id="regName" class="form-control" placeholder="Tu nombre">
-                </div>
-                <div class="form-group">
-                    <label for="regEmail">Correo electrónico</label>
-                    <input type="email" id="regEmail" class="form-control" placeholder="tu@email.com">
-                </div>
-                <div class="form-group">
-                    <label for="regPassword">Contraseña</label>
-                    <input type="password" id="regPassword" class="form-control" placeholder="Mínimo 6 caracteres">
-                </div>
-                <div class="form-group">
-                    <label for="regBusiness">Nombre del negocio</label>
-                    <input type="text" id="regBusiness" class="form-control" placeholder="Ej: Artesanías El Sol">
-                </div>
-                <div class="form-group">
-                    <label for="regPhone">Teléfono de contacto (con cód. de país)</label>
-                    <input type="text" id="regPhone" class="form-control" placeholder="Ej: 5491112345678">
-                </div>
-                <div class="form-group">
-                    <label for="regDescription">Descripción del negocio</label>
-                    <textarea id="regDescription" class="form-control" rows="3" placeholder="Qué vendes, tu historia, etc."></textarea>
-                </div>
-                <div class="form-footer">
-                    <button class="btn btn-secondary" onclick="showSection('home')">Cancelar</button>
-                    <button class="btn btn-primary" onclick="registerMerchant()">Registrarme</button>
-                </div>
+    <section id="my-store" class="section">
+        <h2 class="section-title">Gestión de mi Puesto</h2>
+<!-- Dentro de la sección #my-store, reemplaza el div.form-container con esto: -->
+<div class="form-container" id="storeFormContainer">
+    <button id="editStoreBtn" class="edit-btn-container" onclick="toggleStoreEditMode(true)">
+        <i class="fas fa-pencil-alt"></i>
+    </button>
+    <h3 class="form-title">Información del Puesto</h3>
+
+    <!-- Contenedor flexible: logo a la izquierda, info a la derecha -->
+    <div class="store-info-layout">
+        <!-- Logo a la izquierda -->
+        <div class="store-logo-section">
+            <label>Logo del Puesto</label>
+            <div class="product-image-upload" id="storeLogoUploadArea">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Haz clic o arrastra el logo aquí</p>
             </div>
-        </section>
-<!-- DESPUÉS DE </section> DE REGISTER, ANTES DE </main> -->
+            <input type="file" id="storeLogoInput" accept="image/*" style="display: none;">
+            <div id="storeLogoPreview" style="margin-top: 1rem; text-align: center; display: none;">
+                <img id="storeLogoPreviewImg" src="" alt="Vista previa del logo" style="max-width: 120px; max-height: 120px; border-radius: var(--border-radius-xl);">
+            </div>
+        </div>
+
+        <!-- Información a la derecha -->
+        <div class="store-details-section">
+            <div class="form-group">
+                <label for="storeName">Nombre del puesto</label>
+                <input type="text" id="storeName" class="form-control" readonly>
+            </div>
+            <div class="form-group">
+                <label for="storeDescription">Descripción</label>
+                <textarea id="storeDescription" class="form-control" rows="3" readonly></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div id="storeFormFooter" class="form-footer" style="display: none;">
+        <button class="btn btn-secondary" onclick="toggleStoreEditMode(false)">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveStoreInfo()">Guardar Cambios</button>
+    </div>
+</div>
+
+        <div class="products-header" style="margin-top: 3rem;">
+            <h2 class="section-title">Mis Productos</h2>
+            <div class="header-actions">
+                <button id="create-catalog-btn" class="btn btn-secondary">
+                    <i class="fas fa-file-alt"></i> Crear Catálogo
+                </button>
+                <button id="backup-btn" class="btn btn-secondary">
+                    <i class="fas fa-save"></i> Copia de Seguridad
+                </button>
+                <input type="file" id="json-import-input" accept=".json" style="display: none;">
+                <button class="btn btn-primary" onclick="showProductModal()"><i class="fas fa-plus"></i> Nuevo Producto</button>
+            </div>
+        </div>
+        <div class="products-grid" id="myProductsGrid"></div>
+    </section>
+
+    <section id="register" class="section">
+        <h2 class="section-title">Registro de Comerciante</h2>
+        <div class="form-container">
+            <h3 class="form-title">Crea tu cuenta de comerciante</h3>
+            <div id="registerMessage" class="login-message"></div>
+            <div class="form-group">
+                <label for="regName">Nombre completo</label>
+                <input type="text" id="regName" class="form-control" placeholder="Tu nombre">
+            </div>
+            <div class="form-group">
+                <label for="regEmail">Correo electrónico</label>
+                <input type="email" id="regEmail" class="form-control" placeholder="tu@email.com">
+            </div>
+            <div class="form-group">
+                <label for="regPassword">Contraseña</label>
+                <input type="password" id="regPassword" class="form-control" placeholder="Mínimo 6 caracteres">
+            </div>
+            <div class="form-group">
+                <label for="regBusiness">Nombre del negocio</label>
+                <input type="text" id="regBusiness" class="form-control" placeholder="Ej: Artesanías El Sol">
+            </div>
+            <div class="form-group">
+                <label for="regPhone">Teléfono de contacto (con cód. de país)</label>
+                <input type="text" id="regPhone" class="form-control" placeholder="Ej: 5491112345678">
+            </div>
+            <div class="form-group">
+                <label for="regDescription">Descripción del negocio</label>
+                <textarea id="regDescription" class="form-control" rows="3" placeholder="Qué vendes, tu historia, etc."></textarea>
+            </div>
+            <div class="form-footer">
+                <button class="btn btn-secondary" onclick="showSection('home')">Cancelar</button>
+                <button class="btn btn-primary" onclick="registerMerchant()">Registrarme</button>
+            </div>
+        </div>
+    </section>
 
     <!-- === MODAL DE LOGIN === -->
     <div class="login-modal" id="loginModal">
@@ -421,6 +452,7 @@
                 <label for="json-import-input" class="btn btn-secondary" style="width: 100%; text-align: center; box-sizing: border-box;">
                     <i class="fas fa-upload"></i> Importar desde JSON
                 </label>
+                <input type="file" id="json-import-input" accept=".json" style="display: none;">
             </div>
         </div>
     </div>
@@ -438,17 +470,15 @@
             </div>
         </div>
     </div>
-    </main>
-    
-    <!-- Modals and other fixed elements (sin cambios) -->
-    <!-- ... (todos los modales: login, profilePic, product, exportTheme, catalog-options, backup-options, select-product, footer, etc.) ... -->
-    <!-- (Mantén exactamente como en tu HTML original, ya que no se modifican) -->
+</main>
 
+    <!-- FOOTER -->
     <footer class="footer">
         <p>Únete a la comunidad de pequeños comerciantes que ya están creciendo con Feria Virtual</p>
         <p class="copyright">&copy; 2025 Feria Virtual. Todos los derechos reservados.</p>
     </footer>
 
+    <!-- BOTONES FIJOS -->
     <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema">
         <i class="fas fa-moon"></i>
         <i class="fas fa-sun"></i>
@@ -469,28 +499,39 @@
         </button>
     </div>
 
-    <div id="imageLightbox" class="image-lightbox">
-        <span class="lightbox-close" onclick="hideImageLightbox()">&times;</span>
-        <img class="lightbox-content" id="lightboxImg">
-        
-        <div class="lightbox-loading" id="lightboxLoadingSpinner">
-            <i class="fas fa-spinner fa-spin"></i>
-            <p>Cargando imagen...</p>
-        </div>
-        
-        <div class="lightbox-button-container" id="lightboxButtonContainer">
-            <a id="lightboxWhatsappBtn" class="lightbox-whatsapp-circle-btn" href="#" target="_blank" rel="noopener noreferrer">
-                <i class="fab fa-whatsapp"></i>
-                <span class="whatsapp-btn-text">Chatear por WhatsApp</span>
-            </a>
-            <a id="lightboxStoreBtn" class="lightbox-action-btn store-btn" href="#">
-                <i class="fas fa-store"></i>
-                <span>Ir al Puesto</span>
-            </a>
-        </div>
+<!-- ✅ LIGHTBOX CORREGIDO (SOLO UNA VEZ) -->
+<div id="imageLightbox" class="image-lightbox">
+    <span class="lightbox-close" onclick="hideImageLightbox()">&times;</span>
+    
+    <!-- Imagen principal -->
+    <img class="lightbox-content" id="lightboxImg" alt="Producto">
+    
+    <!-- Loading spinner -->
+    <div class="lightbox-loading" id="lightboxLoadingSpinner">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Cargando imagen...</p>
     </div>
 
-    <!-- === PANEL DEL CARRITO DE COMPRAS === -->
+    <!-- ✅ PANEL SUPERPUESTO EN LA PARTE INFERIOR DERECHA -->
+    <div class="lightbox-overlay-info" id="lightboxOverlayInfo" style="display: none;">
+        <h2 id="lightboxProductName" class="lightbox-product-name">Nombre del producto</h2>
+        <div class="lightbox-product-price" id="lightboxProductPrice">$0.00</div>
+        <p id="lightboxProductDescription" class="lightbox-product-description">Descripción del producto.</p>
+    </div>
+
+<!-- Botón de WhatsApp - Posición inferior izquierda -->
+    <a href="#" id="lightboxWhatsappBtn" class="lightbox-whatsapp-modern-btn" target="_blank" style="display: none;">
+        <i class="fab fa-whatsapp"></i>
+        <span class="whatsapp-btn-text">Contactar vendedor</span>
+    </a>
+
+    <!-- Botón "Ir al Puesto" -->
+    <button id="lightboxStoreBtn" class="lightbox-action-btn store-btn" style="display: none; position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);">
+        <i class="fas fa-store"></i> Ver todos los productos
+    </button>
+</div>
+
+    <!-- PANEL DEL CARRITO -->
     <div class="cart-panel" id="cartPanel">
         <div class="cart-header">
             <h3><i class="fas fa-shopping-cart"></i> Mis Pedidos por Vendedor</h3>
@@ -509,23 +550,18 @@
         </div>
     </div>
 
-    <!-- === OVERLAY OSCURO PARA EL CARRITO === -->
+    <!-- OVERLAYS -->
     <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
-
-    <!-- === BADGE FLOTANTE DEL CARRITO PARA MÓVILES === -->
     <div class="mobile-cart-badge" id="mobileCartBadge" onclick="toggleCart()" style="display: none;">
         <i class="fas fa-shopping-cart"></i>
         <span class="mobile-cart-count" id="mobileCartCount">0</span>
     </div>
-
-    <!-- === CONTENEDOR PARA EL CORREDOR ANIMADO === -->
     <div id="runnerOverlay" class="runner-overlay">
         <div class="runner-character">
             <i class="fas fa-running"></i>
         </div>
         <p class="runner-message">¡Estoy trayendo tus productos!</p>
     </div>
-
     <div id="globalLoadingOverlay" class="global-loading">
         <div class="loading-box">
             <i class="fas fa-spinner fa-spin"></i>
@@ -533,19 +569,20 @@
         </div>
     </div>
 
-    <!-- Librerías Externas -->
+    <!-- LIBRERÍAS EXTERNAS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.1/dist/browser-image-compression.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- Supabase client (UMD) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js "></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
 
-    <!-- ✅ SCRIPTS DIVIDIDOS EN 4 PARTES (EN ORDEN) -->
+    <!-- SCRIPTS -->
     <script src="script.js" defer></script>
     <script src="products.js" defer></script>
     <script src="cart.js" defer></script>
     <script src="catalog.js" defer></script>
+<!-- Partículas de fuego en el fondo -->
+<div id="fire-particles"></div>
 </body>
 </html>

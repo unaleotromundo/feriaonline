@@ -10,41 +10,61 @@ const PDF_THEMES = {
     elegante: { name: 'Elegante', icon: 'fa-gem', headerColor: '#d97706', accentColor: '#b45309' }
 };
 
-// === EXPORTACIÓN A JSON ===
+// === EXPORTACIÓN A JSON (SOLO PRODUCTOS) ===
 window.exportCatalogToJSON = async function() {
-    if (!currentUser) return showToast('Debes iniciar sesión para exportar tu catálogo.', 'error');
-    hideModal('backup-options-modal');
-    showToast('Preparando la exportación...', 'success');
+    if (!currentUser) return showToast('Debes iniciar sesión para exportar tus productos.', 'error');
+    
+    showGlobalLoadingOverlay('Preparando exportación...');
     try {
-        if (!(await ensureSupabaseAvailable())) return showToast('No se puede conectar a Supabase para exportar.', 'error');
+        if (!(await ensureSupabaseAvailable())) {
+            hideGlobalLoadingOverlay();
+            return showToast('No se puede conectar a Supabase.', 'error');
+        }
+
         const supabaseClient = getSupabase();
-        let productsQuery = supabaseClient.from('products').select('*');
-        if (isValidId(currentUser.id)) productsQuery = productsQuery.eq('vendor_id', currentUser.id);
-        const { data: productsData, error } = await productsQuery;
+        const { data: products, error } = await supabaseClient
+            .from('products')
+            .select('*')
+            .eq('vendor_id', currentUser.id);
+
         if (error) throw error;
-        if (!productsData || productsData.length === 0) return showToast('No tienes productos para exportar.', 'error');
-        const productsToExport = productsData.map(d => ({
-            name: d.name,
-            price: d.price,
-            description: d.description,
-            category: d.category || 'otros',
-            imageBase64: d.image_base64 || null,
-            published: typeof d.published === 'boolean' ? d.published : true
+        if (!products || products.length === 0) {
+            hideGlobalLoadingOverlay();
+            return showToast('No tienes productos para exportar.', 'error');
+        }
+
+        // ✅ Formato limpio: solo datos del producto
+        const exportData = products.map(p => ({
+            name: p.name,
+            price: p.price,
+            description: p.description,
+            category: p.category || 'otros',
+            published: p.published !== false, // por defecto true
+            // Incluir ambas formas de imagen (prioridad: URL pública)
+            image_url: p.image_url || null,
+            image_base64: p.image_base64 || null,
+            image_storage_path: p.image_storage_path || null
         }));
-        const jsonString = JSON.stringify(productsToExport, null, 2);
+
+        // ✅ Generar archivo
+        const jsonString = JSON.stringify(exportData, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `catalogo-feria-virtual-${new Date().toISOString().slice(0, 10)}.json`;
+        a.download = `productos-${new Date().toISOString().slice(0, 10)}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        showToast('Catálogo exportado correctamente.', 'success');
+
+        showToast('Productos exportados correctamente.', 'success');
+
     } catch (error) {
-        console.error("Error exportando a JSON:", error);
-        showToast('Hubo un error al exportar el catálogo.', 'error');
+        console.error("Error exportando productos:", error);
+        showToast('Error al exportar los productos.', 'error');
+    } finally {
+        hideGlobalLoadingOverlay();
     }
 };
 
@@ -76,23 +96,36 @@ window.handleJsonImport = function(event) {
 
 async function importCatalogFromJSON(products) {
     if (!Array.isArray(products) || products.length === 0) return showToast('El archivo no contiene productos para importar.', 'error');
+    
     showToast(`Importando ${products.length} productos...`, 'success');
     try {
         if (!(await ensureSupabaseAvailable())) return showToast('No se puede conectar a Supabase para importar.', 'error');
-        const rows = products.map(p => ({
-            name: p.name,
-            price: p.price || 0,
-            description: p.description || '',
-            category: p.category || 'otros',
-            image_base64: p.imageBase64 || null,
-            published: typeof p.published === 'boolean' ? p.published : true,
-            vendor_id: currentUser.id,
-            vendor_name: currentMerchantData.business,
-            created_at: new Date().toISOString()
-        }));
+        
+        const rows = products.map(p => {
+            // ✅ Solo incluir columnas que existen en la tabla 'products'
+            const row = {
+                name: p.name || 'Producto sin nombre',
+                price: p.price || 0,
+                description: p.description || '',
+                category: p.category || 'otros',
+                published: typeof p.published === 'boolean' ? p.published : true,
+                vendor_id: currentUser.id,
+                vendor_name: currentMerchantData?.business || 'Mi Negocio',
+                created_at: new Date().toISOString()
+            };
+
+            // ✅ Solo agregar campos de imagen si existen y son válidos
+            if (p.image_url) row.image_url = p.image_url;
+            if (p.image_storage_path) row.image_storage_path = p.image_storage_path;
+            // ❌ NO incluir 'image_base64' a menos que la tabla lo tenga
+
+            return row;
+        });
+
         const supabaseClient = getSupabase();
         const { error } = await supabaseClient.from('products').insert(rows);
         if (error) throw error;
+
         showToast(`${products.length} productos importados correctamente.`, 'success');
         loadMyProducts();
         updateUserProfile(currentUser.id);
@@ -147,20 +180,64 @@ async function generatePdfWithJsPDF(themeKey) {
         let currentY = margin;
         let columnIndex = 0;
 
-        const addHeader = () => {
-            currentY = margin;
-            doc.setFontSize(28); doc.setTextColor(theme.headerColor);
-            doc.text(String(currentMerchantData.business || ''), pageWidth / 2, currentY, { align: 'center' });
-            currentY += 10;
-            doc.setFontSize(11); doc.setTextColor('#666');
-            const descLines = doc.splitTextToSize(String(currentMerchantData.description || ''), contentWidth - 40);
-            doc.text(descLines, pageWidth / 2, currentY, { align: 'center' });
-            currentY += (descLines.length * 5) + 8;
-            doc.setDrawColor(theme.headerColor); doc.setLineWidth(0.5);
-            doc.line(margin, currentY, pageWidth - margin, currentY);
-            currentY += 10;
-        };
+        // ✅ Precargar logo del puesto si existe
+        let logoDataUrl = null;
+        if (currentMerchantData?.store_logo) {
+            try {
+                const logoImg = new Image();
+                logoImg.crossOrigin = "anonymous";
+                logoImg.src = currentMerchantData.store_logo;
+                await new Promise((resolve, reject) => {
+                    logoImg.onload = resolve;
+                    logoImg.onerror = reject;
+                });
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.min(logoImg.width, 100);
+                canvas.height = Math.min(logoImg.height, 100);
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(logoImg, 0, 0, canvas.width, canvas.height);
+                logoDataUrl = canvas.toDataURL('image/png');
+            } catch (e) {
+                console.warn('No se pudo cargar el logo para el PDF:', e);
+            }
+        }
 
+const addHeader = () => {
+    currentY = margin;
+
+    // ✅ Logo pequeño a la izquierda (solo si existe)
+    let logoWidth = 0;
+    let logoHeight = 0;
+    if (logoDataUrl) {
+        logoWidth = 24;   // Pequeño: 24mm ≈ 90px
+        logoHeight = 24;
+        const logoX = margin;
+        const logoY = currentY;
+        doc.addImage(logoDataUrl, 'PNG', logoX, logoY, logoWidth, logoHeight);
+    }
+
+    // ✅ Nombre del negocio al lado del logo (o centrado si no hay logo)
+    const textX = logoDataUrl ? (margin + logoWidth + 6) : (pageWidth / 2);
+    const textAlign = logoDataUrl ? 'left' : 'center';
+    
+    doc.setFontSize(28);
+    doc.setTextColor(theme.headerColor);
+    doc.text(String(currentMerchantData.business || ''), textX, currentY + 16, { align: textAlign });
+    
+    // ✅ Descripción debajo del nombre
+    currentY += 28; // Altura del nombre + margen
+    doc.setFontSize(11);
+    doc.setTextColor('#666');
+    const descLines = doc.splitTextToSize(String(currentMerchantData.description || ''), contentWidth - (logoDataUrl ? logoWidth + 12 : 0));
+    doc.text(descLines, textX, currentY, { align: textAlign });
+    currentY += (descLines.length * 5) + 10;
+
+    // ✅ Línea divisoria
+    doc.setDrawColor(theme.headerColor);
+    doc.setLineWidth(0.5);
+    doc.line(margin, currentY, pageWidth - margin, currentY);
+    currentY += 12;
+};
         const addFooter = (pageNumber) => {
             const footerY = pageHeight - 10;
             doc.setFontSize(9); doc.setTextColor('#999');
@@ -171,7 +248,7 @@ async function generatePdfWithJsPDF(themeKey) {
         let pageCount = 1;
         addFooter(pageCount);
 
-        // ✅ PRE-CARGAR TODAS LAS IMÁGENES ANTES DE GENERAR EL PDF
+        // ✅ PRE-CARGAR TODAS LAS IMÁGENES DE PRODUCTOS
         const imagePromises = products.map(product => {
             return new Promise((resolve) => {
                 const imgSrc = product.imageUrl || product.imageBase64;
@@ -179,14 +256,10 @@ async function generatePdfWithJsPDF(themeKey) {
                     resolve({ product, img: null });
                     return;
                 }
-                
                 const img = new Image();
                 img.crossOrigin = "anonymous";
                 img.onload = () => resolve({ product, img });
-                img.onerror = () => {
-                    console.warn('Error cargando imagen:', imgSrc);
-                    resolve({ product, img: null });
-                };
+                img.onerror = () => resolve({ product, img: null });
                 img.src = imgSrc;
             });
         });
@@ -198,12 +271,11 @@ async function generatePdfWithJsPDF(themeKey) {
             if (columnIndex > 2) { columnIndex = 0; currentY += productBlockHeight; }
             if (currentY + productBlockHeight > pageHeight - margin) {
                 doc.addPage(); pageCount++; addHeader(); addFooter(pageCount);
-                currentY = doc.internal.pageSize.getHeight() - pageHeight + 48;
+               currentY = margin + (logoDataUrl ? 50 : 38); // Ajuste fino según el nuevo header
                 columnIndex = 0;
             }
             const columnX = margin + (columnIndex * (columnWidth + gutter));
             
-            // ✅ AGREGAR IMAGEN SI EXISTE
             if (img) {
                 try {
                     const boxW = columnWidth, boxH = 80;
@@ -212,15 +284,12 @@ async function generatePdfWithJsPDF(themeKey) {
                     if (h > boxH) { w = (boxH / h) * w; h = boxH; }
                     const x = columnX + (boxW - w) / 2;
                     const y = currentY + (boxH - h) / 2;
-                    
-                    // Convertir a base64 si es necesario
                     const canvas = document.createElement('canvas');
                     canvas.width = img.width;
                     canvas.height = img.height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0);
                     const imgData = canvas.toDataURL('image/jpeg', 0.8);
-                    
                     doc.addImage(imgData, 'JPEG', x, y, w, h);
                 } catch (e) { 
                     console.error("Error al añadir imagen:", e); 
@@ -245,8 +314,7 @@ async function generatePdfWithJsPDF(themeKey) {
         }
         
         doc.save(`catalogo-${currentMerchantData.business.replace(/\s+/g, '-')}.pdf`);
-        showToast('Catálogo PDF generado correctamente.', 'success');
-    } catch (error) {
+        showToast('Catálogo PDF generado correctamente.', 'success');    } catch (error) {
         console.error("Error generando PDF:", error);
         showToast("Hubo un error al generar el catálogo.", "error");
     } finally {
@@ -443,135 +511,6 @@ window.loadUserProductsForSelection = async function() {
     }
 };
 
-async function generateProductJPG(product) {
-    console.log('🎨 Generando JPG para:', product.name);
-    console.log('🖼️ Datos de imagen:', { 
-        imageUrl: product.imageUrl, 
-        imageBase64: product.imageBase64 ? 'Presente' : 'Ausente' 
-    });
-    
-    showToast('Generando ficha de producto...', 'success');
-    
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const canvasWidth = 800, canvasHeight = 800;
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-
-    // Fondo blanco
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-    
-    // Header con color del tema
-    const themeCyan = getComputedStyle(document.documentElement).getPropertyValue('--cyan').trim();
-    ctx.fillStyle = themeCyan || '#06b6d4';
-    ctx.fillRect(0, 0, canvasWidth, 100);
-    
-    // Título del negocio
-    ctx.font = 'bold 36px "Segoe UI", sans-serif';
-    ctx.fillStyle = 'white';
-    ctx.textAlign = 'center';
-    ctx.fillText(currentMerchantData.business || "Mi Tienda", canvasWidth / 2, 65);
-
-    // ✅ DETERMINAR FUENTE DE IMAGEN
-    let imgSrc = 'https://placehold.co/700x400/e2e8f0/a0aec0?text=Producto+sin+imagen';
-    
-    if (product.imageUrl) {
-        imgSrc = product.imageUrl;
-        console.log('✅ Cargando desde imageUrl:', imgSrc);
-    } else if (product.imageBase64) {
-        imgSrc = product.imageBase64;
-        console.log('✅ Cargando desde imageBase64');
-    } else {
-        console.warn('⚠️ Usando placeholder');
-    }
-
-    // ✅ CARGAR Y RENDERIZAR IMAGEN
-    const productImage = new Image();
-    productImage.crossOrigin = "anonymous";
-    
-    productImage.onload = () => {
-        console.log('✅ Imagen cargada exitosamente');
-        
-        // Dibujar imagen en el canvas
-        const boxX = 50, boxY = 120, boxWidth = 700, boxHeight = 400;
-        const imgRatio = productImage.width / productImage.height;
-        const boxRatio = boxWidth / boxHeight;
-        
-        let finalWidth, finalHeight;
-        if (imgRatio > boxRatio) {
-            finalWidth = boxWidth;
-            finalHeight = finalWidth / imgRatio;
-        } else {
-            finalHeight = boxHeight;
-            finalWidth = finalHeight * imgRatio;
-        }
-        
-        const finalX = boxX + (boxWidth - finalWidth) / 2;
-        const finalY = boxY + (boxHeight - finalHeight) / 2;
-        
-        try {
-            ctx.drawImage(productImage, finalX, finalY, finalWidth, finalHeight);
-        } catch (e) {
-            console.error('❌ Error al dibujar imagen:', e);
-        }
-
-        // Nombre del producto
-        ctx.fillStyle = '#333333';
-        ctx.textAlign = 'left';
-        ctx.font = 'bold 32px "Segoe UI", sans-serif';
-        ctx.fillText(product.name, 50, 580);
-
-        // Precio
-        const themeSuccess = getComputedStyle(document.documentElement).getPropertyValue('--success').trim();
-        ctx.font = 'bold 48px "Segoe UI", sans-serif';
-        ctx.fillStyle = themeSuccess || '#10b981';
-        ctx.textAlign = 'right';
-        ctx.fillText(`$${(product.price || 0).toFixed(2)}`, 750, 580);
-
-        // Categoría y descripción
-        ctx.textAlign = 'left';
-        let textY = 620;
-        
-        if (product.category && product.category !== 'otros') {
-            ctx.font = '20px "Segoe UI", sans-serif';
-            ctx.fillStyle = '#555555';
-            ctx.fillText(`Categoría: ${product.category}`, 50, textY);
-            textY += 40;
-        } else {
-            textY = 630;
-        }
-        
-        ctx.font = '20px "Segoe UI", sans-serif';
-        ctx.fillStyle = '#555555';
-        wrapText(ctx, product.description || 'Sin descripción.', 50, textY, 700, 24);
-
-        // ✅ DESCARGAR IMAGEN
-        try {
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-            const link = document.createElement('a');
-            link.href = dataUrl;
-            link.download = `ficha-${product.name.replace(/\s+/g, '-')}.jpg`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            console.log('✅ JPG descargado exitosamente');
-            showToast('Ficha generada correctamente.', 'success');
-        } catch (e) {
-            console.error('❌ Error al descargar:', e);
-            showToast('Error al descargar la ficha.', 'error');
-        }
-    };
-    
-    productImage.onerror = (e) => {
-        console.error('❌ Error cargando imagen:', imgSrc, e);
-        showToast("Error al cargar la imagen del producto.", "error");
-    };
-    
-    // Iniciar carga
-    productImage.src = imgSrc;
-}
 
 function wrapText(context, text, x, y, maxWidth, lineHeight) {
     const words = text.split(' ');
