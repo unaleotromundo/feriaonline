@@ -7,14 +7,66 @@
     <!-- Estilos externos -->
     <link rel="stylesheet" href="style.css">
     <!-- Iconos de Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css  ">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- === ESTILOS DEL MODAL DE BIENVENIDA (AGREGADO) === -->
+    <style>
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(3px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 420px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+        .modal-content h2 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .modal-content p {
+            margin: 12px 0;
+            color: #34495e;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        #closeModalBtn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        #closeModalBtn:hover {
+            background-color: #2980b9;
+        }
+    </style>
 </head>
 <body>
+<!-- Partículas de fuego en el fondo -->
+<div id="fire-particles"></div>
     <header class="header">
-        <a href="#" class="logo" onclick="showSection('home')">
-            <i class="fas fa-store"></i>
-            <span>Feria Virtual</span>
-        </a>
+<a href="#" class="logo" onclick="showSection('home')">
+    <i class="fas fa-store"></i>
+    <span>Feria Virtual</span>
+</a>
         <nav class="nav-container" id="navContainer">
             <a href="#" class="nav-link" onclick="showSection('home')">
                 <i class="fas fa-home"></i>
@@ -32,15 +84,20 @@
                 <i class="fas fa-store"></i>
                 <span>Mi Puesto</span>
             </a>
-<div id="authContainer">
-    <!-- Se reemplaza dinámicamente por updateAuthUI() -->
-</div>
-            <!-- === ÍCONO DEL CARRITO === -->
-            <a href="#" class="cart-icon" id="cartIcon" onclick="event.preventDefault(); toggleCart();">
-                <i class="fas fa-shopping-cart"></i>
-                <span class="cart-badge" id="cartItemCount">0</span>
-            </a>
-        </nav>
+    <div id="authContainer"></div>
+
+    <!-- === NUEVO: ÍCONO DE FAVORITOS === -->
+    <a href="#" class="favorites-icon" id="favoritesIcon" onclick="event.preventDefault(); showSection('favorites');">
+        <i class="far fa-heart"></i>
+        <span class="favorites-badge" id="favoritesCount">0</span>
+    </a>
+
+    <!-- === ÍCONO DEL CARRITO === -->
+    <a href="#" class="cart-icon" id="cartIcon" onclick="event.preventDefault(); toggleCart();">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="cart-badge" id="cartItemCount">0</span>
+    </a>
+</nav>
         <button class="hamburger-menu" id="hamburgerMenu">
             <i class="fas fa-bars"></i>
         </button>
@@ -150,19 +207,19 @@
 <!-- === SECCIÓN DEL PUESTO DEL VENDEDOR (ACTUALIZADA) === -->
 <section id="vendor-page" class="section">
     <div class="vendor-header">
-        <div class="vendor-logo-container">
-            <img id="vendorLogo" src="" alt="Logo del puesto" style="max-width: 150px; max-height: 150px; display: none; border-radius: var(--border-radius-xl);">
-            <i id="vendorLogoPlaceholder" class="fas fa-store" style="font-size: 4rem; color: var(--text-secondary);"></i>
+        <div class="vendor-content">
+            <h2 class="vendor-title" id="vendorPageTitle">Tienda del Vendedor</h2>
+            <p class="vendor-description" id="vendorDescription">Descripción del puesto...</p>
+            <a href="#" id="vendorWhatsappBtn" class="btn btn-primary" target="_blank" style="display: none; margin-top: 1.5rem;">
+                <i class="fab fa-whatsapp"></i> Contactar por WhatsApp
+            </a>
         </div>
-        <h2 class="vendor-title" id="vendorPageTitle">Tienda del Vendedor</h2>
-        <p class="vendor-description" id="vendorDescription">Descripción del puesto...</p>
-        <a href="#" id="vendorWhatsappBtn" class="btn btn-primary" target="_blank" style="display: none; margin-top: 1rem;">
-            <i class="fab fa-whatsapp"></i> Contactar por WhatsApp
-        </a>
+        <div class="vendor-logo-container">
+            <img id="vendorLogo" src="" alt="Logo del puesto" style="display: none; border-radius: var(--border-radius-xl); box-shadow: var(--shadow-lg);">
+            <i id="vendorLogoPlaceholder" class="fas fa-store"></i>
+        </div>
     </div>
-    <div class="products-grid" id="vendorProductsGrid">
-        <!-- Los productos del vendedor se cargarán aquí -->
-    </div>
+    <div class="products-grid" id="vendorProductsGrid"></div>
 </section>
 
     <section id="profile" class="section">
@@ -237,7 +294,7 @@
             </div>
             <input type="file" id="storeLogoInput" accept="image/*" style="display: none;">
             <div id="storeLogoPreview" style="margin-top: 1rem; text-align: center; display: none;">
-                <img id="storeLogoPreviewImg" src="" alt="Vista previa del logo" style="max-width: 120px; max-height: 120px; border-radius: var(--border-radius-xl);">
+                <img id="storeLogoPreviewImg" src="" alt="Vista previa del logo" style="max-width: 300px; max-height: 300px; border-radius: var(--border-radius-xl);">
             </div>
         </div>
 
@@ -311,7 +368,16 @@
             </div>
         </div>
     </section>
-
+<!-- === SECCIÓN DE FAVORITOS === -->
+<section id="favorites" class="section">
+    <h2 class="section-title">Mis Favoritos</h2>
+    <div class="products-grid" id="favoritesGrid"></div>
+    <div class="no-results-message" id="noFavoritesMessage" style="display: none;">
+        <i class="far fa-heart" style="font-size: 4rem; opacity: 0.4;"></i>
+        <h3>No tienes productos favoritos</h3>
+        <p>¡Haz clic en el corazón ❤️ para guardar tus productos preferidos!</p>
+    </div>
+</section>
     <!-- === MODAL DE LOGIN === -->
     <div class="login-modal" id="loginModal">
         <div class="login-box">
@@ -494,17 +560,26 @@
             </div>
             <iframe class="chatbot-iframe-floating" src="https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/13/17/20250813172155-WZV5LKVX.json" loading="lazy" allow="microphone; geolocation; fullscreen" title="Chat Asistente de marketing"></iframe>
         </div>
-        <button class="chatbot-toggle" id="chatbotToggleBtn" type="button" onclick="toggleChatbot()" aria-expanded="false" aria-controls="chatbotContainer">
-            <i class="fas fa-comment-dots"></i>
-        </button>
-    </div>
+<button class="chatbot-toggle" id="chatbotToggleBtn" type="button" onclick="toggleChatbot()" aria-expanded="false" aria-controls="chatbotContainer">
+    <i class="fas fa-robot"></i>
+</button>
 
-<!-- ✅ LIGHTBOX CORREGIDO (SOLO UNA VEZ) -->
+<!-- ✅ LIGHTBOX ACTUALIZADO -->
 <div id="imageLightbox" class="image-lightbox">
     <span class="lightbox-close" onclick="hideImageLightbox()">&times;</span>
     
     <!-- Imagen principal -->
-    <img class="lightbox-content" id="lightboxImg" alt="Producto">
+    <div class="lightbox-image-container">
+        <img class="lightbox-content" id="lightboxImg" alt="Producto">
+        
+        <!-- Botones de navegación (solo en móvil) -->
+        <button class="nav-btn nav-btn-left" onclick="prevProduct()" aria-label="Producto anterior">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button class="nav-btn nav-btn-right" onclick="nextProduct()" aria-label="Siguiente producto">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
     
     <!-- Loading spinner -->
     <div class="lightbox-loading" id="lightboxLoadingSpinner">
@@ -512,20 +587,20 @@
         <p>Cargando imagen...</p>
     </div>
 
-    <!-- ✅ PANEL SUPERPUESTO EN LA PARTE INFERIOR DERECHA -->
+    <!-- Panel de información -->
     <div class="lightbox-overlay-info" id="lightboxOverlayInfo" style="display: none;">
         <h2 id="lightboxProductName" class="lightbox-product-name">Nombre del producto</h2>
         <div class="lightbox-product-price" id="lightboxProductPrice">$0.00</div>
         <p id="lightboxProductDescription" class="lightbox-product-description">Descripción del producto.</p>
     </div>
 
-<!-- Botón de WhatsApp - Posición inferior izquierda -->
+    <!-- Botón de WhatsApp -->
     <a href="#" id="lightboxWhatsappBtn" class="lightbox-whatsapp-modern-btn" target="_blank" style="display: none;">
         <i class="fab fa-whatsapp"></i>
         <span class="whatsapp-btn-text">Contactar vendedor</span>
     </a>
 
-    <!-- Botón "Ir al Puesto" -->
+    <!-- Botón "Ir a este puesto" -->
     <button id="lightboxStoreBtn" class="lightbox-action-btn store-btn" style="display: none; position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);">
         <i class="fas fa-store"></i> Ver todos los productos
     </button>
@@ -568,21 +643,184 @@
             <p>Generando catálogo, un momento por favor...</p>
         </div>
     </div>
+<!-- === MODAL DE DESCRIPCIÓN COMPLETA (PARA MIS PRODUCTOS) === -->
+<div class="login-modal" id="fullProductDescModal">
+    <div class="login-box" style="max-width: 600px; max-height: 80vh;">
+        <button type="button" class="close-modal-btn" onclick="hideModal('fullProductDescModal')">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="login-header">
+            <h2>Descripción del producto</h2>
+        </div>
+        <div id="fullProductDescContent" style="padding: 1rem; line-height: 1.6; color: var(--text-primary); max-height: 60vh; overflow-y: auto; white-space: pre-wrap;"></div>
+    </div>
+</div>
+<!-- Modal de bienvenida -->
+<div id="welcomeModal" class="modal-overlay">
+  <div class="modal-content">
+    <h2>¡Bienvenido/a a la Feria!</h2>
+    <p>👋 Soy tu asistente virtual para recorrer la feria.<br>
+       No dudes en preguntarme lo que sea.</p>
+    
+    <!-- Burbuja ilustrativa del chatbot -->
+    <div id="welcomeChatbotPreview" style="
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--cyan));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      margin: 20px auto;
+      box-shadow: var(--shadow-lg);
+    ">
+      <i class="fas fa-robot"></i>
+    </div>
+
+    <p><strong>💡 Puedes activarme en cualquier momento desde la burbuja en la esquina inferior izquierda.</strong></p>
+    
+    <button id="closeModalBtn">¡Entendido!</button>
+  </div>
+</div>
 
     <!-- LIBRERÍAS EXTERNAS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.1/dist/browser-image-compression.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js "></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
+<!-- Lucide Icons -->
+<script type="module">
+    import { createIcons, icons } from "https://cdn.jsdelivr.net/npm/lucide@0.453.0/+esm";
+    createIcons({ icons });
+</script>
 
     <!-- SCRIPTS -->
     <script src="script.js" defer></script>
     <script src="products.js" defer></script>
     <script src="cart.js" defer></script>
     <script src="catalog.js" defer></script>
-<!-- Partículas de fuego en el fondo -->
-<div id="fire-particles"></div>
+
+
+<!-- === MODAL DE DESCRIPCIÓN COMPLETA === -->
+<div class="login-modal" id="fullDescriptionModal">
+    <div class="login-box" style="max-width: 600px; max-height: 80vh;">
+        <button type="button" class="close-modal-btn" onclick="hideModal('fullDescriptionModal')">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="login-header">
+            <h2>Descripción completa</h2>
+        </div>
+        <div id="fullDescriptionContent" style="padding: 1rem; line-height: 1.6; color: var(--text-primary); max-height: 60vh; overflow-y: auto; white-space: pre-wrap;"></div>
+    </div>
+</div>
+<script>
+function showWelcomeModal() {
+    const modal = document.getElementById('welcomeModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.classList.add('welcome-modal-open');
+    }
+}
+
+function hideWelcomeModal() {
+    const modal = document.getElementById('welcomeModal');
+    const chatbotBtn = document.getElementById('chatbotToggleBtn');
+    const preview = document.getElementById('welcomeChatbotPreview');
+
+    if (!modal || !chatbotBtn) return;
+
+    // Desvanecer y ocultar el modal
+    modal.style.opacity = '0';
+    setTimeout(() => {
+        modal.style.display = 'none';
+        document.body.classList.remove('welcome-modal-open');
+    }, 300);
+
+    // Animar la burbuja voladora con desvanecimiento
+    if (preview && typeof gsap !== 'undefined') {
+        const flyingBubble = preview.cloneNode(true);
+        flyingBubble.style.position = 'fixed';
+        flyingBubble.style.zIndex = '9999';
+        flyingBubble.style.pointerEvents = 'none';
+        flyingBubble.style.margin = '0';
+        flyingBubble.style.boxShadow = '0 8px 24px rgba(99, 102, 241, 0.6)';
+        flyingBubble.style.borderRadius = '50%';
+        flyingBubble.style.width = '60px';
+        flyingBubble.style.height = '60px';
+        flyingBubble.style.display = 'flex';
+        flyingBubble.style.alignItems = 'center';
+        flyingBubble.style.justifyContent = 'center';
+        flyingBubble.style.color = 'white';
+        flyingBubble.style.fontSize = '24px';
+        flyingBubble.style.opacity = '1'; // Inicia visible
+
+        // Posición inicial (centro del modal)
+        const modalRect = modal.getBoundingClientRect();
+        const startX = modalRect.left + modalRect.width / 2 - 30;
+        const startY = modalRect.top + modalRect.height / 2 - 30;
+
+        // Posición final (esquina inferior izquierda)
+        const finalRect = chatbotBtn.getBoundingClientRect();
+        const endX = finalRect.left + window.scrollX;
+        const endY = finalRect.top + window.scrollY;
+
+        document.body.appendChild(flyingBubble);
+        flyingBubble.style.left = startX + 'px';
+        flyingBubble.style.top = startY + 'px';
+
+        // Animación con GSAP: mover + desvanecer
+        gsap.to(flyingBubble, {
+            x: endX - startX,
+            y: endY - startY,
+            opacity: 0, // 👈 se desvanece al llegar
+            scale: 1,
+            duration: 0.8,
+            ease: "power2.out",
+            onComplete: () => {
+                flyingBubble.remove();
+                // Asegurar que la burbuja real esté visible
+                chatbotBtn.style.visibility = 'visible';
+                chatbotBtn.style.opacity = '1';
+            }
+        });
+    }
+}
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('welcomeModal');
+    const closeBtn = document.getElementById('closeModalBtn');
+    const logo = document.querySelector('.logo');
+
+    // Mostrar solo la primera vez
+    if (!localStorage.getItem('welcomeModalShown')) {
+        setTimeout(showWelcomeModal, 600);
+        localStorage.setItem('welcomeModalShown', 'true');
+    }
+
+    // Cerrar con botón
+    if (closeBtn) {
+        closeBtn.addEventListener('click', hideWelcomeModal);
+    }
+
+    // Cerrar al hacer clic fuera
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) hideWelcomeModal();
+        });
+    }
+
+    // Mostrar al hacer clic en el LOGO
+    if (logo) {
+        logo.addEventListener('click', (e) => {
+            e.preventDefault();
+            showSection('home');
+            setTimeout(showWelcomeModal, 300);
+        });
+    }
+});
+</script>
 </body>
 </html>

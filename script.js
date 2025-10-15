@@ -46,17 +46,37 @@ function hideGlobalLoadingOverlay() {
     hideRunnerOverlay();
 }
 
-// Permitir navegación con flechas del teclado en el lightbox
+// === NAVEGACIÓN Y ZOOM EN LIGHTBOX CON TECLAS ===
 document.addEventListener('keydown', function(e) {
     const lightbox = document.getElementById('imageLightbox');
-    if (lightbox && lightbox.style.display === 'flex') {
-        if (e.key === 'ArrowLeft') {
-            if (typeof prevProduct === 'function') prevProduct();
-            e.preventDefault();
-        } else if (e.key === 'ArrowRight') {
-            if (typeof nextProduct === 'function') nextProduct();
-            e.preventDefault();
+    if (!lightbox || lightbox.style.display !== 'flex') return;
+
+    const img = document.getElementById('lightboxImg');
+    if (!img) return;
+
+    // Navegación horizontal
+    if (e.key === 'ArrowLeft') {
+        if (typeof prevProduct === 'function') prevProduct();
+        e.preventDefault();
+    } else if (e.key === 'ArrowRight') {
+        if (typeof nextProduct === 'function') nextProduct();
+        e.preventDefault();
+    }
+    // Zoom vertical
+    else if (e.key === 'ArrowUp') {
+        // Zoom in
+        if (currentZoomLevel < ZOOM_LEVELS.length - 1) {
+            currentZoomLevel++;
+            img.style.transform = `scale(${ZOOM_LEVELS[currentZoomLevel]})`;
         }
+        e.preventDefault();
+    } else if (e.key === 'ArrowDown') {
+        // Zoom out
+        if (currentZoomLevel > 0) {
+            currentZoomLevel--;
+            img.style.transform = `scale(${ZOOM_LEVELS[currentZoomLevel]})`;
+        }
+        e.preventDefault();
     }
 });
 
@@ -403,13 +423,21 @@ window.showSection = function(sectionId) {
     document.querySelectorAll('.section').forEach(section => section.classList.remove('active-section'));
     const targetSection = document.getElementById(sectionId);
     if (targetSection) targetSection.classList.add('active-section');
+    
+    // Cerrar menú hamburguesa
     document.getElementById('navContainer').classList.remove('active');
     document.getElementById('navOverlay').classList.remove('active');
+
+    // Acciones específicas por sección
     if (sectionId === 'products' && typeof loadProducts === 'function') {
         loadProducts();
     }
     if (sectionId === 'my-store' && isMerchant && typeof loadMyProducts === 'function') {
         loadMyProducts();
+    }
+    // ✅ NUEVO: Cargar favoritos
+    if (sectionId === 'favorites' && typeof renderFavoritesSection === 'function') {
+        renderFavoritesSection();
     }
 };
 window.showLogin = function() { document.getElementById('loginModal').style.display = 'flex'; };
@@ -427,7 +455,7 @@ function updateStoreLogoDisplay(logoUrl) {
     const previewContainer = document.getElementById('storeLogoPreview');
     
     if (logoUrl) {
-        logoContainer.innerHTML = `<img src="${logoUrl}" alt="Logo actual" style="max-width: 120px; max-height: 120px; border-radius: var(--border-radius-xl);">`;
+        logoContainer.innerHTML = `<img src="${logoUrl}" alt="Logo actual" style="max-width: 230px; max-height: 230px; border-radius: var(--border-radius-xl);">`;
         if (previewContainer) previewContainer.style.display = 'none';
     } else {
         logoContainer.innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic o arrastra el logo aquí</p>';
@@ -1143,6 +1171,7 @@ async function initializeApp() {
         currentMerchantData = null;
         showSection('home');
     }
+
     hideInitialLoadingSpinner();
     updateAuthUI();
 
@@ -1205,6 +1234,20 @@ async function initializeApp() {
         loadCartFromLocalStorage();
     }
 }
-
+// ✅ Inicializar contador de favoritos (versión segura)
+try {
+    const stored = localStorage.getItem('feriaVirtualFavorites');
+    const favs = stored ? JSON.parse(stored) : [];
+    if (!Array.isArray(favs)) {
+        throw new Error('Invalid favorites format');
+    }
+    document.getElementById('favoritesCount').textContent = favs.length;
+} catch (e) {
+    console.warn('Favoritos corruptos en localStorage. Reiniciando.');
+    localStorage.setItem('feriaVirtualFavorites', '[]');
+    document.getElementById('favoritesCount').textContent = '0';
+}
 // ✅ Ejecutar SOLO cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', initializeApp);
+
+

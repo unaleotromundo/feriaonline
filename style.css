@@ -123,6 +123,8 @@ body[data-theme="dark"] {
     --gray: #30363d;
 }
 
+
+
 /* --- Animación Fade para Lightbox --- */
 .lightbox-img-fade {
     opacity: 0;
@@ -2714,8 +2716,8 @@ body[data-theme="dark"] .runner-overlay {
 .vendor-logo-container i {
     border-radius: var(--border-radius-xl);
     background: var(--bg-tertiary);
-    width: 120px;
-    height: 120px;
+    width: 230px;
+    height: 230px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2740,7 +2742,7 @@ body[data-theme="dark"] .runner-overlay {
 
 /* Estilos para la subida de logo en la gestión del puesto */
 #storeLogoUploadArea {
-    min-height: 120px;
+    min-height: 230px;
 }
 
 #storeLogoPreview {
@@ -3034,5 +3036,194 @@ body[data-theme="dark"] .btn-favorite.active {
         font-size: 22px;
     }
 }
+/* === LIGHTBOX - CONTENEDOR DE IMAGEN CON ZOOM Y DRAG === */
+.lightbox-image-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
+/* === BOTONES DE NAVEGACIÓN (MÓVIL) === */
+.nav-btn {
+    position: absolute;
+    top: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1002;
+    display: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+.nav-btn:hover {
+    background: rgba(0, 0, 0, 0.7);
+    transform: scale(1.1);
+}
+.nav-btn-left {
+    left: 20px;
+    transform: translateY(-50%);
+}
+.nav-btn-right {
+    right: 20px;
+    transform: translateY(-50%);
+}
 
+/* === ESTILO PARA LA IMAGEN ZOOMABLE === */
+.lightbox-content.zoomable {
+    cursor: grab;
+    transition: transform 0.3s ease;
+}
+.lightbox-content.zoomable:active {
+    cursor: grabbing;
+}
+.lightbox-content.zoomed {
+    cursor: move;
+}
+
+/* === BOTÓN DE FAVORITOS (CORAZÓN) EN LIGHTBOX === */
+.floating-favorite-btn {
+    position: absolute !important;
+    top: 90px !important;
+    left: 20px !important;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    z-index: 1003 !important;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+}
+.floating-favorite-btn:hover {
+    transform: translateY(-4px) scale(1.1);
+    box-shadow: 0 12px 32px rgba(217, 70, 239, 0.6);
+    background: rgba(217, 70, 239, 0.9);
+}
+.floating-favorite-btn i.fas.fa-heart {
+    color: var(--magenta);
+}
+
+/* === BOTÓN "VER MÁS" EN LIGHTBOX === */
+.lightbox-ver-mas-btn {
+    background: var(--bg-primary);
+    color: var(--primary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: all 0.2s ease;
+    width: auto;
+    display: inline-block;
+}
+.lightbox-ver-mas-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-hover);
+    color: var(--primary-dark);
+}
+/* === ÍCONO DE FAVORITOS EN HEADER === */
+.favorites-icon {
+    position: relative;
+    color: white;
+    font-size: 24px;
+    margin: 0 1rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+.favorites-icon:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+.favorites-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: var(--magenta);
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: var(--shadow-sm);
+}
+/* === MODAL DE BIENVENIDA === */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 4500;
+}
+
+.modal-content {
+  background: var(--bg-primary);
+  padding: 30px;
+  border-radius: 16px;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: var(--shadow-xl);
+  position: relative;
+  border: 1px solid var(--border-muted);
+  color: var(--text-primary);
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  color: var(--primary);
+}
+
+.modal-content p {
+  margin: 12px 0;
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+#closeModalBtn {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#closeModalBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+body.welcome-modal-open .chatbot-toggle {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}

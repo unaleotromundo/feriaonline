@@ -4,6 +4,10 @@ let currentVendorProducts = [];
 let currentProductIndex = 0;
 let searchDebounceTimer = null;
 
+// === ZOOM EN LIGHTBOX ===
+let currentZoomLevel = 2; // Índice inicial en el array (1.0x)
+const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0];
+
 /**
  * Sube una imagen al bucket 'product-images' y devuelve { publicUrl, path }
  */
@@ -166,6 +170,7 @@ function renderProductCard(container, product) {
     const escapedProductJson = JSON.stringify(product)
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+
     // ✅ Manejo seguro del nombre del vendedor
     const safeVendorName = (product.vendorName || 'Vendedor')
         .replace(/'/g, "\\'")
@@ -176,6 +181,30 @@ function renderProductCard(container, product) {
         vendorLinkHtml = `<a href="#" onclick="event.preventDefault(); showVendorPage('${product.vendorId}', '${safeVendorName}')">${product.vendorName}</a>`;
     } else {
         vendorLinkHtml = `<span>${product.vendorName}</span>`;
+    }
+
+    // === TRUNCAR DESCRIPCIÓN A 50 CARACTERES ===
+    const fullDesc = product.description || 'Sin descripción';
+    const MAX_DESC = 50;
+    let descHtml = '';
+    if (fullDesc.length <= MAX_DESC) {
+        descHtml = `<p class="product-description">${fullDesc}</p>`;
+    } else {
+        let truncated = fullDesc.substring(0, MAX_DESC);
+        const lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > MAX_DESC * 0.7) {
+            truncated = truncated.substring(0, lastSpace);
+        }
+        truncated += '...';
+        // Guardamos la descripción completa en un atributo data
+        descHtml = `
+            <p class="product-description">${truncated}</p>
+            <button class="btn btn-secondary btn-view-more-public" 
+                    data-full-description="${fullDesc.replace(/"/g, '&quot;')}"
+                    style="font-size: 0.8rem; padding: 0.25rem 0.5rem; width: auto; margin-top: 0.5rem;">
+                Ver más
+            </button>
+        `;
     }
 
     card.innerHTML = `
@@ -189,35 +218,54 @@ function renderProductCard(container, product) {
         <div class="product-info">
             <h3 class="product-title">${product.name}</h3>
             <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
-            <p class="product-description">${product.description || ''}</p>
+            ${descHtml}
             <div class="product-category">${product.category !== 'otros' ? `<span class="category-tag">${product.category}</span>` : ''}</div>
-	    <div class="product-actions">
-            <div class="product-vendor">
-        <i class="fas fa-store"></i>
-        ${vendorLinkHtml}
-<button class="btn-favorite" data-product-id="${product.id}">
-            ${isFavorite(product.id) ? '<i class="fas fa-heart"></i>' : '<i class="far fa-heart"></i>'}
-        </button>
-        <button class="btn-add-to-cart-minimal" onclick="event.stopPropagation(); addToCartWithAnimation(this, ${escapedProductJson})">
-            <i class="fas fa-cart-plus"></i>
-        </button>
-    </div>
-</div>
+            <div class="product-actions">
+                <div class="product-vendor">
+                    <i class="fas fa-store"></i>
+                    ${vendorLinkHtml}
+                    <button class="btn-favorite" data-product-id="${product.id}">
+                        ${isFavorite(product.id) ? '<i class="fas fa-heart"></i>' : '<i class="far fa-heart"></i>'}
+                    </button>
+                    <button class="btn-add-to-cart-minimal" onclick="event.stopPropagation(); addToCartWithAnimation(this, ${escapedProductJson})">
+                        <i class="fas fa-cart-plus"></i>
+                    </button>
+                </div>
+            </div>
         </div>`;
     container.appendChild(card);
 }
 
 // ✅ FUNCIÓN MODIFICADA: Sin botones de carrito, con descripción completa
+// ✅ FUNCIÓN ACTUALIZADA: Limita descripción a 100 caracteres y agrega "Ver más"
 function renderMyProductCard(container, product) {
     const card = document.createElement('div');
     card.className = 'product-card';
     const imgSrc = product.imageUrl || product.imageBase64 || '';
     const hasImage = !!imgSrc;
 
-    // ✅ Usar <img loading="lazy"> en lugar de background-image
     const imgTag = hasImage 
         ? `<img src="${imgSrc}" loading="lazy" alt="${product.name}" class="product-grid-img">`
         : '<i class="fas fa-shopping-bag"></i>';
+
+    // === TRUNCAR DESCRIPCIÓN ===
+    const fullDesc = product.description || 'Sin descripción';
+    const MAX_DESC = 100;
+    let descHtml = '';
+    if (fullDesc.length <= MAX_DESC) {
+        descHtml = `<p class="product-description">${fullDesc}</p>`;
+    } else {
+        const truncated = fullDesc.substring(0, MAX_DESC) + '...';
+        // Guardamos la descripción completa en un atributo data para el modal
+        descHtml = `
+            <p class="product-description">${truncated}</p>
+            <button class="btn btn-secondary btn-view-more" 
+                    data-full-description="${fullDesc.replace(/"/g, '&quot;')}"
+                    style="font-size: 0.85rem; padding: 0.3rem 0.6rem; width: auto; margin-top: 0.5rem;">
+                Ver más
+            </button>
+        `;
+    }
 
     card.innerHTML = `
         <div class="product-image-container">
@@ -226,7 +274,7 @@ function renderMyProductCard(container, product) {
         <div class="product-info">
             <h3 class="product-title">${product.name}</h3>
             <div class="product-price">$${(product.price || 0).toFixed(2)}</div>
-            <p class="product-description">${product.description || 'Sin descripción'}</p>
+            ${descHtml}
             <div class="product-category">${product.category !== 'otros' ? `<span class="category-tag">${product.category}</span>` : ''}</div>
             <div class="product-actions">
                 <button class="action-btn" onclick="showProductModal('${product.id}')"><i class="fas fa-edit"></i> Editar</button>
@@ -456,8 +504,46 @@ async function showCurrentProductInLightbox(isMyProduct = false) {
     // Mostrar datos del producto
     productNameEl.textContent = product.name || 'Producto sin nombre';
     productPriceEl.textContent = `$${(product.price || 0).toFixed(2)}`;
-    productDescEl.textContent = product.description || 'Sin descripción';
+// === MANEJO DE DESCRIPCIÓN TRUNCADA CON "VER MÁS" ===
+const fullDesc = product.description || 'Sin descripción';
+const MAX_CHARS = 200;
 
+if (fullDesc.length <= MAX_CHARS) {
+    productDescEl.textContent = fullDesc;
+    productDescEl.style.display = 'block';
+    // Asegurar que no haya botón previo
+    const existingBtn = productDescEl.nextElementSibling;
+    if (existingBtn && existingBtn.classList.contains('lightbox-ver-mas-btn')) {
+        existingBtn.remove();
+    }
+} else {
+    // Truncar sin cortar palabras
+    let truncated = fullDesc.substring(0, MAX_CHARS);
+    const lastSpace = truncated.lastIndexOf(' ');
+    if (lastSpace > MAX_CHARS * 0.7) {
+        truncated = truncated.substring(0, lastSpace);
+    }
+    truncated += '...';
+
+    productDescEl.textContent = truncated;
+    productDescEl.style.display = 'block';
+
+    // Eliminar botón anterior si existe
+    const existingBtn = productDescEl.nextElementSibling;
+    if (existingBtn && existingBtn.classList.contains('lightbox-ver-mas-btn')) {
+        existingBtn.remove();
+    }
+
+    // Crear botón "Ver más"
+    const verMasBtn = document.createElement('button');
+    verMasBtn.className = 'lightbox-ver-mas-btn';
+    verMasBtn.textContent = 'Ver más';
+    verMasBtn.onclick = (e) => {
+        e.stopPropagation();
+        showFullDescriptionModal(fullDesc);
+    };
+    overlayInfo.insertBefore(verMasBtn, productDescEl.nextSibling);
+}
     if (product.description && product.description.trim() !== '') {
         overlayInfo.style.display = 'block';
         overlayInfo.style.opacity = '0';
@@ -481,7 +567,10 @@ async function showCurrentProductInLightbox(isMyProduct = false) {
             }
         };
     }, 50);
-
+// Reiniciar zoom al abrir un nuevo producto
+currentZoomLevel = 2; // 1.0x por defecto
+img.style.transform = 'scale(1)';
+img.style.transformOrigin = 'center center';
     lightbox.style.display = 'flex';
 
     // === BOTÓN DE CARRITO (solo si no es mi producto) ===
@@ -990,8 +1079,20 @@ window.sortByPrice = async function(order) {
 }
 
 // === FAVORITOS ===
-let favorites = JSON.parse(localStorage.getItem('feriaVirtualFavorites') || '[]');
-
+let favorites = [];
+try {
+    const stored = localStorage.getItem('feriaVirtualFavorites');
+    const parsed = stored ? JSON.parse(stored) : [];
+    if (Array.isArray(parsed)) {
+        favorites = parsed;
+    } else {
+        throw new Error('Invalid format');
+    }
+} catch (e) {
+    console.warn('Favoritos corruptos. Reiniciando.');
+    localStorage.setItem('feriaVirtualFavorites', '[]');
+    favorites = [];
+}
 function toggleFavorite(productId) {
     const index = favorites.indexOf(productId);
     const isFavorited = index === -1;
@@ -1015,7 +1116,10 @@ function toggleFavorite(productId) {
             btn.classList.remove('active');
             icon.className = 'far fa-heart'; // vacío
         }
+    // ✅ Actualizar el badge del header en tiempo real
+    document.getElementById('favoritesCount').textContent = favorites.length;
     }
+
 
     // Opcional: notificación
     // showToast(isFavorited ? 'Agregado a favoritos' : 'Eliminado de favoritos', 'info');
@@ -1073,5 +1177,158 @@ document.addEventListener('click', function(e) {
                 icon.className = isNowFav ? 'fas fa-heart' : 'far fa-heart';
             }
         }
+    }
+});
+/**
+ * Muestra un modal con la descripción completa del producto.
+ */
+function showFullDescriptionModal(description) {
+    // Crear modal si no existe
+    let modal = document.getElementById('fullDescriptionModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'fullDescriptionModal';
+        modal.className = 'login-modal';
+        modal.innerHTML = `
+            <div class="login-box" style="max-width: 600px; max-height: 80vh;">
+                <button type="button" class="close-modal-btn" onclick="this.parentElement.parentElement.style.display='none'">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="login-header">
+                    <h2>Descripción completa</h2>
+                </div>
+                <div id="fullDescriptionContent" style="padding: 1rem; line-height: 1.6; color: var(--text-primary); max-height: 60vh; overflow-y: auto; white-space: pre-wrap;"></div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    document.getElementById('fullDescriptionContent').textContent = description;
+    modal.style.display = 'flex';
+}
+// === DELEGACIÓN DE EVENTO PARA "VER MÁS" EN MIS PRODUCTOS ===
+document.addEventListener('click', function(e) {
+    const viewMoreBtn = e.target.closest('.btn-view-more');
+    if (viewMoreBtn) {
+        e.stopPropagation();
+        const fullDesc = viewMoreBtn.dataset.fullDescription || 'Sin descripción';
+        document.getElementById('fullProductDescContent').textContent = fullDesc;
+        document.getElementById('fullProductDescModal').style.display = 'flex';
+    }
+});
+// === DELEGACIÓN DE EVENTO PARA "VER MÁS" EN PRODUCTOS PÚBLICOS ===
+document.addEventListener('click', function(e) {
+    const viewMoreBtn = e.target.closest('.btn-view-more-public');
+    if (viewMoreBtn) {
+        e.stopPropagation();
+        const fullDesc = viewMoreBtn.dataset.fullDescription || 'Sin descripción';
+        // Reutilizamos el mismo modal que creamos para "Mis Productos"
+        let modal = document.getElementById('fullProductDescModal');
+        if (!modal) {
+            // Crear modal dinámicamente si no existe
+            modal = document.createElement('div');
+            modal.id = 'fullProductDescModal';
+            modal.className = 'login-modal';
+            modal.innerHTML = `
+                <div class="login-box" style="max-width: 600px; max-height: 80vh;">
+                    <button type="button" class="close-modal-btn" onclick="this.parentElement.parentElement.style.display='none'">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <div class="login-header">
+                        <h2>Descripción del producto</h2>
+                    </div>
+                    <div id="fullProductDescContent" style="padding: 1rem; line-height: 1.6; color: var(--text-primary); max-height: 60vh; overflow-y: auto; white-space: pre-wrap;"></div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        document.getElementById('fullProductDescContent').textContent = fullDesc;
+        modal.style.display = 'flex';
+    }
+});
+// === RENDERIZAR SECCIÓN DE FAVORITOS ===
+
+window.renderFavoritesSection = function() {
+    const favoritesGrid = document.getElementById('favoritesGrid');
+    const noFavoritesMsg = document.getElementById('noFavoritesMessage');
+    
+    if (!favoritesGrid) return;
+
+    const favorites = JSON.parse(localStorage.getItem('feriaVirtualFavorites') || '[]');
+    document.getElementById('favoritesCount').textContent = favorites.length;
+
+    if (favorites.length === 0) {
+        favoritesGrid.innerHTML = '';
+        noFavoritesMsg.style.display = 'flex';
+        return;
+    }
+
+    noFavoritesMsg.style.display = 'none';
+    favoritesGrid.innerHTML = '<p>Cargando favoritos...</p>';
+// Dentro de renderFavoritesSection:
+const stored = localStorage.getItem('feriaVirtualFavorites');
+const validFavorites = stored ? JSON.parse(stored) : [];
+if (!Array.isArray(validFavorites)) {
+    localStorage.setItem('feriaVirtualFavorites', '[]');
+    validFavorites = [];
+}
+document.getElementById('favoritesCount').textContent = validFavorites.length;
+    // Cargar productos desde Supabase
+    (async () => {
+        try {
+            if (!(await ensureSupabaseAvailable())) {
+                favoritesGrid.innerHTML = '<p>No se puede conectar a la base de datos.</p>';
+                return;
+            }
+            const supabaseClient = getSupabase();
+            const { data, error } = await supabaseClient
+                .from('products')
+                .select('*')
+                .in('id', favorites)
+                .eq('published', true);
+
+            if (error) throw error;
+
+            const products = (data || []).map(normalizeProductRow);
+            favoritesGrid.innerHTML = '';
+            if (products.length === 0) {
+                noFavoritesMsg.style.display = 'flex';
+                return;
+            }
+            products.forEach(product => renderProductCard(favoritesGrid, product));
+            // ✅ Actualizar UI de favoritos (corazones llenos)
+            updateFavoriteUI();
+        } catch (err) {
+            console.error('Error al cargar favoritos:', err);
+            favoritesGrid.innerHTML = '<p>Error al cargar tus favoritos.</p>';
+        }
+    })();
+};
+// === DELEGACIÓN DE EVENTO PARA "VER MÁS" EN PRODUCTOS PÚBLICOS ===
+document.addEventListener('click', function(e) {
+    const viewMoreBtn = e.target.closest('.btn-view-more-public');
+    if (viewMoreBtn) {
+        e.stopPropagation();
+        const fullDesc = viewMoreBtn.dataset.fullDescription || 'Sin descripción';
+        // Crear o reutilizar modal
+        let modal = document.getElementById('fullProductDescModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'fullProductDescModal';
+            modal.className = 'login-modal';
+            modal.innerHTML = `
+                <div class="login-box" style="max-width: 600px; max-height: 80vh;">
+                    <button type="button" class="close-modal-btn" onclick="this.parentElement.parentElement.style.display='none'">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <div class="login-header">
+                        <h2>Descripción del producto</h2>
+                    </div>
+                    <div id="fullProductDescContent" style="padding: 1rem; line-height: 1.6; color: var(--text-primary); max-height: 60vh; overflow-y: auto; white-space: pre-wrap;"></div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        document.getElementById('fullProductDescContent').textContent = fullDesc;
+        modal.style.display = 'flex';
     }
 });
