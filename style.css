@@ -2,7 +2,6 @@
    SISTEMA DE TEMAS PROFESIONAL Y ACCESIBLE
    Inspirado en GitHub, Stripe, Linear, y Vercel
    ======================================== */
-
 /* === TEMA CLARO (DEFAULT) === */
 :root {
     /* Colores principales - Paleta refinada */
@@ -13,7 +12,6 @@
     --cyan-dark: #0891b2;      /* Cyan oscuro */
     --magenta: #d946ef;        /* Acento magenta */
     --yellow: #f59e0b;         /* Amarillo */
-    
     /* Colores de fondo - Sistema de capas */
     --bg-base: #fafbfc;        /* Fondo base muy sutil */
     --bg-primary: #ffffff;     /* Blanco puro para tarjetas */
@@ -22,20 +20,17 @@
     --bg-elevated: #ffffff;    /* Elementos elevados */
     --bg-gradient-start: #f8fafc;
     --bg-gradient-end: #f0f4f8;
-    
     /* Colores de texto - Optimizados para accesibilidad WCAG AAA */
     --text-primary: #0d1117;   /* Casi negro - ratio 15.3:1 */
     --text-secondary: #24292f; /* Gris muy oscuro - ratio 12.6:1 */
     --text-tertiary: #57606a;  /* Gris medio - ratio 5.8:1 */
     --text-muted: #6e7781;     /* Gris suave - ratio 4.7:1 */
     --text-placeholder: #8c959f; /* Placeholders */
-    
     /* Bordes y separadores - Sutiles y profesionales */
     --border-color: #d0d7de;
     --border-muted: #e4e9ee;
     --border-hover: #b3bac2;
     --border-focus: #6366f1;
-    
     /* Estados y feedback - Claros y consistentes */
     --error: #dc2626;
     --error-bg: #fef2f2;
@@ -46,24 +41,20 @@
     --info: #0ea5e9;
     --info-bg: #f0f9ff;
     --whatsapp: #25D366;
-    
     /* Sombras - Sistema de elevación */
     --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
     --shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.1), 0 1px 2px rgba(16, 24, 40, 0.06);
     --shadow-md: 0 4px 8px rgba(16, 24, 40, 0.08), 0 2px 4px rgba(16, 24, 40, 0.03);
     --shadow-lg: 0 12px 24px rgba(16, 24, 40, 0.1), 0 4px 8px rgba(16, 24, 40, 0.04);
     --shadow-xl: 0 24px 48px rgba(16, 24, 40, 0.12), 0 8px 16px rgba(16, 24, 40, 0.05);
-    
     /* Overlays */
     --overlay-light: rgba(255, 255, 255, 0.9);
     --overlay-dark: rgba(0, 0, 0, 0.6);
-    
     /* Compatibilidad */
     --black: #0d1117;
     --light: #f6f8fa;
     --gray: #d0d7de;
 }
-
 /* === TEMA OSCURO === */
 body[data-theme="dark"] {
     /* Colores principales - Más saturados y vibrantes */
@@ -73,7 +64,6 @@ body[data-theme="dark"] {
     --cyan: #22d3ee;
     --cyan-dark: #06b6d4;
     --magenta: #f472b6;
-    
     /* Colores de fondo - Sistema de capas invertido */
     --bg-base: #0d1117;        /* Negro azulado profundo */
     --bg-primary: #161b22;     /* Elevación nivel 1 */
@@ -82,20 +72,17 @@ body[data-theme="dark"] {
     --bg-elevated: #252b33;    /* Elementos elevados */
     --bg-gradient-start: #0d1117;
     --bg-gradient-end: #161b22;
-    
     /* Colores de texto - Optimizados para fondo oscuro */
     --text-primary: #f0f6fc;   /* Casi blanco - ratio 14.8:1 */
     --text-secondary: #c9d1d9; /* Gris muy claro - ratio 10.4:1 */
     --text-tertiary: #8b949e;  /* Gris claro - ratio 5.6:1 */
     --text-muted: #6e7681;     /* Gris medio - ratio 4.2:1 */
     --text-placeholder: #484f58;
-    
     /* Bordes y separadores */
     --border-color: #30363d;
     --border-muted: #21262d;
     --border-hover: #484f58;
     --border-focus: #818cf8;
-    
     /* Estados y feedback - Ajustados para oscuro */
     --error: #f87171;
     --error-bg: #2d1517;
@@ -105,26 +92,20 @@ body[data-theme="dark"] {
     --warning-bg: #2b2416;
     --info: #38bdf8;
     --info-bg: #0c1e2b;
-    
     /* Sombras - Más profundas en oscuro */
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.4);
     --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.7), 0 8px 16px rgba(0, 0, 0, 0.5);
-    
     /* Overlays */
     --overlay-light: rgba(22, 27, 34, 0.95);
     --overlay-dark: rgba(0, 0, 0, 0.8);
-    
     /* Compatibilidad */
     --black: #f0f6fc;
     --light: #161b22;
     --gray: #30363d;
 }
-
-
-
 /* --- Animación Fade para Lightbox --- */
 .lightbox-img-fade {
     opacity: 0;
@@ -134,31 +115,25 @@ body[data-theme="dark"] {
     opacity: 1;
     transition: opacity 0.5s cubic-bezier(0.4,0,0.2,1);
 }
-
 /* --- Mejorar transiciones de tema en tarjetas y modales --- */
 .profile-card, .form-container, .product-card, .login-box, .dropdown-menu, .modal, .theme-card {
     transition: background-color 0.4s, color 0.4s, box-shadow 0.4s;
 }
-
 body[data-theme="dark"] #initial-loading-overlay {
     background: rgba(15, 23, 42, 0.95);
 }
-
 body[data-theme="dark"] #initial-loading-message {
     color: var(--text-primary) !important;
 }
-
 /* ========================================
    ESTILOS BASE
    ======================================== */
-
 * { 
     margin: 0; 
     padding: 0; 
     box-sizing: border-box; 
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
 }
-
 body {
     background: var(--bg-base);
     color: var(--text-primary);
@@ -167,7 +142,6 @@ body {
     flex-direction: column;
     transition: background-color 0.3s ease, color 0.3s ease;
 }
-
 /* Patrón de fondo sutil */
 body::before {
     content: '';
@@ -182,17 +156,14 @@ body::before {
     pointer-events: none;
     z-index: -1;
 }
-
 body[data-theme="dark"]::before {
     background-image: 
         radial-gradient(circle at 20% 50%, rgba(129, 140, 248, 0.05) 0%, transparent 50%),
         radial-gradient(circle at 80% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 50%);
 }
-
 /* ========================================
    HEADER Y NAVEGACIÓN
    ======================================== */
-
 .header {
     background: linear-gradient(135deg, var(--primary) 0%, var(--cyan) 100%);
     padding: 1rem 1.5rem;
@@ -206,7 +177,6 @@ body[data-theme="dark"]::before {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(8px);
 }
-
 .logo {
     display: flex;
     align-items: center;
@@ -217,20 +187,16 @@ body[data-theme="dark"]::before {
     text-decoration: none;
     transition: transform 0.2s ease;
 }
-
 .logo:hover {
     transform: scale(1.05);
 }
-
 .logo i {
     font-size: 1.75rem;
 }
-
 .nav-container {
     display: flex;
     gap: 1.5rem;
 }
-
 .nav-link {
     color: white !important;
     text-decoration: none;
@@ -242,28 +208,23 @@ body[data-theme="dark"]::before {
     border-radius: 0.5rem;
     transition: all 0.2s ease;
 }
-
 .nav-link:hover {
     background: rgba(255, 255, 255, 0.15);
 }
-
 nav a.active {
     background: var(--primary);
     color: white !important;
     border-radius: 0.5rem;
     box-shadow: var(--shadow-sm);
 }
-
 nav a {
     transition: all 0.2s ease;
     padding: 0.5rem 1rem;
     display: inline-block;
 }
-
 .user-dropdown {
     position: relative;
 }
-
 .dropdown-menu {
     display: none;
     position: absolute;
@@ -278,7 +239,6 @@ nav a {
     border: 1px solid var(--border-muted);
     margin-top: 0.5rem;
 }
-
 .dropdown-menu a {
     display: block;
     padding: 0.75rem 1rem;
@@ -286,24 +246,20 @@ nav a {
     text-decoration: none;
     transition: all 0.2s ease;
 }
-
 .dropdown-menu a:hover {
     background: var(--bg-tertiary);
     color: var(--primary);
 }
-
 .dropdown-menu a i {
     margin-right: 0.5rem;
     width: 20px;
     text-align: center;
 }
-
 .dropdown-divider {
     height: 1px;
     background: var(--border-color);
     margin: 0.25rem 0;
 }
-
 .cart-icon {
     position: relative;
     color: white;
@@ -312,12 +268,10 @@ nav a {
     text-decoration: none;
     transition: all 0.2s ease;
 }
-
 .cart-icon:hover {
     opacity: 0.8;
     transform: scale(1.05);
 }
-
 .cart-badge {
     position: absolute;
     top: -8px;
@@ -334,7 +288,6 @@ nav a {
     font-weight: bold;
     box-shadow: var(--shadow-sm);
 }
-
 .hamburger-menu {
     display: none;
     background: none;
@@ -346,15 +299,12 @@ nav a {
     padding: 0.5rem;
     transition: transform 0.2s ease;
 }
-
 .hamburger-menu:hover {
     transform: scale(1.1);
 }
-
 /* ========================================
    SECCIONES Y LAYOUTS
    ======================================== */
-
 .section {
     display: none;
     padding: 2rem 1rem;
@@ -363,11 +313,9 @@ nav a {
     width: 100%;
     animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
 .active-section {
     display: block;
 }
-
 .hero {
     flex: 1;
     display: flex;
@@ -379,7 +327,6 @@ nav a {
     max-width: 900px;
     margin: 0 auto;
 }
-
 .hero h1 {
     font-size: 2.5rem;
     font-weight: 800;
@@ -390,7 +337,6 @@ nav a {
     background-clip: text;
     line-height: 1.2;
 }
-
 .hero p {
     font-size: 1.1rem;
     color: var(--text-secondary);
@@ -398,7 +344,6 @@ nav a {
     max-width: 700px;
     line-height: 1.6;
 }
-
 .buttons {
     display: flex;
     flex-wrap: wrap;
@@ -406,11 +351,9 @@ nav a {
     justify-content: center;
     margin-bottom: 3rem;
 }
-
 /* ========================================
    BOTONES
    ======================================== */
-
 .btn {
     font-weight: 600;
     padding: 1rem 2rem;
@@ -429,54 +372,45 @@ nav a {
     cursor: pointer;
     text-decoration: none;
 }
-
 .btn-primary {
     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     color: white;
     border: 1px solid transparent;
 }
-
 .btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
     filter: brightness(1.05);
 }
-
 .btn-secondary {
     background: var(--bg-primary);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
 }
-
 .btn-secondary:hover {
     background: var(--bg-tertiary);
     border-color: var(--border-hover);
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
-
 .btn-whatsapp {
     background: var(--whatsapp);
     color: white;
     border: 1px solid transparent;
 }
-
 .btn-whatsapp:hover {
     background: #128C7E;
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
-
 /* ========================================
    PERFIL Y TARJETAS
    ======================================== */
-
 .profile-container {
     display: flex;
     flex-wrap: wrap;
     gap: 2rem;
 }
-
 .profile-card {
     background: var(--bg-primary);
     border-radius: 1rem;
@@ -488,12 +422,10 @@ nav a {
     position: relative;
     transition: all 0.3s ease;
 }
-
 .profile-card:hover {
     box-shadow: var(--shadow-lg);
     border-color: var(--border-color);
 }
-
 .profile-header {
     display: flex;
     align-items: center;
@@ -502,7 +434,6 @@ nav a {
     padding-bottom: 1.5rem;
     border-bottom: 1px solid var(--border-color);
 }
-
 .profile-pic {
     width: 100px;
     height: 100px;
@@ -519,13 +450,11 @@ nav a {
     box-shadow: var(--shadow-md);
     border: 3px solid var(--bg-primary);
 }
-
 .profile-pic img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
-
 .profile-pic-edit-overlay {
     position: absolute;
     width: 100%;
@@ -540,27 +469,22 @@ nav a {
     opacity: 0;
     transition: opacity 0.3s ease;
 }
-
 .profile-card.edit-mode .profile-pic:hover .profile-pic-edit-overlay {
     opacity: 1;
 }
-
 .profile-info h2 {
     font-size: 1.8rem;
     margin-bottom: 0.5rem;
     color: var(--text-primary);
 }
-
 .profile-info p {
     color: var(--text-secondary);
 }
-
 .profile-details {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 1.5rem;
 }
-
 .detail-item {
     background: var(--bg-secondary);
     padding: 1.5rem;
@@ -568,42 +492,34 @@ nav a {
     border: 1px solid var(--border-muted);
     transition: all 0.2s ease;
 }
-
 .detail-item:hover {
     background: var(--bg-tertiary);
     border-color: var(--border-color);
 }
-
 .detail-item h3 {
     color: var(--primary);
     margin-bottom: 0.5rem;
     font-weight: 600;
 }
-
 .detail-item p {
     color: var(--text-secondary);
 }
-
 /* ESTILOS PARA EDICIÓN DE PERFIL */
 .profile-card.edit-mode .detail-item p,
 .profile-card.edit-mode .profile-info h2 {
     display: none;
 }
-
 .profile-card.edit-mode .detail-item .editable,
 .profile-card.edit-mode .profile-info .editable {
     display: block;
 }
-
 .editable {
     display: none;
     width: 100%;
 }
-
 /* ========================================
    PRODUCTOS
    ======================================== */
-
 .products-header {
     display: flex;
     flex-wrap: wrap;
@@ -612,7 +528,6 @@ nav a {
     margin-bottom: 2rem;
     gap: 1rem;
 }
-
 .section-title {
     font-size: 2rem;
     font-weight: 700;
@@ -621,13 +536,11 @@ nav a {
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
-
 .products-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 1.5rem;
 }
-
 .product-card {
     background: var(--bg-primary);
     border-radius: 1rem;
@@ -636,13 +549,11 @@ nav a {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid var(--border-muted);
 }
-
 .product-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-lg);
     border-color: var(--border-color);
 }
-
 .product-image {
     height: 200px;
     background: var(--bg-secondary);
@@ -658,40 +569,33 @@ nav a {
     position: relative;
     transition: all 0.3s ease;
 }
-
 .product-image:hover {
     opacity: 0.95;
 }
-
 .product-info {
     padding: 1.5rem;
 }
-
 .product-title {
     font-size: 1.25rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
     color: var(--text-primary);
 }
-
 .product-price {
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--success);
     margin-bottom: 1rem;
 }
-
 .product-description {
     color: var(--text-secondary);
     margin-bottom: 1rem;
     font-size: 0.9rem;
     line-height: 1.5;
 }
-
 .product-category {
     margin-bottom: 0.75rem;
 }
-
 .category-tag {
     display: inline-block;
     padding: 0.25rem 0.75rem;
@@ -703,7 +607,6 @@ nav a {
     text-transform: capitalize;
     box-shadow: var(--shadow-xs);
 }
-
 .product-vendor {
     display: flex;
     align-items: center;
@@ -712,25 +615,21 @@ nav a {
     font-size: 0.9rem;
     margin-top: 1rem;
 }
-
 .product-vendor a {
     color: var(--text-secondary);
     text-decoration: none;
     transition: color 0.2s ease;
     font-weight: 500;
 }
-
 .product-vendor a:hover {
     color: var(--primary);
     text-decoration: underline;
 }
-
 .product-actions {
     display: flex;
     gap: 0.5rem;
     margin-top: 1rem;
 }
-
 .action-btn {
     flex: 1;
     padding: 0.5rem;
@@ -741,7 +640,6 @@ nav a {
     transition: all 0.2s ease;
     color: var(--text-primary);
 }
-
 .action-btn:hover {
     background: var(--primary);
     color: white;
@@ -749,11 +647,9 @@ nav a {
     transform: translateY(-1px);
     box-shadow: var(--shadow-sm);
 }
-
 /* ========================================
    BOTONES DE CARRITO
    ======================================== */
-
 .btn-add-to-cart-overlay {
     position: absolute;
     top: 10px;
@@ -773,25 +669,21 @@ nav a {
     transition: all 0.3s ease;
     z-index: 2;
 }
-
 .btn-add-to-cart-overlay:hover {
     background-color: var(--primary);
     color: white;
     transform: scale(1.1);
     box-shadow: var(--shadow-md);
 }
-
 body[data-theme="dark"] .btn-add-to-cart-overlay {
     background-color: rgba(22, 27, 34, 0.95);
     color: var(--primary-light);
     border-color: var(--primary-light);
 }
-
 body[data-theme="dark"] .btn-add-to-cart-overlay:hover {
     background-color: var(--primary);
     color: white;
 }
-
 .btn-add-to-cart-minimal {
     width: 28px;
     height: 28px;
@@ -809,7 +701,6 @@ body[data-theme="dark"] .btn-add-to-cart-overlay:hover {
     vertical-align: middle;
     padding: 0;
 }
-
 .btn-add-to-cart-minimal:hover {
     background-color: var(--primary);
     color: white;
@@ -817,11 +708,9 @@ body[data-theme="dark"] .btn-add-to-cart-overlay:hover {
     transform: scale(1.1);
     box-shadow: var(--shadow-sm);
 }
-
 /* ========================================
    FORMULARIOS
    ======================================== */
-
 .form-container {
     background: var(--bg-primary);
     border-radius: 1rem;
@@ -832,7 +721,6 @@ body[data-theme="dark"] .btn-add-to-cart-overlay:hover {
     border: 1px solid var(--border-muted);
     position: relative;
 }
-
 .form-title {
     font-size: 1.8rem;
     margin-bottom: 1.5rem;
@@ -843,18 +731,15 @@ body[data-theme="dark"] .btn-add-to-cart-overlay:hover {
     text-align: center;
     font-weight: 700;
 }
-
 .form-group {
     margin-bottom: 1.5rem;
 }
-
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 600;
     color: var(--text-primary);
 }
-
 .form-control {
     width: 100%;
     padding: 0.75rem 1rem;
@@ -865,36 +750,30 @@ body[data-theme="dark"] .btn-add-to-cart-overlay:hover {
     background-color: var(--bg-primary);
     color: var(--text-primary);
 }
-
 .form-control::placeholder {
     color: var(--text-placeholder);
 }
-
 .form-control:focus {
     outline: none;
     border-color: var(--border-focus);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
     background-color: var(--bg-primary);
 }
-
 .form-control:hover {
     border-color: var(--border-hover);
 }
-
 .form-control[readonly] {
     background-color: var(--bg-secondary);
     color: var(--text-tertiary);
     cursor: not-allowed;
     border-color: var(--border-muted);
 }
-
 .form-footer {
     display: flex;
     justify-content: center;
     gap: 6rem;
     margin-top: 1.5rem;
 }
-
 .product-image-upload {
     border: 2px dashed var(--border-color);
     border-radius: 0.5rem;
@@ -909,22 +788,18 @@ body[data-theme="dark"] .btn-add-to-cart-overlay:hover {
     justify-content: center;
     flex-direction: column;
 }
-
 .product-image-upload:hover {
     border-color: var(--primary);
     background: var(--bg-secondary);
 }
-
 .preview-image {
     max-width: 100%;
     max-height: 200px;
     border-radius: 0.5rem;
 }
-
 /* ========================================
    MODALES
    ======================================== */
-
 .login-modal,
 .global-loading {
     position: fixed;
@@ -939,16 +814,13 @@ body[data-theme="dark"] .btn-add-to-cart-overlay:hover {
     display: none;
     backdrop-filter: blur(4px);
 }
-
 .login-modal.visible,
 .global-loading.visible {
     display: flex;
 }
-
 .global-loading {
     display: none;
 }
-
 /* === MODAL GENÉRICO (INCLUIDO PRODUCTO) === */
 .login-box {
     background: var(--bg-primary);
@@ -965,7 +837,6 @@ body[data-theme="dark"] .btn-add-to-cart-overlay:hover {
     display: flex;
     flex-direction: column;
 }
-
 /* Asegurar que el contenido principal crezca pero respete el scroll */
 .login-header,
 #productModalMessage,
@@ -973,11 +844,9 @@ body[data-theme="dark"] .btn-add-to-cart-overlay:hover {
 .form-footer {
     flex-shrink: 0; /* Evita que se compriman al hacer scroll */
 }
-
 .form-group {
     margin-bottom: 1.25rem;
 }
-
 /* En móviles, ajustar paddings */
 @media (max-height: 700px) {
     .login-box {
@@ -992,7 +861,6 @@ body[data-theme="dark"] .btn-add-to-cart-overlay:hover {
         font-size: 0.95rem;
     }
 }
-
 @media (max-width: 480px) {
     .login-box {
         width: 95%;
@@ -1010,7 +878,6 @@ body[data-theme="dark"] .btn-add-to-cart-overlay:hover {
 /* ========================================
    TOASTS Y NOTIFICACIONES
    ======================================== */
-
 .toast {
     position: fixed;
     bottom: 2rem;
@@ -1026,23 +893,18 @@ body[data-theme="dark"] .btn-add-to-cart-overlay:hover {
     border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(8px);
 }
-
 .toast-success {
     background: linear-gradient(135deg, var(--success) 0%, #15803d 100%);
 }
-
 .toast-error {
     background: linear-gradient(135deg, var(--error) 0%, #b91c1c 100%);
 }
-
 .toast-info {
     background: linear-gradient(135deg, var(--info) 0%, #0284c7 100%);
 }
-
 /* ========================================
    BOTONES DE EDICIÓN
    ======================================== */
-
 .edit-btn-container {
     position: absolute;
     top: 1.5rem;
@@ -1061,7 +923,6 @@ body[data-theme="dark"] .btn-add-to-cart-overlay:hover {
     justify-content: center;
     box-shadow: var(--shadow-xs);
 }
-
 .edit-btn-container:hover {
     background: var(--primary);
     color: white;
@@ -1069,11 +930,9 @@ body[data-theme="dark"] .btn-add-to-cart-overlay:hover {
     box-shadow: var(--shadow-sm);
     border-color: var(--primary);
 }
-
 /* ========================================
    THEME TOGGLE
    ======================================== */
-
 .theme-toggle {
     position: fixed;
     bottom: 20px;
@@ -1094,49 +953,39 @@ body[data-theme="dark"] .btn-add-to-cart-overlay:hover {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
 }
-
 .theme-toggle:hover {
     transform: scale(1.1) rotate(15deg);
     box-shadow: var(--shadow-lg);
     border-color: var(--primary);
 }
-
 .theme-toggle:active {
     transform: scale(0.95);
 }
-
 .theme-toggle .fa-sun {
     display: none;
 }
-
 .theme-toggle .fa-moon {
     display: block;
 }
-
 body[data-theme="dark"] .theme-toggle {
     background: var(--bg-elevated);
     border-color: var(--border-hover);
 }
-
 body[data-theme="dark"] .theme-toggle .fa-sun {
     display: block;
 }
-
 body[data-theme="dark"] .theme-toggle .fa-moon {
     display: none;
 }
-
 /* ========================================
    CHATBOT
    ======================================== */
-
 .chatbot-floating {
     position: fixed;
     bottom: 20px;
     left: 20px;
     z-index: 3000;
 }
-
 .chatbot-toggle {
     background: linear-gradient(135deg, var(--primary), var(--cyan));
     border: none;
@@ -1154,12 +1003,10 @@ body[data-theme="dark"] .theme-toggle .fa-moon {
     justify-content: center;
     z-index: 3001;
 }
-
 .chatbot-toggle:hover {
     transform: scale(1.1);
     box-shadow: var(--shadow-xl);
 }
-
 .chatbot-container-floating {
     width: 360px;
     height: 520px;
@@ -1176,21 +1023,18 @@ body[data-theme="dark"] .theme-toggle .fa-moon {
     pointer-events: none;
     border: 1px solid var(--border-muted);
 }
-
 .chatbot-container-floating.visible {
     display: block;
     visibility: visible;
     pointer-events: auto;
     opacity: 1;
 }
-
 .chatbot-iframe-floating {
     width: 100%;
     height: calc(100% - 54px);
     border: none;
     display: block;
 }
-
 .chatbot-header-floating {
     background: linear-gradient(135deg, var(--primary), var(--cyan));
     color: white;
@@ -1200,12 +1044,10 @@ body[data-theme="dark"] .theme-toggle .fa-moon {
     align-items: center;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
-
 .chatbot-header-floating h3 {
     font-size: 1rem;
     font-weight: 700;
 }
-
 .close-chatbot-btn {
     background: none;
     border: none;
@@ -1213,11 +1055,96 @@ body[data-theme="dark"] .theme-toggle .fa-moon {
     font-size: 1.15rem;
     cursor: pointer;
 }
+/* ========================================
+   LIGHTBOX - PANEL DE INFORMACIÓN (CORREGIDO Y ÚNICO)
+   ======================================== */
+.lightbox-overlay-info {
+    position: absolute;
+    bottom: 50px;           /* 👈 ACERCADO EN ESCRITORIO */
+    right: 330px;            /* 👈 MARGEN DERECHO REDUCIDO */
+    max-width: 55%;
+    text-align: right;
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    padding: 1rem 1.2rem;
+    border-radius: 12px;
+    backdrop-filter: blur(8px);
+    box-shadow: var(--shadow-lg);
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.lightbox-overlay-info.visible {
+    opacity: 1;
+    visibility: visible;
+}
+.lightbox-product-name {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    line-height: 1.3;
+}
+.lightbox-product-price {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--cyan);
+    margin: 0 0 0.8rem;
+    line-height: 1.2;
+}
+/* Botón "Leer descripción" */
+.lightbox-ver-mas-btn {
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 0.45rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    backdrop-filter: blur(4px);
+}
+.lightbox-ver-mas-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* === VERSIÓN MÓVIL (centrado y acercado con espacio para botones) === */
+@media (max-width: 767px) {
+    .lightbox-overlay-info {
+        bottom: 60px !important;   /* 👈 ESPACIO SEGURO SOBRE BOTONES */
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        max-width: calc(100% - 30px);
+        width: auto;
+        text-align: center;
+        padding: 0.9rem 1rem;
+    }
+    .lightbox-product-name {
+        font-size: 1.15rem;
+        margin-bottom: 0.4rem;
+    }
+    .lightbox-product-price {
+        font-size: 1.35rem;
+        margin-bottom: 0.7rem;
+    }
+    .lightbox-ver-mas-btn {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.9rem;
+        border-radius: 8px;
+    }
+}
 
 /* ========================================
-   LIGHTBOX
+   RESTO DEL LIGHTBOX (sin cambios)
    ======================================== */
-
 .image-lightbox {
     display: none;
     position: fixed;
@@ -1232,17 +1159,14 @@ body[data-theme="dark"] .theme-toggle .fa-moon {
     animation: fadeIn 0.3s ease;
     backdrop-filter: blur(4px);
 }
-
 .lightbox-content {
     max-width: 90vw;
     max-height: 85vh;
     transition: opacity 0.5s ease;
 }
-
 .lightbox-content.loading {
     opacity: 0;
 }
-
 .lightbox-close {
     position: absolute;
     top: 20px;
@@ -1254,11 +1178,9 @@ body[data-theme="dark"] .theme-toggle .fa-moon {
     cursor: pointer;
     z-index: 4001;
 }
-
 .lightbox-close:hover {
     color: #bbb;
 }
-
 .lightbox-loading {
     position: absolute;
     top: 50%;
@@ -1274,18 +1196,15 @@ body[data-theme="dark"] .theme-toggle .fa-moon {
     color: white;
     z-index: 1002;
 }
-
 .lightbox-loading i {
     font-size: 2rem;
     margin-bottom: 1rem;
     color: var(--primary);
 }
-
 .lightbox-loading p {
     font-size: 1.1rem;
     margin: 0;
 }
-
 /* === BOTÓN DE CARRITO EN LIGHTBOX - ARRIBA IZQUIERDA === */
 .floating-cart-btn {
     position: absolute !important;
@@ -1307,22 +1226,18 @@ body[data-theme="dark"] .theme-toggle .fa-moon {
     border: 3px solid rgba(255, 255, 255, 0.3);
     backdrop-filter: blur(10px);
 }
-
 .floating-cart-btn:hover {
     transform: translateY(-4px) scale(1.1);
     box-shadow: 0 12px 32px rgba(99, 102, 241, 0.6);
     background: linear-gradient(135deg, var(--primary-dark) 0%, var(--cyan) 100%);
 }
-
 .floating-cart-btn:active {
     transform: translateY(-2px) scale(1.05);
 }
-
 body[data-theme="dark"] .floating-cart-btn {
     background: linear-gradient(135deg, var(--primary) 0%, var(--cyan) 100%);
     border-color: rgba(255, 255, 255, 0.2);
 }
-
 /* === BOTÓN DE WHATSAPP EN LIGHTBOX - ABAJO IZQUIERDA === */
 .lightbox-whatsapp-modern-btn {
     position: absolute !important;
@@ -1344,27 +1259,22 @@ body[data-theme="dark"] .floating-cart-btn {
     border: 2px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(10px);
 }
-
 .lightbox-whatsapp-modern-btn i {
     font-size: 24px;
     margin: 0;
 }
-
 .lightbox-whatsapp-modern-btn .whatsapp-btn-text {
     white-space: nowrap;
     letter-spacing: 0.3px;
 }
-
 .lightbox-whatsapp-modern-btn:hover {
     transform: translateY(-4px) scale(1.05);
     box-shadow: 0 12px 32px rgba(37, 211, 102, 0.6);
     background: linear-gradient(135deg, #128C7E 0%, #075E54 100%);
 }
-
 .lightbox-whatsapp-modern-btn:active {
     transform: translateY(-2px) scale(1.02);
 }
-
 /* Estado de carga */
 .lightbox-whatsapp-modern-btn--loading {
     position: absolute !important;
@@ -1386,22 +1296,18 @@ body[data-theme="dark"] .floating-cart-btn {
     border: 2px solid rgba(255, 255, 255, 0.2);
     cursor: wait;
 }
-
 .lightbox-whatsapp-modern-btn--loading i {
     font-size: 24px;
     margin: 0;
     animation: spin 1s linear infinite;
 }
-
 .lightbox-whatsapp-modern-btn--loading .whatsapp-btn-text {
     white-space: nowrap;
 }
-
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-
 /* === BOTÓN "IR AL PUESTO" === */
 .lightbox-action-btn {
     display: flex;
@@ -1419,16 +1325,9 @@ body[data-theme="dark"] .floating-cart-btn {
     border: none;
     cursor: pointer;
 }
-
 .lightbox-action-btn i {
     font-size: 20px;
 }
-
-.lightbox-action-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-}
-
 .lightbox-action-btn.store-btn {
     background-color: var(--primary);
     position: absolute;
@@ -1437,110 +1336,11 @@ body[data-theme="dark"] .floating-cart-btn {
     transform: translateX(-50%);
     z-index: 1001;
 }
-
 .lightbox-action-btn.store-btn:hover {
     background-color: var(--primary-dark);
     transform: translateX(-50%) translateY(-2px);
 }
 
-/* === LIGHTBOX - PANEL SUPERPUESTO EN LA PARTE INFERIOR DERECHA === */
-.lightbox-overlay-info {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    max-width: 60%;
-    text-align: right;
-    background: rgba(0, 0, 0, 0.75);
-    color: white;
-    padding: 1.2rem;
-    border-radius: 12px;
-    backdrop-filter: blur(8px);
-    box-shadow: var(--shadow-lg);
-    z-index: 1001;
-    animation: slideUpFade 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
-@keyframes slideUpFade {
-    from {
-        opacity: 0;
-        transform: translateY(20px) scale(0.98);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-.lightbox-product-name {
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin: 0 0 0.5rem;
-    line-height: 1.3;
-}
-
-.lightbox-product-price {
-    font-size: 1.6rem;
-    font-weight: 800;
-    color: var(--cyan);
-    margin: 0 0 0.8rem;
-    line-height: 1.2;
-}
-
-.lightbox-product-description {
-    font-size: 0.95rem;
-    margin: 0;
-    line-height: 1.5;
-    opacity: 0.9;
-}
-
-/* Responsive para móviles */
-@media (max-width: 768px) {
-    .lightbox-overlay-info {
-        bottom: 15px;
-        right: 15px;
-        max-width: 70%;
-        padding: 1rem;
-    }
-    
-    .lightbox-product-name {
-        font-size: 1.2rem;
-    }
-    
-    .lightbox-product-price {
-        font-size: 1.4rem;
-    }
-    
-    .lightbox-whatsapp-modern-btn,
-    .lightbox-whatsapp-modern-btn--loading {
-        bottom: 15px !important;
-        left: 15px !important;
-        padding: 14px 24px;
-        font-size: 15px;
-    }
-    
-    .lightbox-whatsapp-modern-btn:hover {
-        transform: translateY(-4px) scale(1.05);
-    }
-    
-    .lightbox-whatsapp-modern-btn i {
-        font-size: 22px;
-    }
-    
-    .floating-cart-btn {
-        top: 15px !important;
-        left: 15px !important;
-        width: 54px;
-        height: 54px;
-        font-size: 22px;
-    }
-    
-    .lightbox-action-btn.store-btn {
-        bottom: 80px !important;
-    }
-}
 
 /* ========================================
    CARRITO DE COMPRAS
@@ -2456,179 +2256,7 @@ body[data-theme="dark"] .runner-overlay {
     object-fit: cover;
 }
 
-/* === LIGHTBOX - PANEL SUPERPUESTO EN LA PARTE INFERIOR DERECHA === */
-.lightbox-overlay-info {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    max-width: 60%;
-    text-align: right;
-    background: rgba(0, 0, 0, 0.75);
-    color: white;
-    padding: 1.2rem;
-    border-radius: 12px;
-    backdrop-filter: blur(8px);
-    box-shadow: var(--shadow-lg);
-    z-index: 1001;
-    animation: slideUpFade 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-@keyframes slideUpFade {
-    from {
-        opacity: 0;
-        transform: translateY(20px) scale(0.98);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-.lightbox-product-name {
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin: 0 0 0.5rem;
-    line-height: 1.3;
-}
-.lightbox-product-price {
-    font-size: 1.6rem;
-    font-weight: 800;
-    color: var(--cyan);
-    margin: 0 0 0.8rem;
-    line-height: 1.2;
-}
-.lightbox-product-description {
-    font-size: 0.95rem;
-    margin: 0;
-    line-height: 1.5;
-    opacity: 0.9;
-}
-/* Versión móvil */
-@media (max-width: 768px) {
-    .lightbox-overlay-info {
-        bottom: 15px;
-        right: 15px;
-        max-width: 70%;
-        padding: 1rem;
-    }
-    .lightbox-product-name {
-        font-size: 1.2rem;
-    }
-    .lightbox-product-price {
-        font-size: 1.4rem;
-    }
-}
 
-/* === LIGHTBOX - PANEL DE INFORMACIÓN === */
-.lightbox-info-panel {
-    background: var(--bg-primary);
-    padding: 1.2rem;
-    border-radius: 1rem;
-    margin: 1.5rem auto 0;
-    max-width: 90vw;
-    width: 600px;
-    box-shadow: var(--shadow-md);
-    border: 1px solid var(--border-muted);
-    text-align: center;
-}
-.lightbox-product-name {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin: 0 0 0.5rem;
-}
-.lightbox-product-price {
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: var(--success);
-    margin: 0 0 1rem;
-}
-.lightbox-product-description {
-    color: var(--text-secondary);
-    font-size: 1rem;
-    line-height: 1.5;
-    margin: 0;
-}
-
-/* === LIGHTBOX - PANEL SUPERPUESTO EN LA PARTE INFERIOR DERECHA === */
-.lightbox-overlay-info {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    max-width: 60%;
-    text-align: right;
-    background: rgba(0, 0, 0, 0.75);
-    color: white;
-    padding: 1.2rem;
-    border-radius: 12px;
-    backdrop-filter: blur(8px);
-    box-shadow: var(--shadow-lg);
-    z-index: 1001;
-    animation: slideUpFade 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
-@keyframes slideUpFade {
-    from {
-        opacity: 0;
-        transform: translateY(20px) scale(0.98);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-.lightbox-product-name {
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin: 0 0 0.5rem;
-    line-height: 1.3;
-}
-
-.lightbox-product-price {
-    font-size: 1.6rem;
-    font-weight: 800;
-    color: var(--cyan);
-    margin: 0 0 0.8rem;
-    line-height: 1.2;
-}
-
-.lightbox-product-description {
-    font-size: 0.95rem;
-    margin: 0;
-    line-height: 1.5;
-    opacity: 0.9;
-}
-
-/* Responsive para móviles */
-@media (max-width: 768px) {
-    /* Panel de información - ahora abajo centrado */
-    .lightbox-overlay-info {
-        bottom: 80px;
-        left: 50%;
-        right: auto;
-        transform: translateX(-50%);
-        max-width: 90%;
-        width: calc(100% - 30px);
-        padding: 1rem;
-        text-align: center;
-    }
-    
-    .lightbox-product-name {
-        font-size: 1.1rem;
-        margin-bottom: 0.4rem;
-    }
-    
-    .lightbox-product-price {
-        font-size: 1.3rem;
-        margin-bottom: 0.6rem;
-    }
-    
-    .lightbox-product-description {
-        font-size: 0.85rem;
-        line-height: 1.4;
-    }
     
     /* Botón de WhatsApp - más pequeño y abajo a la izquierda */
     .lightbox-whatsapp-modern-btn,
@@ -3651,44 +3279,6 @@ body.welcome-modal-open .chatbot-toggle {
         font-size: 14px;
     }
 
-    .lightbox-overlay-info {
-        bottom: 70px !important;
-        left: 10px !important;
-        right: 10px !important;
-        max-width: calc(100% - 20px);
-        text-align: center;
-        padding: 1rem;
-    }
-
-    .lightbox-product-name {
-        font-size: 1.1rem;
-    }
-
-    .lightbox-product-price {
-        font-size: 1.3rem;
-    }
-
-    .lightbox-product-description {
-        font-size: 0.85rem;
-    }
-
-    /* Botones de navegación en lightbox */
-    .nav-btn {
-        display: flex;
-        width: 44px;
-        height: 44px;
-        font-size: 20px;
-    }
-
-    .nav-btn-left {
-        left: 10px;
-    }
-
-    .nav-btn-right {
-        right: 10px;
-    }
-}
-
 /* === BÚSQUEDA Y FILTROS MÓVIL === */
 @media (max-width: 767px) {
     .search-filter-container {
@@ -4111,3 +3701,20 @@ html {
         scroll-behavior: auto;
     }
 }
+/* Mobile First (Base) */
+:root { --mobile-padding: 1rem; }
+
+/* Móvil: 320px - 767px */
+@media (max-width: 767px) { ... }
+
+/* Móvil Landscape */
+@media (max-width: 767px) and (orientation: landscape) { ... }
+
+/* Tablet: 768px - 1023px */
+@media (min-width: 768px) and (max-width: 1023px) { ... }
+
+/* Desktop: 1024px+ */
+@media (min-width: 1024px) { ... }
+
+/* Large Desktop: 1440px+ */
+@media (min-width: 1440px) { ... }

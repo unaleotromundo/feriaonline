@@ -504,53 +504,39 @@ async function showCurrentProductInLightbox(isMyProduct = false) {
     // Mostrar datos del producto
     productNameEl.textContent = product.name || 'Producto sin nombre';
     productPriceEl.textContent = `$${(product.price || 0).toFixed(2)}`;
-// === MANEJO DE DESCRIPCIÓN TRUNCADA CON "VER MÁS" ===
+// === MOSTRAR SIEMPRE BOTÓN "LEER DESCRIPCIÓN" ===
 const fullDesc = product.description || 'Sin descripción';
-const MAX_CHARS = 200;
+productNameEl.textContent = product.name || 'Producto sin nombre';
+productPriceEl.textContent = `$${(product.price || 0).toFixed(2)}`;
 
-if (fullDesc.length <= MAX_CHARS) {
-    productDescEl.textContent = fullDesc;
-    productDescEl.style.display = 'block';
-    // Asegurar que no haya botón previo
-    const existingBtn = productDescEl.nextElementSibling;
-    if (existingBtn && existingBtn.classList.contains('lightbox-ver-mas-btn')) {
-        existingBtn.remove();
-    }
-} else {
-    // Truncar sin cortar palabras
-    let truncated = fullDesc.substring(0, MAX_CHARS);
-    const lastSpace = truncated.lastIndexOf(' ');
-    if (lastSpace > MAX_CHARS * 0.7) {
-        truncated = truncated.substring(0, lastSpace);
-    }
-    truncated += '...';
+// Ocultar el párrafo de descripción
+productDescEl.style.display = 'none';
+productDescEl.textContent = ''; // Limpiar contenido
 
-    productDescEl.textContent = truncated;
-    productDescEl.style.display = 'block';
+// Eliminar botón anterior si existe
+const existingBtn = overlayInfo.querySelector('.lightbox-ver-mas-btn');
+if (existingBtn) existingBtn.remove();
 
-    // Eliminar botón anterior si existe
-    const existingBtn = productDescEl.nextElementSibling;
-    if (existingBtn && existingBtn.classList.contains('lightbox-ver-mas-btn')) {
-        existingBtn.remove();
-    }
+// Crear nuevo botón "Leer descripción"
+const leerBtn = document.createElement('button');
+leerBtn.className = 'lightbox-ver-mas-btn';
+leerBtn.textContent = 'Leer descripción';
+leerBtn.onclick = (e) => {
+    e.stopPropagation();
+    showFullDescriptionModal(fullDesc);
+};
+overlayInfo.appendChild(leerBtn);
 
-    // Crear botón "Ver más"
-    const verMasBtn = document.createElement('button');
-    verMasBtn.className = 'lightbox-ver-mas-btn';
-    verMasBtn.textContent = 'Ver más';
-    verMasBtn.onclick = (e) => {
-        e.stopPropagation();
-        showFullDescriptionModal(fullDesc);
-    };
-    overlayInfo.insertBefore(verMasBtn, productDescEl.nextSibling);
-}
-    if (product.description && product.description.trim() !== '') {
-        overlayInfo.style.display = 'block';
-        overlayInfo.style.opacity = '0';
-        overlayInfo.style.visibility = 'hidden';
-    } else {
-        overlayInfo.style.display = 'none';
+// Mostrar el panel de info
+overlayInfo.style.display = 'block';
+overlayInfo.style.opacity = '0';
+overlayInfo.style.visibility = 'hidden';
+setTimeout(() => {
+    if (overlayInfo.style.display === 'block') {
+        overlayInfo.style.opacity = '1';
+        overlayInfo.style.visibility = 'visible';
     }
+}, 50);
 
     // Cargar imagen
     img.classList.remove('lightbox-img-visible');
