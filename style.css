@@ -937,7 +937,7 @@ body[data-theme="dark"] .btn-add-to-cart-overlay:hover {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    z-index: 3001;
+    z-index: 2000;
     width: 50px;
     height: 50px;
     border-radius: 50%;
@@ -3691,6 +3691,7 @@ body.welcome-modal-open .chatbot-toggle {
     }
 }
 
+
 /* Smooth scroll para toda la app */
 html {
     scroll-behavior: smooth;
@@ -3718,3 +3719,11 @@ html {
 
 /* Large Desktop: 1440px+ */
 @media (min-width: 1440px) { ... }
+
+.image-lightbox.active ~ .theme-toggle,
+.image-lightbox.active ~ .cart-icon,
+.image-lightbox.active ~ .mobile-cart-badge,
+.image-lightbox.active ~ #cartIcon,
+.image-lightbox.active ~ #themeToggle {
+    display: none !important;
+}

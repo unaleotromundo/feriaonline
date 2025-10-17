@@ -61,16 +61,13 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
         console.warn(`Container ${containerId} no encontrado`);
         return;
     }
-
     // ✅ Reiniciar mapa global de productos
     window.allProductsMap = {};
-
     showRunnerOverlay();
     const isReachable = await ensureSupabaseAvailable();
     if (!isReachable) {
         console.warn('Supabase no alcanzable, intentando de todas formas...');
     }
-
     try {
         const supabaseClient = getSupabase();
         let q = supabaseClient
@@ -84,7 +81,6 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
         const { data, error } = await q;
         hideRunnerOverlay();
         productsGrid.innerHTML = '';
-
         if (error) {
             console.error("Error loading products:", error);
             productsGrid.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
@@ -94,7 +90,6 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
             </div>`;
             return;
         }
-
         if (!data || data.length === 0) {
             productsGrid.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
                 <i class="fas fa-shopping-bag" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
@@ -102,7 +97,6 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
             </div>`;
             return;
         }
-
         // ✅ Normalizar y renderizar productos
         data.forEach(row => {
             const product = normalizeProductRow(row);
@@ -165,24 +159,20 @@ function renderProductCard(container, product) {
     card.className = 'product-card';
     const imgSrc = product.imageUrl || product.imageBase64 || '';
     const hasImage = !!imgSrc;
-
     // ✅ Escapar correctamente el JSON para evitar errores
     const escapedProductJson = JSON.stringify(product)
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
-
     // ✅ Manejo seguro del nombre del vendedor
     const safeVendorName = (product.vendorName || 'Vendedor')
         .replace(/'/g, "\\'")
         .replace(/"/g, '\\"');
-
     let vendorLinkHtml = '';
     if (isValidId(product.vendorId)) {
         vendorLinkHtml = `<a href="#" onclick="event.preventDefault(); showVendorPage('${product.vendorId}', '${safeVendorName}')">${product.vendorName}</a>`;
     } else {
         vendorLinkHtml = `<span>${product.vendorName}</span>`;
     }
-
     // === TRUNCAR DESCRIPCIÓN A 50 CARACTERES ===
     const fullDesc = product.description || 'Sin descripción';
     const MAX_DESC = 50;
@@ -206,7 +196,6 @@ function renderProductCard(container, product) {
             </button>
         `;
     }
-
     card.innerHTML = `
         <div class="product-image" 
              ${hasImage ? `style="background-image: url('${imgSrc}')" onclick="showImageLightbox('${imgSrc}', { name: '${product.name.replace(/'/g, "\\'")}', price: ${product.price || 0}, vendorId: '${product.vendorId || ''}', id: '${product.id}', category: '${product.category}' })"` : ''}>
@@ -243,11 +232,9 @@ function renderMyProductCard(container, product) {
     card.className = 'product-card';
     const imgSrc = product.imageUrl || product.imageBase64 || '';
     const hasImage = !!imgSrc;
-
     const imgTag = hasImage 
         ? `<img src="${imgSrc}" loading="lazy" alt="${product.name}" class="product-grid-img">`
         : '<i class="fas fa-shopping-bag"></i>';
-
     // === TRUNCAR DESCRIPCIÓN ===
     const fullDesc = product.description || 'Sin descripción';
     const MAX_DESC = 100;
@@ -266,7 +253,6 @@ function renderMyProductCard(container, product) {
             </button>
         `;
     }
-
     card.innerHTML = `
         <div class="product-image-container">
             ${imgTag}
@@ -341,7 +327,6 @@ window.saveProduct = async function() {
     if (saveBtn.disabled) return; // Si ya está deshabilitado, no hacer nada
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-
     const isEditing = !!document.getElementById('productModal').dataset.productId;
     const productData = { 
         name: document.getElementById('productName').value.trim(),
@@ -351,7 +336,6 @@ window.saveProduct = async function() {
         vendorId: currentUser.id,
         vendorName: document.getElementById('userBusiness').textContent
     };
-
     if (!productData.name || !productData.price || isNaN(productData.price)) {
         showToast('Por favor completa el nombre y precio del producto.', 'error');
         // ✅ Rehabilitar botón si hay error de validación
@@ -359,11 +343,9 @@ window.saveProduct = async function() {
         saveBtn.innerHTML = 'Guardar Producto';
         return;
     }
-
     let imageBase64 = document.getElementById('productImageUploadArea').dataset.existingImage || null;
     let imageUrl = null;
     let imageStoragePath = null;
-
     try {
         if (selectedProductUpload) {
             imageUrl = selectedProductUpload.publicUrl;
@@ -382,7 +364,6 @@ window.saveProduct = async function() {
                 });
             }
         }
-
         const dbProduct = {
             name: productData.name,
             price: productData.price,
@@ -395,11 +376,9 @@ window.saveProduct = async function() {
             published: true
         };
         if (!isEditing) dbProduct.created_at = new Date().toISOString();
-
         if (!(await ensureSupabaseAvailable())) {
             throw new Error('No se puede conectar a Supabase.');
         }
-
         const supabaseClient = getSupabase();
         if (isEditing) {
             const productId = document.getElementById('productModal').dataset.productId;
@@ -409,14 +388,12 @@ window.saveProduct = async function() {
             const { error } = await supabaseClient.from('products').insert([dbProduct]);
             if (error) throw error;
         }
-
         showToast('Producto guardado.', 'success');
         hideModal('productModal');
         loadMyProducts();
         if (document.getElementById('products').classList.contains('active-section')) {
             loadProducts();
         }
-
     } catch (error) {
         console.error("Error saving product:", error);
         showToast(`Error al guardar el producto. ${error.message || ''}`, 'error');
@@ -484,7 +461,7 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
     }
 }
 
-// ✅ MODIFICADO: Agrega botón de favoritos y cambia texto del botón de puesto
+// ✅ MODIFICADO: Muestra SOLO nombre, precio y botón "Leer descripción"
 async function showCurrentProductInLightbox(isMyProduct = false) {
     const product = currentVendorProducts[currentProductIndex];
     if (!product) return;
@@ -492,51 +469,37 @@ async function showCurrentProductInLightbox(isMyProduct = false) {
     const img = document.getElementById('lightboxImg');
     const productNameEl = document.getElementById('lightboxProductName');
     const productPriceEl = document.getElementById('lightboxProductPrice');
-    const productDescEl = document.getElementById('lightboxProductDescription');
     const overlayInfo = document.getElementById('lightboxOverlayInfo');
     const lightbox = document.getElementById('imageLightbox');
 
-    if (!img || !productNameEl || !productPriceEl || !productDescEl || !overlayInfo || !lightbox) {
+    if (!img || !productNameEl || !productPriceEl || !overlayInfo || !lightbox) {
         console.error('❌ Elementos del lightbox no encontrados');
         return;
     }
 
-    // Mostrar datos del producto
+    // Mostrar nombre y precio
     productNameEl.textContent = product.name || 'Producto sin nombre';
     productPriceEl.textContent = `$${(product.price || 0).toFixed(2)}`;
-// === MOSTRAR SIEMPRE BOTÓN "LEER DESCRIPCIÓN" ===
-const fullDesc = product.description || 'Sin descripción';
-productNameEl.textContent = product.name || 'Producto sin nombre';
-productPriceEl.textContent = `$${(product.price || 0).toFixed(2)}`;
 
-// Ocultar el párrafo de descripción
-productDescEl.style.display = 'none';
-productDescEl.textContent = ''; // Limpiar contenido
+    // === LIMPIAR CONTENIDO ANTERIOR ===
+    overlayInfo.innerHTML = `
+        <h2 id="lightboxProductName" class="lightbox-product-name">${product.name || 'Producto sin nombre'}</h2>
+        <div class="lightbox-product-price" id="lightboxProductPrice">$${(product.price || 0).toFixed(2)}</div>
+    `;
 
-// Eliminar botón anterior si existe
-const existingBtn = overlayInfo.querySelector('.lightbox-ver-mas-btn');
-if (existingBtn) existingBtn.remove();
+    // === CREAR BOTÓN "Leer descripción" SIEMPRE ===
+    const leerBtn = document.createElement('button');
+    leerBtn.className = 'lightbox-ver-mas-btn';
+    leerBtn.textContent = 'Leer descripción';
+    leerBtn.onclick = (e) => {
+        e.stopPropagation();
+        showFullDescriptionModal(product.description || 'Sin descripción');
+    };
+    overlayInfo.appendChild(leerBtn);
 
-// Crear nuevo botón "Leer descripción"
-const leerBtn = document.createElement('button');
-leerBtn.className = 'lightbox-ver-mas-btn';
-leerBtn.textContent = 'Leer descripción';
-leerBtn.onclick = (e) => {
-    e.stopPropagation();
-    showFullDescriptionModal(fullDesc);
-};
-overlayInfo.appendChild(leerBtn);
-
-// Mostrar el panel de info
-overlayInfo.style.display = 'block';
-overlayInfo.style.opacity = '0';
-overlayInfo.style.visibility = 'hidden';
-setTimeout(() => {
-    if (overlayInfo.style.display === 'block') {
-        overlayInfo.style.opacity = '1';
-        overlayInfo.style.visibility = 'visible';
-    }
-}, 50);
+    // Mostrar el panel
+    overlayInfo.style.display = 'block';
+    overlayInfo.classList.add('visible');
 
     // Cargar imagen
     img.classList.remove('lightbox-img-visible');
@@ -547,16 +510,13 @@ setTimeout(() => {
         img.onload = img.onerror = () => {
             img.classList.remove('lightbox-img-fade');
             img.classList.add('lightbox-img-visible');
-            if (overlayInfo.style.display === 'block') {
-                overlayInfo.style.opacity = '1';
-                overlayInfo.style.visibility = 'visible';
-            }
         };
     }, 50);
-// Reiniciar zoom al abrir un nuevo producto
-currentZoomLevel = 2; // 1.0x por defecto
-img.style.transform = 'scale(1)';
-img.style.transformOrigin = 'center center';
+
+    // Reiniciar zoom
+    currentZoomLevel = 2;
+    img.style.transform = 'scale(1)';
+    img.style.transformOrigin = 'center center';
     lightbox.style.display = 'flex';
 
     // === BOTÓN DE CARRITO (solo si no es mi producto) ===
@@ -574,10 +534,9 @@ img.style.transformOrigin = 'center center';
         lightbox.appendChild(floatingCartBtn);
     }
 
-    // === BOTÓN DE FAVORITOS (siempre visible) ===
+    // === BOTÓN DE FAVORITOS ===
     const existingFavBtn = lightbox.querySelector('.floating-favorite-btn');
     if (existingFavBtn) existingFavBtn.remove();
-
     const floatingFavBtn = document.createElement('div');
     floatingFavBtn.className = 'floating-favorite-btn';
     floatingFavBtn.innerHTML = isFavorite(product.id) 
@@ -587,7 +546,6 @@ img.style.transformOrigin = 'center center';
     floatingFavBtn.onclick = function(event) {
         event.stopPropagation();
         toggleFavorite(product.id);
-        // Actualizar visualmente
         const isNowFav = isFavorite(product.id);
         floatingFavBtn.innerHTML = isNowFav 
             ? '<i class="fas fa-heart"></i>' 
@@ -603,7 +561,7 @@ img.style.transformOrigin = 'center center';
             storeBtn.style.display = 'none';
         } else if (product.vendorId && product.vendorName) {
             storeBtn.style.display = 'flex';
-            storeBtn.textContent = 'Ir a este puesto'; // ✅ Texto actualizado
+            storeBtn.textContent = 'Ir a este puesto';
             storeBtn.onclick = function(event) {
                 event.preventDefault();
                 hideImageLightbox();
@@ -614,7 +572,7 @@ img.style.transformOrigin = 'center center';
         }
     }
 
-    // === BOTÓN DE WHATSAPP (sin cambios) ===
+    // === BOTÓN DE WHATSAPP ===
     const whatsappBtn = document.getElementById('lightboxWhatsappBtn');
     if (!whatsappBtn) return;
     if (isMyProduct) {
@@ -626,7 +584,6 @@ img.style.transformOrigin = 'center center';
     whatsappBtn.innerHTML = `<i class="fab fa-whatsapp"></i><span class="whatsapp-btn-text">Contactar vendedor</span>`;
     whatsappBtn.classList.remove('lightbox-whatsapp-modern-btn--loading');
     whatsappBtn.classList.add('lightbox-whatsapp-modern-btn');
-
     if (isValidId(product.vendorId)) {
         try {
             const supClient = getSupabase();
@@ -692,6 +649,9 @@ function nextProduct() {
 
 window.hideImageLightbox = function() {
     document.getElementById('imageLightbox').style.display = 'none';
+    // ✅ Quitar clase visible para resetear transición
+    const overlayInfo = document.getElementById('lightboxOverlayInfo');
+    if (overlayInfo) overlayInfo.classList.remove('visible');
 }
 
 // === FICHA DE PRODUCTO (JPG) ===
@@ -828,18 +788,15 @@ function wrapText(context, text, x, y, maxWidth, lineHeight) {
 window.showVendorPage = async function(vendorId, vendorName) {
     showSection('vendor-page');
     document.getElementById('vendorPageTitle').textContent = vendorName || 'Tienda del Vendedor';
-
     const vendorLogo = document.getElementById('vendorLogo');
     const vendorLogoPlaceholder = document.getElementById('vendorLogoPlaceholder');
     const vendorDescription = document.getElementById('vendorDescription');
     const whatsappBtn = document.getElementById('vendorWhatsappBtn');
-
     // ✅ Reset inicial
     vendorLogo.style.display = 'none';
     vendorLogoPlaceholder.style.display = 'inline-block';
     vendorDescription.textContent = 'Descripción del puesto...';
     whatsappBtn.style.display = 'none';
-
     try {
         if (!(await ensureSupabaseAvailable())) {
             showToast('No se puede conectar para cargar la página del vendedor.', 'error');
@@ -847,12 +804,10 @@ window.showVendorPage = async function(vendorId, vendorName) {
         }
         const supabaseClient = getSupabase();
         let merchant = null;
-
         if (isValidId(vendorId)) {
             const { data: mdata, error } = await supabaseClient.from('merchants').select('*').eq('id', vendorId).single();
             if (!error && mdata) merchant = mdata;
         }
-
         if (merchant) {
             // ✅ Mostrar logo si existe
             if (merchant.store_logo) {
@@ -863,10 +818,8 @@ window.showVendorPage = async function(vendorId, vendorName) {
                 vendorLogo.style.display = 'none';
                 vendorLogoPlaceholder.style.display = 'inline-block';
             }
-
             // ✅ Mostrar descripción
             vendorDescription.textContent = merchant.description || 'Este vendedor aún no ha agregado una descripción.';
-
             // ✅ WhatsApp
             if (merchant.phone) {
                 const phone = merchant.phone.replace(/[^0-9]/g, '');
@@ -879,14 +832,11 @@ window.showVendorPage = async function(vendorId, vendorName) {
     } catch (error) { 
         console.error("Error fetching vendor data:", error); 
     }
-
-// Dentro de showVendorPage, al final:
-loadProducts('vendorProductsGrid', { vendorId: vendorId });
-
-// ✅ Actualizar favoritos después de que los productos se rendericen
-setTimeout(updateFavoriteUI, 100);
+    // Dentro de showVendorPage, al final:
+    loadProducts('vendorProductsGrid', { vendorId: vendorId });
+    // ✅ Actualizar favoritos después de que los productos se rendericen
+    setTimeout(updateFavoriteUI, 100);
 }
-
 
 // === BÚSQUEDA Y FILTRADO ===
 let currentCategory = 'all';
@@ -913,8 +863,6 @@ window.filterProducts = function() {
         applyFilters();
     }, 500);
 };
-
-
 
 window.clearSearch = function() {
     document.getElementById('productSearchInput').value = '';
@@ -1079,10 +1027,10 @@ try {
     localStorage.setItem('feriaVirtualFavorites', '[]');
     favorites = [];
 }
+
 function toggleFavorite(productId) {
     const index = favorites.indexOf(productId);
     const isFavorited = index === -1;
-
     // Actualizar array de favoritos
     if (isFavorited) {
         favorites.push(productId);
@@ -1090,7 +1038,6 @@ function toggleFavorite(productId) {
         favorites.splice(index, 1);
     }
     localStorage.setItem('feriaVirtualFavorites', JSON.stringify(favorites));
-
     // ✅ Actualizar el botón específico en el DOM (sin recargar toda la grilla)
     const btn = document.querySelector(`.btn-favorite[data-product-id="${productId}"]`);
     if (btn) {
@@ -1105,11 +1052,11 @@ function toggleFavorite(productId) {
     // ✅ Actualizar el badge del header en tiempo real
     document.getElementById('favoritesCount').textContent = favorites.length;
     }
-
-
     // Opcional: notificación
     // showToast(isFavorited ? 'Agregado a favoritos' : 'Eliminado de favoritos', 'info');
-}function isFavorite(productId) {
+}
+
+function isFavorite(productId) {
     return favorites.includes(productId);
 }
 
@@ -1117,7 +1064,6 @@ function updateFavoriteUI() {
     // Solo en secciones activas
     const activeSections = document.querySelectorAll('.section.active-section');
     if (activeSections.length === 0) return;
-
     activeSections.forEach(section => {
         const favoriteButtons = section.querySelectorAll('.btn-favorite');
         favoriteButtons.forEach(btn => {
@@ -1147,7 +1093,6 @@ document.addEventListener('click', function(e) {
             window.addToCartWithAnimation(addToCartBtn, product);
         }
     }
-
     // Favoritos
     const favoriteBtn = e.target.closest('.btn-favorite');
     if (favoriteBtn) {
@@ -1165,11 +1110,12 @@ document.addEventListener('click', function(e) {
         }
     }
 });
+
 /**
  * Muestra un modal con la descripción completa del producto.
  */
 function showFullDescriptionModal(description) {
-    // Crear modal si no existe
+    // Reutilizar modal existente si está en el DOM
     let modal = document.getElementById('fullDescriptionModal');
     if (!modal) {
         modal = document.createElement('div');
@@ -1191,6 +1137,7 @@ function showFullDescriptionModal(description) {
     document.getElementById('fullDescriptionContent').textContent = description;
     modal.style.display = 'flex';
 }
+
 // === DELEGACIÓN DE EVENTO PARA "VER MÁS" EN MIS PRODUCTOS ===
 document.addEventListener('click', function(e) {
     const viewMoreBtn = e.target.closest('.btn-view-more');
@@ -1201,63 +1148,29 @@ document.addEventListener('click', function(e) {
         document.getElementById('fullProductDescModal').style.display = 'flex';
     }
 });
-// === DELEGACIÓN DE EVENTO PARA "VER MÁS" EN PRODUCTOS PÚBLICOS ===
-document.addEventListener('click', function(e) {
-    const viewMoreBtn = e.target.closest('.btn-view-more-public');
-    if (viewMoreBtn) {
-        e.stopPropagation();
-        const fullDesc = viewMoreBtn.dataset.fullDescription || 'Sin descripción';
-        // Reutilizamos el mismo modal que creamos para "Mis Productos"
-        let modal = document.getElementById('fullProductDescModal');
-        if (!modal) {
-            // Crear modal dinámicamente si no existe
-            modal = document.createElement('div');
-            modal.id = 'fullProductDescModal';
-            modal.className = 'login-modal';
-            modal.innerHTML = `
-                <div class="login-box" style="max-width: 600px; max-height: 80vh;">
-                    <button type="button" class="close-modal-btn" onclick="this.parentElement.parentElement.style.display='none'">
-                        <i class="fas fa-times"></i>
-                    </button>
-                    <div class="login-header">
-                        <h2>Descripción del producto</h2>
-                    </div>
-                    <div id="fullProductDescContent" style="padding: 1rem; line-height: 1.6; color: var(--text-primary); max-height: 60vh; overflow-y: auto; white-space: pre-wrap;"></div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }
-        document.getElementById('fullProductDescContent').textContent = fullDesc;
-        modal.style.display = 'flex';
-    }
-});
-// === RENDERIZAR SECCIÓN DE FAVORITOS ===
 
+// === RENDERIZAR SECCIÓN DE FAVORITOS ===
 window.renderFavoritesSection = function() {
     const favoritesGrid = document.getElementById('favoritesGrid');
     const noFavoritesMsg = document.getElementById('noFavoritesMessage');
-    
     if (!favoritesGrid) return;
-
     const favorites = JSON.parse(localStorage.getItem('feriaVirtualFavorites') || '[]');
     document.getElementById('favoritesCount').textContent = favorites.length;
-
     if (favorites.length === 0) {
         favoritesGrid.innerHTML = '';
         noFavoritesMsg.style.display = 'flex';
         return;
     }
-
     noFavoritesMsg.style.display = 'none';
     favoritesGrid.innerHTML = '<p>Cargando favoritos...</p>';
-// Dentro de renderFavoritesSection:
-const stored = localStorage.getItem('feriaVirtualFavorites');
-const validFavorites = stored ? JSON.parse(stored) : [];
-if (!Array.isArray(validFavorites)) {
-    localStorage.setItem('feriaVirtualFavorites', '[]');
-    validFavorites = [];
-}
-document.getElementById('favoritesCount').textContent = validFavorites.length;
+    // Dentro de renderFavoritesSection:
+    const stored = localStorage.getItem('feriaVirtualFavorites');
+    const validFavorites = stored ? JSON.parse(stored) : [];
+    if (!Array.isArray(validFavorites)) {
+        localStorage.setItem('feriaVirtualFavorites', '[]');
+        validFavorites = [];
+    }
+    document.getElementById('favoritesCount').textContent = validFavorites.length;
     // Cargar productos desde Supabase
     (async () => {
         try {
@@ -1271,9 +1184,7 @@ document.getElementById('favoritesCount').textContent = validFavorites.length;
                 .select('*')
                 .in('id', favorites)
                 .eq('published', true);
-
             if (error) throw error;
-
             const products = (data || []).map(normalizeProductRow);
             favoritesGrid.innerHTML = '';
             if (products.length === 0) {
@@ -1289,6 +1200,7 @@ document.getElementById('favoritesCount').textContent = validFavorites.length;
         }
     })();
 };
+
 // === DELEGACIÓN DE EVENTO PARA "VER MÁS" EN PRODUCTOS PÚBLICOS ===
 document.addEventListener('click', function(e) {
     const viewMoreBtn = e.target.closest('.btn-view-more-public');
