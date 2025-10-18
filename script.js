@@ -784,10 +784,30 @@ window.login = async function() {
         const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) throw error;
         showMessage(msgEl, '¡Bienvenido!', 'success');
+        // After a successful sign-in, refresh session info, set currentUser, and update UI/data
+        try {
+            const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+            if (session && session.user) {
+                currentUser = { id: session.user.id, email: session.user.email };
+                isMerchant = true;
+                // Load latest merchant/profile data and update UI
+                await updateUserProfile(currentUser.id);
+                updateAuthUI();
+                // If a function to load merchant products exists, call it to refresh the management view
+                if (typeof loadMyProducts === 'function') {
+                    try { await loadMyProducts(); } catch (e) { console.warn('loadMyProducts failed:', e); }
+                } else if (typeof loadMyProductsWrapper === 'function') {
+                    try { await loadMyProductsWrapper(); } catch (e) { console.warn('loadMyProductsWrapper failed:', e); }
+                }
+            }
+        } catch (e) {
+            console.warn('Error al refrescar sesión tras login:', e);
+        }
+
         setTimeout(() => {
             hideLogin();
             showSection('my-store'); // ✅ Redirigir a Mi Puesto al iniciar sesión
-        }, 1000);
+        }, 700);
     } catch (error) {
         console.error('Error login:', error);
         let userMsg = 'Correo o contraseña incorrectos.';

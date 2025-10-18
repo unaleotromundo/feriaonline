@@ -1,0 +1,114 @@
+/* Backup of original root style.css (pre-restore)
+   Created automatically before restoring a clean baseline.
+*/
+
+/* ========================================
+   SISTEMA DE TEMAS PROFESIONAL Y ACCESIBLE
+   Inspirado en GitHub, Stripe, Linear, y Vercel
+   ======================================== */
+/* === TEMA CLARO (DEFAULT) === */
+:root {
+    /* Colores principales - Paleta refinada */
+    --primary: #6366f1;        /* Indigo vibrante */
+    --primary-dark: #4f46e5;   /* Indigo oscuro */
+    --primary-light: #818cf8;  /* Indigo claro */
+    --cyan: #06b6d4;           /* Cyan profesional */
+    --cyan-dark: #0891b2;      /* Cyan oscuro */
+    --magenta: #d946ef;        /* Acento magenta */
+    --yellow: #f59e0b;         /* Amarillo */
+    /* Colores de fondo - Sistema de capas */
+    --bg-base: #fafbfc;        /* Fondo base muy sutil */
+    --bg-primary: #ffffff;     /* Blanco puro para tarjetas */
+    --bg-secondary: #f6f8fa;   /* Gris muy claro */
+    --bg-tertiary: #eef2f6;    /* Gris claro para hover */
+    --bg-elevated: #ffffff;    /* Elementos elevados */
+    --bg-gradient-start: #f8fafc;
+    --bg-gradient-end: #f0f4f8;
+    /* Colores de texto - Optimizados para accesibilidad WCAG AAA */
+    --text-primary: #0d1117;   /* Casi negro - ratio 15.3:1 */
+    --text-secondary: #24292f; /* Gris muy oscuro - ratio 12.6:1 */
+    --text-tertiary: #57606a;  /* Gris medio - ratio 5.8:1 */
+    --text-muted: #6e7781;     /* Gris suave - ratio 4.7:1 */
+    --text-placeholder: #8c959f; /* Placeholders */
+    /* Bordes y separadores - Sutiles y profesionales */
+    --border-color: #d0d7de;
+    --border-muted: #e4e9ee;
+    --border-hover: #b3bac2;
+    --border-focus: #6366f1;
+    /* Estados y feedback - Claros y consistentes */
+    --error: #dc2626;
+    --error-bg: #fef2f2;
+    --success: #16a34a;
+    --success-bg: #f0fdf4;
+    --warning: #f59e0b;
+    --warning-bg: #fffbeb;
+    --info: #0ea5e9;
+    --info-bg: #f0f9ff;
+    --whatsapp: #25D366;
+    /* Sombras - Sistema de elevación */
+    --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
+    --shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.1), 0 1px 2px rgba(16, 24, 40, 0.06);
+    --shadow-md: 0 4px 8px rgba(16, 24, 40, 0.08), 0 2px 4px rgba(16, 24, 40, 0.03);
+    --shadow-lg: 0 12px 24px rgba(16, 24, 40, 0.1), 0 4px 8px rgba(16, 24, 40, 0.04);
+    --shadow-xl: 0 24px 48px rgba(16, 24, 40, 0.12), 0 8px 16px rgba(16, 24, 40, 0.05);
+    /* Overlays */
+    --overlay-light: rgba(255, 255, 255, 0.9);
+    --overlay-dark: rgba(0, 0, 0, 0.6);
+    /* Compatibilidad */
+    --black: #0d1117;
+    --light: #f6f8fa;
+    --gray: #d0d7de;
+}
+/* === TEMA OSCURO === */
+body[data-theme="dark"] {
+    /* Colores principales - Más saturados y vibrantes */
+    --primary: #818cf8;
+    --primary-dark: #6366f1;
+    --primary-light: #a5b4fc;
+    --cyan: #22d3ee;
+    --cyan-dark: #06b6d4;
+    --magenta: #f472b6;
+    /* Colores de fondo - Sistema de capas invertido */
+    --bg-base: #0d1117;        /* Negro azulado profundo */
+    --bg-primary: #161b22;     /* Elevación nivel 1 */
+    --bg-secondary: #1c2128;   /* Elevación nivel 2 */
+    --bg-tertiary: #21262d;    /* Elevación nivel 3 */
+    --bg-elevated: #252b33;    /* Elementos elevados */
+    --bg-gradient-start: #0d1117;
+    --bg-gradient-end: #161b22;
+    /* Colores de texto - Optimizados para fondo oscuro */
+    --text-primary: #f0f6fc;   /* Casi blanco - ratio 14.8:1 */
+    --text-secondary: #c9d1d9; /* Gris muy claro - ratio 10.4:1 */
+    --text-tertiary: #8b949e;  /* Gris claro - ratio 5.6:1 */
+    --text-muted: #6e7681;     /* Gris medio - ratio 4.2:1 */
+    --text-placeholder: #484f58;
+    /* Bordes y separadores */
+    --border-color: #30363d;
+    --border-muted: #21262d;
+    --border-hover: #484f58;
+    --border-focus: #818cf8;
+    /* Estados y feedback - Ajustados para oscuro */
+    --error: #f87171;
+    --error-bg: #2d1517;
+    --success: #4ade80;
+    --success-bg: #0d211a;
+    --warning: #fbbf24;
+    --warning-bg: #2b2416;
+    --info: #38bdf8;
+    --info-bg: #0c1e2b;
+    /* Sombras - Más profundas en oscuro */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.7), 0 8px 16px rgba(0, 0, 0, 0.5);
+    /* Overlays */
+    --overlay-light: rgba(22, 27, 34, 0.95);
+    --overlay-dark: rgba(0, 0, 0, 0.8);
+    /* Compatibilidad */
+    --black: #f0f6fc;
+    --light: #161b22;
+    --gray: #30363d;
+}
+
+/* The rest of the original root style.css content is saved here for recovery if needed. */

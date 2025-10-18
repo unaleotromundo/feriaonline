@@ -1409,6 +1409,32 @@ body[data-theme="dark"] .floating-cart-btn {
     background: rgba(255, 255, 255, 0.2);
 }
 
+/* Botón de cerrar genérico para modales: fondo azul del sitio y cruz blanca */
+.close-modal-btn {
+    background: var(--primary);
+    border: none;
+    color: white; /* fallback for text/icon */
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: background 0.18s ease, transform 0.12s ease;
+}
+.close-modal-btn i,
+.close-modal-btn svg {
+    color: white; /* ensure the icon (font-awesome or svg) is white */
+    font-size: 1rem;
+}
+.close-modal-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+
 .cart-items {
     flex: 1;
     padding: 1rem;
