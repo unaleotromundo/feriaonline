@@ -3980,3 +3980,7 @@ html {
 .image-lightbox.active ~ #themeToggle {
     display: none !important;
 }
+
+/* Cierre final agregado para balancear llaves abiertas durante ediciones previas */
+
+}
