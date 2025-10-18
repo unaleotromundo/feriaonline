@@ -507,11 +507,106 @@ async function updateUserProfile(userId) {
         const { data: products, error: productsError } = await productsQuery;
         if (productsError) throw productsError;
         document.getElementById('userProducts').textContent = `${(products || []).length} productos publicados`;
+        // Render social links in vendor page using individual columns (instagram, facebook, youtube, sitioweb)
+        try {
+            const socialsObj = {
+                instagram: currentMerchantData.instagram || null,
+                facebook: currentMerchantData.facebook || null,
+                youtube: currentMerchantData.youtube || null,
+                website: currentMerchantData.sitioweb || null
+            };
+            renderVendorSocials(socialsObj);
+        } catch (e) {
+            console.warn('No se pudieron renderizar redes sociales:', e);
+        }
         
     } catch (error) { 
         console.error("Error loading profile:", error); 
     }
 }
+
+// Mostrar / renderizar iconos sociales en la página del vendedor
+function renderVendorSocials(socials) {
+    const container = document.getElementById('vendorSocialsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!socials) return;
+    // socials expected to be an object with keys: instagram, facebook, youtube, website
+    const addIcon = (href, cls, title) => {
+        if (!href) return;
+        const a = document.createElement('a');
+        a.href = href;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.className = 'btn btn-social';
+        a.style.display = 'inline-flex';
+        a.style.alignItems = 'center';
+        a.style.justifyContent = 'center';
+        a.style.padding = '0.45rem';
+        a.style.borderRadius = '8px';
+        a.style.fontSize = '1.05rem';
+        a.title = title;
+        a.innerHTML = `<i class="${cls}"></i>`;
+        // add a platform-specific class for styling (instagram/facebook/youtube/website)
+        if (/instagram/i.test(cls) || /instagram/i.test(title)) a.classList.add('instagram');
+        else if (/facebook/i.test(cls) || /facebook/i.test(title)) a.classList.add('facebook');
+        else if (/youtube/i.test(cls) || /youtube/i.test(title)) a.classList.add('youtube');
+        else a.classList.add('website');
+        container.appendChild(a);
+    };
+    addIcon(socials.instagram, 'fab fa-instagram', 'Instagram');
+    addIcon(socials.facebook, 'fab fa-facebook', 'Facebook');
+    addIcon(socials.youtube, 'fab fa-youtube', 'YouTube');
+    addIcon(socials.website, 'fas fa-link', 'Sitio Web');
+}
+
+// Abrir modal de redes y cargar valores actuales
+window.openSocialsModal = function() {
+    const modal = document.getElementById('socialsModal');
+    if (!modal) return;
+    // prefilling if currentMerchantData exists
+    document.getElementById('socialInstagram').value = currentMerchantData?.instagram || '';
+    document.getElementById('socialFacebook').value = currentMerchantData?.facebook || '';
+    document.getElementById('socialYouTube').value = currentMerchantData?.youtube || '';
+    document.getElementById('socialWebsite').value = currentMerchantData?.sitioweb || '';
+    modal.style.display = 'flex';
+};
+
+// Guardar redes sociales (llamado desde modal)
+window.saveStoreSocials = async function() {
+    if (!currentUser) return showToast('Debes iniciar sesión para guardar tus redes.', 'error');
+    const newSocials = {
+        instagram: document.getElementById('socialInstagram').value.trim() || null,
+        facebook: document.getElementById('socialFacebook').value.trim() || null,
+        youtube: document.getElementById('socialYouTube').value.trim() || null,
+        situsite: document.getElementById('socialWebsite').value.trim() || null
+    };
+    // cleanup empty strings
+    Object.keys(newSocials).forEach(k => { if (!newSocials[k]) newSocials[k] = null; });
+    const saveBtn = document.querySelector('#socialsModal .btn-primary');
+    startButtonLoading(saveBtn, 'Guardando...');
+    try {
+        if (!(await ensureSupabaseAvailable())) { stopButtonLoading(saveBtn); return; }
+        const supabaseClient = getSupabase();
+        // Persist into individual columns (instagram, facebook, youtube, sitioweb)
+        const payload = {
+            instagram: newSocials.instagram,
+            facebook: newSocials.facebook,
+            youtube: newSocials.youtube,
+            sitioweb: newSocials.situsite
+        };
+        const { error } = await supabaseClient.from('merchants').update(payload).eq('id', currentUser.id);
+        if (error) throw error;
+        await updateUserProfile(currentUser.id);
+        hideModal('socialsModal');
+        showToast('Redes sociales guardadas.', 'success');
+    } catch (err) {
+        console.error('Error saving socials:', err);
+        showToast('Error al guardar redes sociales.', 'error');
+    } finally {
+        stopButtonLoading(saveBtn);
+    }
+};
 
 // === ACTUALIZAR toggleStoreEditMode PARA MANEJAR EL LOGO ===
 window.toggleStoreEditMode = function(isEditing) {
@@ -534,6 +629,19 @@ window.saveStoreInfo = async function() {
         business: document.getElementById('storeName').value, 
         description: document.getElementById('storeDescription').value 
     };
+    // If the socials modal exists, include its values as well
+    try {
+        const instagram = document.getElementById('socialInstagram')?.value.trim() || null;
+        const facebook = document.getElementById('socialFacebook')?.value.trim() || null;
+        const youtube = document.getElementById('socialYouTube')?.value.trim() || null;
+        const sitioweb = document.getElementById('socialWebsite')?.value.trim() || null;
+        if (instagram || facebook || youtube || sitioweb) {
+            newData.instagram = instagram;
+            newData.facebook = facebook;
+            newData.youtube = youtube;
+            newData.sitioweb = sitioweb;
+        }
+    } catch (e) { /* ignore if elements missing */ }
     
     // Agregar logo del puesto si se subió uno nuevo (diferente de la foto de perfil)
     if (selectedStoreLogoUpload) {
@@ -1254,6 +1362,110 @@ async function initializeApp() {
         loadCartFromLocalStorage();
     }
 }
+// === CURSOR PERSONALIZADO: punto + trail + flash ===
+(function() {
+    // Toggle to enable/disable custom cursor. Set to true if you want the custom cursor back.
+    const ENABLE_CUSTOM_CURSOR = false;
+    if (!ENABLE_CUSTOM_CURSOR) return;
+
+    const supportsFine = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (!supportsFine || reduceMotion || isTouch) return;
+
+    const body = document.body;
+    body.classList.add('custom-cursor-enabled');
+
+    // main point
+    const cursor = document.createElement('div');
+    cursor.className = 'custom-cursor';
+    document.body.appendChild(cursor);
+
+    // followers: circle, triangle, square
+    const followerCircle = document.createElement('div'); followerCircle.className = 'cursor-follower circle'; document.body.appendChild(followerCircle);
+    const followerTriangle = document.createElement('div'); followerTriangle.className = 'cursor-follower triangle'; document.body.appendChild(followerTriangle);
+    const followerSquare = document.createElement('div'); followerSquare.className = 'cursor-follower square'; document.body.appendChild(followerSquare);
+
+    const followers = [
+        { el: followerCircle, radius: 28, phase: 0 },
+        { el: followerTriangle, radius: 44, phase: Math.PI * 0.66 },
+        { el: followerSquare, radius: 60, phase: Math.PI * 1.33 }
+    ];
+
+    let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+    let cx = mouseX, cy = mouseY; // current center (smoothed)
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
+    // update loop
+    let last = performance.now();
+    function frame(now) {
+        const dt = Math.min(48, now - last);
+        last = now;
+        // smooth center
+        cx = lerp(cx, mouseX, 0.22);
+        cy = lerp(cy, mouseY, 0.22);
+        // move main cursor
+        cursor.style.left = cx + 'px';
+        cursor.style.top = cy + 'px';
+        // orbit followers with slight phase progression
+        followers.forEach((f, i) => {
+            f.phase += 0.028 * (1 + i * 0.12);
+            const fx = cx + Math.cos(f.phase) * f.radius;
+            const fy = cy + Math.sin(f.phase) * f.radius;
+            // smoother follow
+            const curLeft = parseFloat(f.el.style.left) || fx;
+            const curTop = parseFloat(f.el.style.top) || fy;
+            f.el.style.left = lerp(curLeft, fx, 0.26) + 'px';
+            f.el.style.top = lerp(curTop, fy, 0.26) + 'px';
+            // rotate triangle and square a bit
+            if (f.el.classList.contains('triangle') || f.el.classList.contains('square')) {
+                f.el.style.transform = `translate(-50%, -50%) rotate(${(f.phase * 30) % 360}deg)`;
+            }
+        });
+
+        requestAnimationFrame(frame);
+    }
+
+    window.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+    }, { passive: true });
+
+    window.addEventListener('mousedown', (e) => {
+        // pulse effect
+        const pulse = document.createElement('div');
+        pulse.className = 'cursor-pulse';
+        pulse.style.left = e.clientX + 'px';
+        pulse.style.top = e.clientY + 'px';
+        document.body.appendChild(pulse);
+        setTimeout(() => pulse.remove(), 450);
+    });
+
+    window.addEventListener('mouseenter', () => {
+        cursor.classList.remove('custom-cursor--hidden');
+        followers.forEach(f => f.el.classList.remove('custom-cursor--hidden'));
+    });
+    window.addEventListener('mouseleave', () => {
+        cursor.classList.add('custom-cursor--hidden');
+        followers.forEach(f => f.el.classList.add('custom-cursor--hidden'));
+    });
+
+    // Hide when focusing input fields to avoid interference
+    document.addEventListener('focusin', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) {
+            cursor.classList.add('custom-cursor--hidden');
+            followers.forEach(f => f.el.classList.add('custom-cursor--hidden'));
+        }
+    });
+    document.addEventListener('focusout', () => {
+        cursor.classList.remove('custom-cursor--hidden');
+        followers.forEach(f => f.el.classList.remove('custom-cursor--hidden'));
+    });
+
+    requestAnimationFrame(frame);
+
+})();
 // ✅ Inicializar contador de favoritos (versión segura)
 try {
     const stored = localStorage.getItem('feriaVirtualFavorites');

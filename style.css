@@ -55,6 +55,148 @@
     --light: #f6f8fa;
     --gray: #d0d7de;
 }
+/* === CURSOR PERSONALIZADO Y TRAIL (efecto especial pedido) === */
+/* Solo en pantallas apuntadoras y si no se prefiere reducir movimiento */
+@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    /* Ocultar cursor nativo en toda la página cuando el cursor personalizado está activo.
+       Excepción: campos de formulario y elementos con la clase .no-custom-cursor */
+    body.custom-cursor-enabled,
+    body.custom-cursor-enabled * {
+        cursor: none !important;
+    }
+
+    /* Permitir cursor nativo en inputs y elementos editables para mantener la usabilidad */
+    body.custom-cursor-enabled input,
+    body.custom-cursor-enabled textarea,
+    body.custom-cursor-enabled select,
+    body.custom-cursor-enabled [contenteditable],
+    body.custom-cursor-enabled .no-custom-cursor {
+        cursor: auto !important;
+    }
+
+    .custom-cursor {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 10px;
+        height: 10px;
+        background: #000; /* punto negro */
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 99999;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 6px 3px rgba(255, 223, 0, 0.95), inset 0 0 6px 2px rgba(255,255,255,0.6);
+        transition: transform 0.08s linear, opacity 0.2s ease;
+        will-change: transform, opacity;
+    }
+
+    .custom-cursor--hidden {
+        opacity: 0;
+    }
+
+    /* Orbiting followers: circle, triangle, square */
+    .cursor-follower {
+        position: fixed;
+        width: 14px;
+        height: 14px;
+        pointer-events: none;
+        z-index: 99998;
+        transform: translate(-50%, -50%);
+        transition: transform 0.12s linear, opacity 0.25s ease;
+        will-change: transform, opacity;
+        opacity: 0.95;
+    }
+    .cursor-follower.circle {
+        border-radius: 50%;
+        background: radial-gradient(circle at 30% 25%, #fff 0%, #ffd800 20%, #ff7a00 55%);
+        box-shadow: 0 0 8px rgba(255,160,40,0.45);
+    }
+    .cursor-follower.triangle {
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-bottom: 14px solid rgba(255,140,40,0.95);
+        background: transparent;
+        filter: drop-shadow(0 2px 6px rgba(255,80,30,0.25));
+    }
+    .cursor-follower.square {
+        border-radius: 3px;
+        background: linear-gradient(135deg, #fff 0%, #ffd800 20%, #ff2d2d 90%);
+        box-shadow: 0 2px 10px rgba(255,50,50,0.15);
+    }
+
+    /* small click pulse */
+    .cursor-pulse {
+        position: fixed;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 99997;
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95) 0%, rgba(255,223,0,0.95) 20%, rgba(255,122,0,0.88) 50%, rgba(255,45,45,0.75) 80%);
+        mix-blend-mode: screen;
+        transform: translate(-50%, -50%) scale(0.6);
+        opacity: 0.95;
+        animation: cursor-pulse-fade 420ms forwards ease-out;
+    }
+
+    @keyframes cursor-pulse-fade { to { opacity: 0; transform: translate(-50%, -50%) scale(1.8); } }
+}
+
+/* If user prefers reduced motion or on coarse pointers, do not hide native cursor or run effects */
+@media (prefers-reduced-motion: reduce), (pointer: coarse) {
+    .custom-cursor, .cursor-trail, .cursor-flash { display: none !important; }
+}
+
+/* Social buttons under WhatsApp on vendor page */
+#vendorSocialsContainer .btn-social {
+    width: 44px;
+    height: 44px;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 10px;
+    color: white !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+}
+#vendorSocialsContainer .btn-social i { font-size: 20px; }
+
+/* Platform colors (approximate official shades) */
+#vendorSocialsContainer .btn-social.instagram { background: radial-gradient(circle at 30% 20%, #fff 0%, #f58529 20%, #dd2a7b 55%, #8134af 100%); box-shadow: 0 8px 20px rgba(221,42,123,0.22); }
+#vendorSocialsContainer .btn-social.facebook { background: linear-gradient(180deg,#1877f2,#165ec9); box-shadow: 0 8px 20px rgba(24,119,242,0.18); }
+#vendorSocialsContainer .btn-social.youtube { background: linear-gradient(180deg,#ff0000,#cc0000); box-shadow: 0 8px 20px rgba(255,0,0,0.14); }
+#vendorSocialsContainer .btn-social.website { background: linear-gradient(135deg,#06b6d4,#0ea5e9); box-shadow: 0 8px 20px rgba(6,182,212,0.12); }
+
+/* Click/tap animation */
+#vendorSocialsContainer .btn-social:active { transform: translateY(2px) scale(0.98); box-shadow: 0 4px 12px rgba(0,0,0,0.08); filter: brightness(0.95); }
+#vendorSocialsContainer .btn-social:hover { transform: translateY(-3px); box-shadow: 0 12px 26px rgba(0,0,0,0.14); }
+
+/* Estilo para el botón de WhatsApp específico en la página del vendedor */
+.btn-whatsapp {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    background: linear-gradient(180deg, var(--whatsapp), #1f9a4a);
+    color: white !important;
+    box-shadow: 0 10px 28px rgba(37,211,102,0.18);
+    border: none;
+    text-decoration: none;
+    font-weight: 600;
+    transition: transform 140ms ease, box-shadow 140ms ease, filter 120ms ease;
+}
+.btn-whatsapp i { font-size: 20px; }
+.btn-whatsapp:hover { transform: translateY(-3px); box-shadow: 0 16px 36px rgba(37,211,102,0.22); filter: brightness(0.98); }
+.btn-whatsapp:active { transform: translateY(1px) scale(0.995); box-shadow: 0 8px 18px rgba(0,0,0,0.08); }
+
+/* Asegurar que el contenedor alinee WhatsApp a la izquierda y sociales a la derecha si hay espacio */
+.vendor-contact-row { justify-content: flex-start; }
+.vendor-contact-row #vendorSocialsContainer { margin-left: 0.5rem; }
+
 /* === TEMA OSCURO === */
 body[data-theme="dark"] {
     /* Colores principales - Más saturados y vibrantes */
@@ -193,6 +335,97 @@ body[data-theme="dark"]::before {
 .logo i {
     font-size: 1.75rem;
 }
+.site-logo-svg {
+    flex: 0 0 auto;
+    width: 44px; /* restaurado al tamaño original */
+    height: 44px; /* restaurado */
+    display: block;
+    border-radius: 8px;
+    transform-origin: center;
+}
+
+/* Imagen del logo cuando se usa un asset externo */
+#siteLogoImg, .site-logo-img {
+    width: auto; /* keep aspect ratio */
+    height: 56px;      /* increase to the maximum that fits typical headers */
+    max-height: 56px;  /* ensure it doesn't grow header */
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.14);
+    display: inline-block;
+    vertical-align: middle;
+}
+.brand-name {
+    font-weight: 800;
+    font-size: 1.6rem;
+    color: white;
+    letter-spacing: -0.02em;
+}
+
+/* Estilo para el texto dentro del SVG del logo */
+.site-logo-svg .logo-text {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-weight: 900;
+    font-size: 13px; /* mayor para legibilidad */
+    fill: #ffffff;
+    stroke: rgba(0,0,0,0.35);
+    stroke-width: 0.6px;
+    paint-order: stroke fill;
+    text-shadow: 0 3px 12px rgba(0,0,0,0.45);
+    pointer-events: none;
+    letter-spacing: -0.01em;
+}
+
+/* Ajustes responsivos: reducir texto si el contenedor es muy pequeño */
+@media (max-width: 420px) {
+    .site-logo-svg { width: 40px; height: 40px; }
+    .site-logo-svg .logo-text { font-size: 7px; }
+    #siteLogoImg, .site-logo-img { height: 40px; max-height: 40px; }
+    .brand-name { font-size: 1.05rem; }
+}
+
+/* Small periodic sparkle: visible briefly every 33 seconds */
+.logo-spark {
+    transform-origin: center;
+    filter: drop-shadow(0 6px 10px rgba(255,255,255,0.18));
+}
+
+@keyframes logo-spark-appear {
+    0%   { opacity: 0; transform: scale(0.6) translateY(-2px); }
+    8%   { opacity: 1; transform: scale(1.05) translateY(-6px); }
+    22%  { opacity: 0.6; transform: scale(0.9) translateY(-8px); }
+    40%  { opacity: 0; transform: scale(0.6) translateY(-10px); }
+}
+
+/* Trigger the animation every 33s using animation-delay sequence trick: 
+   we make a long duration animation but with steps so it only visibly runs briefly.
+   Using animation-iteration-count: infinite and large duration. */
+.site-logo-svg .logo-spark {
+    animation: logo-spark-appear 1.6s linear infinite;
+    animation-delay: 0s;
+    /* We simulate a 33s period by offsetting the animation using a negative delay so
+       only one short visible phase occurs per 33s logical cycle. We'll set the
+       animation-duration long and use steps for opacity, but to keep things simple
+       we stagger the visible window by combining multiple animations via layers if needed. */
+}
+
+/* To actually have a 33s period we'll use an auxiliary animation on the SVG that toggles visibility
+   by moving the phase using steps. This technique is robust across browsers. */
+@keyframes logo-phase {
+    from { --phase: 0; }
+    to   { --phase: 1; }
+}
+.site-logo-svg {
+    animation: logo-phase 33s linear infinite;
+}
+
+/* Use an inline CSS variable to start the spark only in a small window: when the phase is near 0.0
+   we rely on the spark animation being active; otherwise keep spark hidden. This is done with calc() and opacity.
+   Note: not all browsers support conditional animation based on CSS variables, but modern ones do. */
+.site-logo-svg .logo-spark { opacity: 0; }
+.site-logo-svg[style] .logo-spark { opacity: 0; }
+
+/* Fallback: also provide a JS trigger for older browsers (script added below if needed) */
 .nav-container {
     display: flex;
     gap: 1.5rem;

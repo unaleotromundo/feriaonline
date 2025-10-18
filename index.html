@@ -63,10 +63,14 @@
 <!-- Partículas de fuego en el fondo -->
 <div id="fire-particles"></div>
     <header class="header">
-<a href="#" class="logo" onclick="showSection('home')">
-    <i class="fas fa-store"></i>
-    <span>Feria Virtual</span>
-</a>
+        <a href="#" class="logo" onclick="showSection('home')">
+            <!-- Logo image: kangaroo PNG placed inside the logo link -->
+            <picture>
+                <source srcset="logo.png" type="image/png">
+                <img id="siteLogoImg" class="site-logo-img" src="logo.svg" alt="Logo Feria Virtual">
+            </picture>
+            <span class="brand-name">Feria Virtual</span>
+        </a>
         <nav class="nav-container" id="navContainer">
             <a href="#" class="nav-link" onclick="showSection('home')">
                 <i class="fas fa-home"></i>
@@ -210,9 +214,12 @@
         <div class="vendor-content">
             <h2 class="vendor-title" id="vendorPageTitle">Tienda del Vendedor</h2>
             <p class="vendor-description" id="vendorDescription">Descripción del puesto...</p>
-            <a href="#" id="vendorWhatsappBtn" class="btn btn-primary" target="_blank" style="display: none; margin-top: 1.5rem;">
-                <i class="fab fa-whatsapp"></i> Contactar por WhatsApp
-            </a>
+            <div class="vendor-contact-row" style="margin-top:1.5rem; display:flex; gap:0.6rem; align-items:center;">
+                <a href="#" id="vendorWhatsappBtn" class="btn btn-whatsapp" target="_blank" style="display: none;">
+                    <i class="fab fa-whatsapp"></i> Contactar por WhatsApp
+                </a>
+                <div id="vendorSocialsContainer" style="display:flex; gap:0.5rem; align-items:center;"></div>
+            </div>
         </div>
         <div class="vendor-logo-container">
             <img id="vendorLogo" src="" alt="Logo del puesto" style="display: none; border-radius: var(--border-radius-xl); box-shadow: var(--shadow-lg);">
@@ -313,6 +320,7 @@
 
     <div id="storeFormFooter" class="form-footer" style="display: none;">
         <button class="btn btn-secondary" onclick="toggleStoreEditMode(false)">Cancelar</button>
+        <button class="btn btn-secondary" onclick="openSocialsModal()"><i class="fas fa-share-alt"></i> Agregar redes sociales</button>
         <button class="btn btn-primary" onclick="saveStoreInfo()">Guardar Cambios</button>
     </div>
 </div>
@@ -483,6 +491,37 @@
             <div id="themeSelectionGrid" class="theme-selection-grid"></div>
         </div>
     </div>
+
+            <!-- === MODAL REDES SOCIALES === -->
+            <div class="login-modal" id="socialsModal">
+                <div class="login-box" style="max-width:520px;">
+                    <button type="button" class="close-modal-btn" onclick="hideModal('socialsModal')"><i class="fas fa-times"></i></button>
+                    <div class="login-header">
+                        <h2>Redes Sociales</h2>
+                        <p>Agrega enlaces a tus redes para mostrarlos en la portada del puesto.</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="socialInstagram"><i class="fab fa-instagram"></i> Instagram</label>
+                        <input id="socialInstagram" class="form-control" placeholder="https://instagram.com/tuusuario">
+                    </div>
+                    <div class="form-group">
+                        <label for="socialFacebook"><i class="fab fa-facebook"></i> Facebook</label>
+                        <input id="socialFacebook" class="form-control" placeholder="https://facebook.com/tuPagina">
+                    </div>
+                    <div class="form-group">
+                        <label for="socialYouTube"><i class="fab fa-youtube"></i> YouTube</label>
+                        <input id="socialYouTube" class="form-control" placeholder="https://youtube.com/channel/xxxx">
+                    </div>
+                    <div class="form-group">
+                        <label for="socialWebsite"><i class="fas fa-link"></i> Sitio Web</label>
+                        <input id="socialWebsite" class="form-control" placeholder="https://tusitio.com">
+                    </div>
+                    <div class="form-footer" style="display:flex; gap:.5rem; justify-content:flex-end;">
+                        <button class="btn btn-secondary" onclick="hideModal('socialsModal')">Cancelar</button>
+                        <button class="btn btn-primary" onclick="saveStoreSocials()">Guardar Redes</button>
+                    </div>
+                </div>
+            </div>
 
     <!-- === MODAL DE OPCIONES DE CATÁLOGO === -->
     <div class="login-modal" id="catalog-options-modal">

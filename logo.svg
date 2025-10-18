@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+  <rect width="120" height="120" rx="16" fill="#ff9a3c"/>
+  <circle cx="60" cy="50" r="28" fill="#fff" opacity="0.12"/>
+  <text x="60" y="78" font-family="Segoe UI, Tahoma, sans-serif" font-size="20" fill="#fff" font-weight="700" text-anchor="middle">FV</text>
+</svg>
