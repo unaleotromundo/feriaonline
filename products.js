@@ -828,6 +828,19 @@ window.showVendorPage = async function(vendorId, vendorName) {
                     whatsappBtn.style.display = 'inline-flex';
                 }
             }
+            // --- Mostrar redes sociales del vendedor (también para visitantes sin sesión) ---
+            try {
+                const socialsObj = {
+                    instagram: merchant.instagram || null,
+                    facebook: merchant.facebook || null,
+                    youtube: merchant.youtube || null,
+                    website: merchant.sitioweb || null
+                };
+                // Llamada a la función del script principal que renderiza botones
+                if (typeof renderVendorSocials === 'function') renderVendorSocials(socialsObj);
+            } catch (err) {
+                console.warn('No se pudieron renderizar redes del vendedor:', err);
+            }
         }
     } catch (error) { 
         console.error("Error fetching vendor data:", error); 
