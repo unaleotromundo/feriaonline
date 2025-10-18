@@ -1471,6 +1471,13 @@ body[data-theme="dark"] .floating-cart-btn {
     background: linear-gradient(135deg, var(--primary) 0%, var(--cyan) 100%);
     border-color: rgba(255, 255, 255, 0.2);
 }
+/* Ocultar solo el badge/cart móvil que aparece en pantallas pequeñas (bottom-right) */
+.mobile-cart-badge {
+    /* Si quieres que nunca aparezca en móvil, forzamos hide */
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
 /* === BOTÓN DE WHATSAPP EN LIGHTBOX - ABAJO IZQUIERDA === */
 .lightbox-whatsapp-modern-btn {
     position: absolute !important;
@@ -2576,7 +2583,6 @@ body[data-theme="dark"] .runner-overlay {
         max-width: 95vw;
         max-height: 70vh;
     }
-}
 
 /* === ESTILOS PARA LA PÁGINA DEL VENDEDOR === */
 .vendor-header {
@@ -3961,24 +3967,12 @@ html {
         scroll-behavior: auto;
     }
 }
-/* Mobile First (Base) */
+/* Mobile first base variables and breakpoints.
+    Detailed responsive rules are defined above; this section
+    consolidates breakpoint references and avoids placeholder
+    tokens that can break CSS parsers. */
+
 :root { --mobile-padding: 1rem; }
-
-/* Móvil: 320px - 767px */
-@media (max-width: 767px) { ... }
-
-/* Móvil Landscape */
-@media (max-width: 767px) and (orientation: landscape) { ... }
-
-/* Tablet: 768px - 1023px */
-@media (min-width: 768px) and (max-width: 1023px) { ... }
-
-/* Desktop: 1024px+ */
-@media (min-width: 1024px) { ... }
-
-/* Large Desktop: 1440px+ */
-@media (min-width: 1440px) { ... }
-
 .image-lightbox.active ~ .theme-toggle,
 .image-lightbox.active ~ .cart-icon,
 .image-lightbox.active ~ .mobile-cart-badge,
