@@ -2862,6 +2862,17 @@ body[data-theme="dark"] .btn-favorite.active {
     color: var(--text-muted);
     font-size: 5rem;
 }
+.flying-cart {
+    position: fixed;
+    top: 50%;
+    left: 0;
+    font-size: 24px;
+    color: #3498db;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 1;
+    transform: translateY(-50%);
+}
 
 /* Responsive: en móviles, apilar verticalmente */
 @media (max-width: 768px) {

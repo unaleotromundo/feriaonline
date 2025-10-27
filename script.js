@@ -1481,5 +1481,32 @@ try {
 }
 // ✅ Ejecutar SOLO cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', initializeApp);
+document.getElementById('cartIcon').addEventListener('mouseenter', function() {
+    // Crear el carrito volador
+    const flyingCart = document.createElement('div');
+    flyingCart.className = 'flying-cart';
+    flyingCart.innerHTML = '<i class="fas fa-shopping-cart"></i>';
+
+    document.body.appendChild(flyingCart);
+
+    // Usar GSAP para animar (ya lo tienes cargado)
+    if (typeof gsap !== 'undefined') {
+        gsap.to(flyingCart, {
+            x: window.innerWidth,
+            opacity: 0,
+            duration: 1.2,
+            ease: "power2.out",
+            onComplete: () => {
+                flyingCart.remove();
+            }
+        });
+    } else {
+        // Fallback básico si GSAP no está listo (poco probable en tu caso)
+        flyingCart.style.transition = 'transform 1.2s, opacity 1.2s';
+        flyingCart.style.transform = `translateX(${window.innerWidth}px) translateY(-50%)`;
+        flyingCart.style.opacity = '0';
+        setTimeout(() => flyingCart.remove(), 1300);
+    }
+});
 
 
