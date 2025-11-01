@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script src="https://t.contentsquare.net/uxa/92ffd2f83fa31.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feria Virtual - Conecta tu negocio</title>
@@ -59,6 +60,14 @@
             background-color: #2980b9;
         }
     </style>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-GQZZQMNVPH"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-GQZZQMNVPH');
+</script>
 </head>
 <body>
 <!-- Partículas de fuego en el fondo -->
@@ -859,6 +868,32 @@ document.addEventListener('DOMContentLoaded', () => {
             showSection('home');
             setTimeout(showWelcomeModal, 300);
         });
+    }
+});
+// === EVENTOS PERSONALIZADOS PARA WHATSAPP Y FACEBOOK ===
+document.addEventListener('click', function(e) {
+    // Detectar clic en enlaces de WhatsApp
+    if (e.target.closest('a[href^="https://wa.me"], a[href^="https://api.whatsapp.com"], .btn-whatsapp, .lightbox-whatsapp-modern-btn')) {
+        const element = e.target.closest('a, .btn-whatsapp, .lightbox-whatsapp-modern-btn');
+        const href = element?.href || '';
+        gtag('event', 'click_whatsapp', {
+            event_category: 'Contacto',
+            event_label: href,
+            value: 1
+        });
+        console.log('GA4: WhatsApp click trackeado', href);
+    }
+
+    // Detectar clic en enlaces de Facebook
+    if (e.target.closest('a[href*="facebook.com"], #vendorSocialsContainer .facebook')) {
+        const element = e.target.closest('a, .facebook');
+        const href = element?.href || '';
+        gtag('event', 'click_facebook', {
+            event_category: 'Redes Sociales',
+            event_label: href,
+            value: 1
+        });
+        console.log('GA4: Facebook click trackeado', href);
     }
 });
 </script>
