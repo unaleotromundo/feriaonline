@@ -59,6 +59,44 @@
         #closeModalBtn:hover {
             background-color: #2980b9;
         }
+
+        /* === ESTILOS ADICIONALES PARA EL NUEVO BOTÓN DE WHATSAPP (IZQUIERDA) === */
+        .whatsapp-float-container {
+            position: fixed;
+            bottom: 20px;
+            left: 20px; /* Posición izquierda */
+            z-index: 998;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .whatsapp-float {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #25D366;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            text-decoration: none;
+            font-size: 24px;
+            transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .whatsapp-float:hover {
+            transform: scale(1.1);
+            background-color: #128C7E;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .whatsapp-float i {
+            pointer-events: none;
+        }
+
     </style>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-GQZZQMNVPH"></script>
@@ -99,13 +137,11 @@
                 <span>Mi Puesto</span>
             </a>
     <div id="authContainer"></div>
-
     <!-- === NUEVO: ÍCONO DE FAVORITOS === -->
     <a href="#" class="favorites-icon" id="favoritesIcon" onclick="event.preventDefault(); showSection('favorites');">
         <i class="far fa-heart"></i>
         <span class="favorites-badge" id="favoritesCount">0</span>
     </a>
-
     <!-- === ÍCONO DEL CARRITO === -->
     <a href="#" class="cart-icon" id="cartIcon" onclick="event.preventDefault(); toggleCart();">
         <i class="fas fa-shopping-cart"></i>
@@ -118,7 +154,6 @@
         <!-- Overlay para cerrar el menú hamburguesa -->
         <div id="navOverlay"></div>
     </header>
-
 <main>
     <!-- SECCIONES -->
     <section id="home" class="section active-section">
@@ -135,12 +170,10 @@
             </div>
         </div>
     </section>
-
     <section id="products" class="section">
         <div class="products-header">
             <h2 class="section-title">Productos Destacados</h2>
         </div>
-        
         <!-- BARRA DE BÚSQUEDA Y FILTROS -->
         <div class="search-filter-container">
             <div class="filter-main-row">
@@ -156,12 +189,10 @@
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
-                
                 <div class="filter-buttons">
                     <button class="filter-chip active" data-category="all" onclick="filterByCategory('all')">
                         <i class="fas fa-th"></i> Todos
                     </button>
-                    
                     <div class="filter-dropdown" id="categoryDropdown">
                         <button class="filter-chip dropdown-toggle" id="categoryDropdownBtn">
                             <i class="fas fa-tag"></i> Categorías <i class="fas fa-chevron-down"></i>
@@ -187,7 +218,6 @@
                             </button>
                         </div>
                     </div>
-                    
                     <div class="filter-dropdown" id="priceDropdown">
                         <button class="filter-chip dropdown-toggle" id="priceDropdownBtn">
                             <i class="fas fa-dollar-sign"></i> Precio <i class="fas fa-chevron-down"></i>
@@ -203,21 +233,17 @@
                     </div>
                 </div>
             </div>
-            
             <div class="search-results-info">
                 <span id="resultsCount">Mostrando todos los productos</span>
             </div>
         </div>    
-
         <div class="products-grid" id="productsGrid"></div>
-        
         <div class="no-results-message" id="noResultsMessage" style="display: none;">
             <i class="fas fa-search"></i>
             <h3>No se encontraron productos</h3>
             <p>Intenta con otra búsqueda o categoría</p>
         </div>
     </section>
-
 <!-- === SECCIÓN DEL PUESTO DEL VENDEDOR (ACTUALIZADA) === -->
 <section id="vendor-page" class="section">
     <div class="vendor-header">
@@ -238,7 +264,6 @@
     </div>
     <div class="products-grid" id="vendorProductsGrid"></div>
 </section>
-
     <section id="profile" class="section">
         <h2 class="section-title">Mi Perfil</h2>
         <div class="profile-container">
@@ -290,7 +315,6 @@
             </div>
         </div>
     </section>
-
     <section id="my-store" class="section">
         <h2 class="section-title">Gestión de mi Puesto</h2>
 <!-- Dentro de la sección #my-store, reemplaza el div.form-container con esto: -->
@@ -299,7 +323,6 @@
         <i class="fas fa-pencil-alt"></i>
     </button>
     <h3 class="form-title">Información del Puesto</h3>
-
     <!-- Contenedor flexible: logo a la izquierda, info a la derecha -->
     <div class="store-info-layout">
         <!-- Logo a la izquierda -->
@@ -314,7 +337,6 @@
                 <img id="storeLogoPreviewImg" src="" alt="Vista previa del logo" style="max-width: 300px; max-height: 300px; border-radius: var(--border-radius-xl);">
             </div>
         </div>
-
         <!-- Información a la derecha -->
         <div class="store-details-section">
             <div class="form-group">
@@ -327,14 +349,12 @@
             </div>
         </div>
     </div>
-
     <div id="storeFormFooter" class="form-footer" style="display: none;">
         <button class="btn btn-secondary" onclick="toggleStoreEditMode(false)">Cancelar</button>
         <button class="btn btn-secondary" onclick="openSocialsModal()"><i class="fas fa-share-alt"></i> Agregar redes sociales</button>
         <button class="btn btn-primary" onclick="saveStoreInfo()">Guardar Cambios</button>
     </div>
 </div>
-
         <div class="products-header" style="margin-top: 3rem;">
             <h2 class="section-title">Mis Productos</h2>
             <div class="header-actions">
@@ -350,7 +370,6 @@
         </div>
         <div class="products-grid" id="myProductsGrid"></div>
     </section>
-
     <section id="register" class="section">
         <h2 class="section-title">Registro de Comerciante</h2>
         <div class="form-container">
@@ -416,7 +435,6 @@
             <button class="btn btn-primary" style="width: 100%;" onclick="login()"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</button>
         </div>
     </div>
-
     <!-- === MODAL DE FOTO DE PERFIL === -->
     <div class="login-modal" id="profilePicModal">
         <div class="login-box">
@@ -442,7 +460,6 @@
             </div>
         </div>
     </div>
-
     <!-- === MODAL DE PRODUCTO === -->
     <div class="login-modal" id="productModal">
         <div class="login-box">
@@ -489,7 +506,6 @@
             </div>
         </div>
     </div>
-    
     <!-- === MODAL DE TEMAS PDF === -->
     <div class="login-modal" id="exportThemeModal">
         <div class="login-box">
@@ -501,7 +517,6 @@
             <div id="themeSelectionGrid" class="theme-selection-grid"></div>
         </div>
     </div>
-
             <!-- === MODAL REDES SOCIALES === -->
             <div class="login-modal" id="socialsModal">
                 <div class="login-box" style="max-width:520px;">
@@ -532,7 +547,6 @@
                     </div>
                 </div>
             </div>
-
     <!-- === MODAL DE OPCIONES DE CATÁLOGO === -->
     <div class="login-modal" id="catalog-options-modal">
         <div class="login-box">
@@ -551,7 +565,6 @@
             </div>
         </div>
     </div>
-
     <!-- === MODAL DE BACKUP === -->
     <div class="login-modal" id="backup-options-modal">
         <div class="login-box">
@@ -571,7 +584,6 @@
             </div>
         </div>
     </div>
-
     <!-- === MODAL DE SELECCIÓN DE PRODUCTO === -->
     <div class="login-modal" id="select-product-modal">
         <div class="login-box" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
@@ -586,74 +598,59 @@
         </div>
     </div>
 </main>
-
     <!-- FOOTER -->
     <footer class="footer">
         <p>Únete a la comunidad de pequeños comerciantes que ya están creciendo con Feria Virtual</p>
         <p class="copyright">&copy; 2025 Feria Virtual. Todos los derechos reservados.</p>
     </footer>
-
     <!-- BOTONES FIJOS -->
     <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema">
         <i class="fas fa-moon"></i>
         <i class="fas fa-sun"></i>
     </button>
-    
-    <div class="chatbot-floating" id="chatbotFloatingContainer" aria-live="polite">
-        <div class="chatbot-container-floating" id="chatbotContainer" aria-hidden="true">
-            <div class="chatbot-header-floating">
-                <h3>Asistente de marketing</h3>
-                <button class="close-chatbot-btn" type="button" onclick="toggleChatbot()" aria-label="Cerrar chat">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <iframe class="chatbot-iframe-floating" src="https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/13/17/20250813172155-WZV5LKVX.json" loading="lazy" allow="microphone; geolocation; fullscreen" title="Chat Asistente de marketing"></iframe>
+
+    <!-- === BOTÓN FLOTANTE DE WHATSAPP (IZQUIERDA) CON MENSAJE PREDEFINIDO === -->
+    <div class="whatsapp-float-container">
+        <a href="https://wa.me/59894691690?text=estoy%20interesado.%20Quiero%20registrarme%20en%20la%20feria!" target="_blank" class="whatsapp-float" aria-label="Contactar por WhatsApp">
+            <i class="fab fa-whatsapp"></i>
+        </a>
+    </div>
+
+    <!-- === LIGHTBOX ACTUALIZADO === -->
+    <div id="imageLightbox" class="image-lightbox">
+        <span class="lightbox-close" onclick="hideImageLightbox()">&times;</span>
+        <!-- Imagen principal -->
+        <div class="lightbox-image-container">
+            <img class="lightbox-content" id="lightboxImg" alt="Producto">
+            <!-- Botones de navegación (solo en móvil) -->
+            <button class="nav-btn nav-btn-left" onclick="prevProduct()" aria-label="Producto anterior">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="nav-btn nav-btn-right" onclick="nextProduct()" aria-label="Siguiente producto">
+                <i class="fas fa-chevron-right"></i>
+            </button>
         </div>
-<button class="chatbot-toggle" id="chatbotToggleBtn" type="button" onclick="toggleChatbot()" aria-expanded="false" aria-controls="chatbotContainer">
-    <i class="fas fa-robot"></i>
-</button>
-
-<!-- ✅ LIGHTBOX ACTUALIZADO -->
-<div id="imageLightbox" class="image-lightbox">
-    <span class="lightbox-close" onclick="hideImageLightbox()">&times;</span>
-    
-    <!-- Imagen principal -->
-    <div class="lightbox-image-container">
-        <img class="lightbox-content" id="lightboxImg" alt="Producto">
-        
-        <!-- Botones de navegación (solo en móvil) -->
-        <button class="nav-btn nav-btn-left" onclick="prevProduct()" aria-label="Producto anterior">
-            <i class="fas fa-chevron-left"></i>
+        <!-- Loading spinner -->
+        <div class="lightbox-loading" id="lightboxLoadingSpinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Cargando imagen...</p>
+        </div>
+        <!-- Panel de información -->
+        <div class="lightbox-overlay-info" id="lightboxOverlayInfo" style="display: none;">
+            <h2 id="lightboxProductName" class="lightbox-product-name">Nombre del producto</h2>
+            <div class="lightbox-product-price" id="lightboxProductPrice">$0.00</div>
+            <p id="lightboxProductDescription" class="lightbox-product-description">Descripción del producto.</p>
+        </div>
+        <!-- Botón de WhatsApp -->
+        <a href="#" id="lightboxWhatsappBtn" class="lightbox-whatsapp-modern-btn" target="_blank" style="display: none;">
+            <i class="fab fa-whatsapp"></i>
+            <span class="whatsapp-btn-text">Contactar vendedor</span>
+        </a>
+        <!-- Botón "Ir a este puesto" -->
+        <button id="lightboxStoreBtn" class="lightbox-action-btn store-btn" style="display: none; position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);">
+            <i class="fas fa-store"></i> Ver todos los productos
         </button>
-        <button class="nav-btn nav-btn-right" onclick="nextProduct()" aria-label="Siguiente producto">
-            <i class="fas fa-chevron-right"></i>
-        </button>
     </div>
-    
-    <!-- Loading spinner -->
-    <div class="lightbox-loading" id="lightboxLoadingSpinner">
-        <i class="fas fa-spinner fa-spin"></i>
-        <p>Cargando imagen...</p>
-    </div>
-
-    <!-- Panel de información -->
-    <div class="lightbox-overlay-info" id="lightboxOverlayInfo" style="display: none;">
-        <h2 id="lightboxProductName" class="lightbox-product-name">Nombre del producto</h2>
-        <div class="lightbox-product-price" id="lightboxProductPrice">$0.00</div>
-        <p id="lightboxProductDescription" class="lightbox-product-description">Descripción del producto.</p>
-    </div>
-
-    <!-- Botón de WhatsApp -->
-    <a href="#" id="lightboxWhatsappBtn" class="lightbox-whatsapp-modern-btn" target="_blank" style="display: none;">
-        <i class="fab fa-whatsapp"></i>
-        <span class="whatsapp-btn-text">Contactar vendedor</span>
-    </a>
-
-    <!-- Botón "Ir a este puesto" -->
-    <button id="lightboxStoreBtn" class="lightbox-action-btn store-btn" style="display: none; position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);">
-        <i class="fas fa-store"></i> Ver todos los productos
-    </button>
-</div>
 
     <!-- PANEL DEL CARRITO -->
     <div class="cart-panel" id="cartPanel">
@@ -673,7 +670,6 @@
             </button>
         </div>
     </div>
-
     <!-- OVERLAYS -->
     <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
     <div class="mobile-cart-badge" id="mobileCartBadge" onclick="toggleCart()" style="display: none;">
@@ -708,9 +704,8 @@
 <div id="welcomeModal" class="modal-overlay">
   <div class="modal-content">
     <h2>¡Bienvenido/a a la Feria!</h2>
-    <p>👋 Soy tu asistente virtual para recorrer la feria.<br>
-       No dudes en preguntarme lo que sea.</p>
-    
+    <p>👋 Hola! Soy Ale <br>
+       No dudes en preguntarme lo que sea acerca de la Feria Virtual. ¿Quieres comprar? ¿vender?</p>
     <!-- Burbuja ilustrativa del chatbot -->
     <div id="welcomeChatbotPreview" style="
       width: 60px;
@@ -725,15 +720,12 @@
       margin: 20px auto;
       box-shadow: var(--shadow-lg);
     ">
-      <i class="fas fa-robot"></i>
+      <i class="fab fa-whatsapp"></i>
     </div>
-
-    <p><strong>💡 Puedes activarme en cualquier momento desde la burbuja en la esquina inferior izquierda.</strong></p>
-    
+    <p><strong>💡 Puedes consultarme en cualquier momento desde la burbuja en la esquina inferior izquierda</strong></p>
     <button id="closeModalBtn">¡Entendido!</button>
   </div>
 </div>
-
     <!-- LIBRERÍAS EXTERNAS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.1/dist/browser-image-compression.js"></script>
@@ -746,14 +738,11 @@
     import { createIcons, icons } from "https://cdn.jsdelivr.net/npm/lucide@0.453.0/+esm";
     createIcons({ icons });
 </script>
-
     <!-- SCRIPTS -->
     <script src="script.js" defer></script>
     <script src="products.js" defer></script>
     <script src="cart.js" defer></script>
     <script src="catalog.js" defer></script>
-
-
 <!-- === MODAL DE DESCRIPCIÓN COMPLETA === -->
 <div class="login-modal" id="fullDescriptionModal">
     <div class="login-box" style="max-width: 600px; max-height: 80vh;">
@@ -774,23 +763,20 @@ function showWelcomeModal() {
         document.body.classList.add('welcome-modal-open');
     }
 }
-
 function hideWelcomeModal() {
     const modal = document.getElementById('welcomeModal');
-    const chatbotBtn = document.getElementById('chatbotToggleBtn');
+    // El botón del chatbot ya no existe, así que lo comentamos
+    // const chatbotBtn = document.getElementById('chatbotToggleBtn');
     const preview = document.getElementById('welcomeChatbotPreview');
-
-    if (!modal || !chatbotBtn) return;
-
+    if (!modal || !preview) return;
     // Desvanecer y ocultar el modal
     modal.style.opacity = '0';
     setTimeout(() => {
         modal.style.display = 'none';
         document.body.classList.remove('welcome-modal-open');
     }, 300);
-
-    // Animar la burbuja voladora con desvanecimiento
-    if (preview && typeof gsap !== 'undefined') {
+    // Animación del modal al nuevo botón de WhatsApp (izquierda)
+    if (typeof gsap !== 'undefined') {
         const flyingBubble = preview.cloneNode(true);
         flyingBubble.style.position = 'fixed';
         flyingBubble.style.zIndex = '9999';
@@ -806,61 +792,61 @@ function hideWelcomeModal() {
         flyingBubble.style.color = 'white';
         flyingBubble.style.fontSize = '24px';
         flyingBubble.style.opacity = '1'; // Inicia visible
-
         // Posición inicial (centro del modal)
         const modalRect = modal.getBoundingClientRect();
         const startX = modalRect.left + modalRect.width / 2 - 30;
         const startY = modalRect.top + modalRect.height / 2 - 30;
+        // Posición final (esquina inferior izquierda, donde está el nuevo botón de WA)
+        const waBtn = document.querySelector('.whatsapp-float');
+        if (waBtn) {
+            const finalRect = waBtn.getBoundingClientRect();
+            const endX = finalRect.left + window.scrollX;
+            const endY = finalRect.top + window.scrollY;
 
-        // Posición final (esquina inferior izquierda)
-        const finalRect = chatbotBtn.getBoundingClientRect();
-        const endX = finalRect.left + window.scrollX;
-        const endY = finalRect.top + window.scrollY;
+            document.body.appendChild(flyingBubble);
+            flyingBubble.style.left = startX + 'px';
+            flyingBubble.style.top = startY + 'px';
 
-        document.body.appendChild(flyingBubble);
-        flyingBubble.style.left = startX + 'px';
-        flyingBubble.style.top = startY + 'px';
-
-        // Animación con GSAP: mover + desvanecer
-        gsap.to(flyingBubble, {
-            x: endX - startX,
-            y: endY - startY,
-            opacity: 0, // 👈 se desvanece al llegar
-            scale: 1,
-            duration: 0.8,
-            ease: "power2.out",
-            onComplete: () => {
-                flyingBubble.remove();
-                // Asegurar que la burbuja real esté visible
-                chatbotBtn.style.visibility = 'visible';
-                chatbotBtn.style.opacity = '1';
-            }
-        });
+            // Animación con GSAP: mover + desvanecer
+            gsap.to(flyingBubble, {
+                x: endX - startX,
+                y: endY - startY,
+                opacity: 0, // 👈 se desvanece al llegar
+                scale: 1,
+                duration: 0.8,
+                ease: "power2.out",
+                onComplete: () => {
+                    flyingBubble.remove();
+                    // Asegurar que el botón de WA esté visible
+                    waBtn.style.visibility = 'visible';
+                    waBtn.style.opacity = '1';
+                }
+            });
+        } else {
+            // Si no se encuentra el botón de WA, simplemente eliminar la burbuja
+            flyingBubble.remove();
+        }
     }
 }
 document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('welcomeModal');
     const closeBtn = document.getElementById('closeModalBtn');
     const logo = document.querySelector('.logo');
-
     // Mostrar solo la primera vez
     if (!localStorage.getItem('welcomeModalShown')) {
         setTimeout(showWelcomeModal, 600);
         localStorage.setItem('welcomeModalShown', 'true');
     }
-
     // Cerrar con botón
     if (closeBtn) {
         closeBtn.addEventListener('click', hideWelcomeModal);
     }
-
     // Cerrar al hacer clic fuera
     if (modal) {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) hideWelcomeModal();
         });
     }
-
     // Mostrar al hacer clic en el LOGO
     if (logo) {
         logo.addEventListener('click', (e) => {
@@ -873,8 +859,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // === EVENTOS PERSONALIZADOS PARA WHATSAPP Y FACEBOOK ===
 document.addEventListener('click', function(e) {
     // Detectar clic en enlaces de WhatsApp
-    if (e.target.closest('a[href^="https://wa.me"], a[href^="https://api.whatsapp.com"], .btn-whatsapp, .lightbox-whatsapp-modern-btn')) {
-        const element = e.target.closest('a, .btn-whatsapp, .lightbox-whatsapp-modern-btn');
+    if (e.target.closest('a[href^="https://wa.me"], a[href^="https://api.whatsapp.com"], .btn-whatsapp, .lightbox-whatsapp-modern-btn, .whatsapp-float')) {
+        const element = e.target.closest('a, .btn-whatsapp, .lightbox-whatsapp-modern-btn, .whatsapp-float');
         const href = element?.href || '';
         gtag('event', 'click_whatsapp', {
             event_category: 'Contacto',
@@ -883,7 +869,6 @@ document.addEventListener('click', function(e) {
         });
         console.log('GA4: WhatsApp click trackeado', href);
     }
-
     // Detectar clic en enlaces de Facebook
     if (e.target.closest('a[href*="facebook.com"], #vendorSocialsContainer .facebook')) {
         const element = e.target.closest('a, .facebook');
