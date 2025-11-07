@@ -1,4 +1,9 @@
 {
+  "github": {
+    "silent": true
+  },
+  "buildCommand": null,
+  "cleanUrls": true,
   "routes": [
     {
       "src": "/dashboard",
@@ -14,6 +19,10 @@
       "source": "/(.*)",
       "headers": [
         {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        {
           "key": "X-Content-Type-Options",
           "value": "nosniff"
         },
@@ -25,8 +34,3 @@
     }
   ]
 }
-// vercel.json
-   {
-     "buildCommand": "npm run build",
-     "cleanUrls": true
-   }

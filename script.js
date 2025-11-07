@@ -202,8 +202,8 @@ function hideInitialLoadingSpinner() {
 }
 
 // Configuración de Supabase - CORREGIDO: Eliminados espacios en blanco
-const supabaseUrl = 'https://fyierdvjqwtuoilvhfdh.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5aWVyZHZqcXd0dW9pbHZoZmRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkwOTU3NTksImV4cCI6MjA3NDY3MTc1OX0.Fx-edKYpWjGJ2tTNODSkGXXodu0pNp1XmvYkwRd3C_M';
+const supabaseUrl= 'https://fyierdvjqwtuoilvhfdh.supabase.co';
+const supabaseAnonKey= 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5aWVyZHZqcXd0dW9pbHZoZmRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkwOTU3NTksImV4cCI6MjA3NDY3MTc1OX0.Fx-edKYpWjGJ2tTNODSkGXXodu0pNp1XmvYkwRd3C_M';
 let supabase = null;
 
 function initializeSupabaseClient() {
