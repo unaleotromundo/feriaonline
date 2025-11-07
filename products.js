@@ -3,7 +3,11 @@
 let currentVendorProducts = [];
 let currentProductIndex = 0;
 let searchDebounceTimer = null;
-
+// --- NUEVAS VARIABLES PARA EDICIÓN DE PRODUCTO ---
+let editingProductOriginalId = null; // ID del producto que se está editando (opcional, útil para validaciones)
+let editingProductOriginalImage = null; // URL original de la imagen
+let editingProductOriginalImagePath = null; // Ruta original en storage
+// --- FIN NUEVAS VARIABLES ---
 // === ZOOM EN LIGHTBOX ===
 let currentZoomLevel = 2; // Índice inicial en el array (1.0x)
 const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0];
@@ -114,7 +118,6 @@ async function loadProducts(containerId = 'productsGrid', filter = {}) {
         </div>`;
     }
 }
-
 updateFavoriteUI();
 
 async function loadMyProducts() {
@@ -235,6 +238,7 @@ function renderMyProductCard(container, product) {
     const imgTag = hasImage 
         ? `<img src="${imgSrc}" loading="lazy" alt="${product.name}" class="product-grid-img">`
         : '<i class="fas fa-shopping-bag"></i>';
+
     // === TRUNCAR DESCRIPCIÓN ===
     const fullDesc = product.description || 'Sin descripción';
     const MAX_DESC = 100;
@@ -276,6 +280,12 @@ function renderMyProductCard(container, product) {
 window.showProductModal = function(productId = null) {
     const modal = document.getElementById('productModal');
     const title = document.getElementById('productModalTitle');
+
+    // ✅ Limpiar variables de edición antes de abrir el modal
+    editingProductOriginalId = null;
+    editingProductOriginalImage = null;
+    editingProductOriginalImagePath = null;
+
     resetProductForm();
     modal.style.display = 'flex';
     if (productId) {
@@ -298,6 +308,9 @@ function resetProductForm() {
     delete document.getElementById('productImageUploadArea').dataset.existingImage;
     selectedProductFile = null;
     selectedProductUpload = null;
+    // ✅ Limpiar variables de edición (por si acaso)
+    editingProductOriginalImage = null;
+    editingProductOriginalImagePath = null;
 }
 
 async function loadProductForEdit(productId) {
@@ -311,23 +324,37 @@ async function loadProductForEdit(productId) {
         document.getElementById('productPrice').value = product.price;
         document.getElementById('productDescription').value = product.description;
         document.getElementById('productCategory').value = product.category || 'otros';
-        if (product.imageUrl || product.imageBase64) {
-            const imgSrc = product.imageUrl || product.imageBase64;
-            document.getElementById('productImageUploadArea').innerHTML = `<img src="${imgSrc}" class="preview-image">`;
-            document.getElementById('productImageUploadArea').dataset.existingImage = imgSrc;
+
+        // --- MODIFICADO: Almacenar datos originales y manejar vista previa ---
+        editingProductOriginalImage = product.imageUrl || product.imageBase64 || null;
+        editingProductOriginalImagePath = product.imageStoragePath || null;
+
+        if (editingProductOriginalImage) {
+            document.getElementById('productImageUploadArea').innerHTML = `<img src="${editingProductOriginalImage}" class="preview-image">`;
+            document.getElementById('productImageUploadArea').dataset.existingImage = editingProductOriginalImage;
+        } else {
+            document.getElementById('productImageUploadArea').innerHTML = '<i class="fas fa-cloud-upload-alt"></i><p>Haz clic o arrastra una imagen aquí</p>';
+            delete document.getElementById('productImageUploadArea').dataset.existingImage;
         }
+        // --- FIN MODIFICADO ---
+
     } catch (error) { 
-        console.error("Error loading product for edit:", error); 
+        console.error("Error loading product for edit:", error);
+        // ✅ Limpiar variables por si acaso
+        editingProductOriginalImage = null;
+        editingProductOriginalImagePath = null;
     } 
 }
 
 window.saveProduct = async function() {
     const saveBtn = document.querySelector('#productModal .btn-primary');
+    const isEditing = !!document.getElementById('productModal').dataset.productId;
+
     // ✅ Deshabilitar inmediatamente el botón para evitar doble envío
-    if (saveBtn.disabled) return; // Si ya está deshabilitado, no hacer nada
+    if (saveBtn.disabled) return;
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-    const isEditing = !!document.getElementById('productModal').dataset.productId;
+
     const productData = { 
         name: document.getElementById('productName').value.trim(),
         price: parseFloat(document.getElementById('productPrice').value),
@@ -336,6 +363,7 @@ window.saveProduct = async function() {
         vendorId: currentUser.id,
         vendorName: document.getElementById('userBusiness').textContent
     };
+
     if (!productData.name || !productData.price || isNaN(productData.price)) {
         showToast('Por favor completa el nombre y precio del producto.', 'error');
         // ✅ Rehabilitar botón si hay error de validación
@@ -343,27 +371,52 @@ window.saveProduct = async function() {
         saveBtn.innerHTML = 'Guardar Producto';
         return;
     }
-    let imageBase64 = document.getElementById('productImageUploadArea').dataset.existingImage || null;
+
+    // --- MODIFICADO: Manejo de la imagen ---
     let imageUrl = null;
     let imageStoragePath = null;
-    try {
-        if (selectedProductUpload) {
-            imageUrl = selectedProductUpload.publicUrl;
-            imageStoragePath = selectedProductUpload.path;
-        } else if (selectedProductFile) {
+
+    if (selectedProductUpload) {
+        // Se subió una nueva imagen
+        imageUrl = selectedProductUpload.publicUrl;
+        imageStoragePath = selectedProductUpload.path;
+        console.log("Usando nueva imagen:", imageUrl);
+    } else if (isEditing && editingProductOriginalImage) {
+        // Estamos editando y no se subió una nueva imagen, mantener la original
+        imageUrl = editingProductOriginalImage;
+        imageStoragePath = editingProductOriginalImagePath; // Mantener la ruta original si existe
+        console.log("Manteniendo imagen original:", imageUrl);
+    } else if (selectedProductFile) {
+        // Se seleccionó un archivo pero no se subió inmediatamente (caso raro, pero por si acaso)
+        try {
             const compressedFile = await imageCompression(selectedProductFile, { maxSizeMB: 0.5, maxWidthOrHeight: 800 });
             const upload = await uploadProductImage(compressedFile, currentUser?.id || 'anonymous');
             if (upload) {
                 imageUrl = upload.publicUrl;
                 imageStoragePath = upload.path;
             } else {
-                imageBase64 = await new Promise(resolve => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.readAsDataURL(compressedFile);
-                });
+                // Si falla la subida, se podría intentar con base64, pero para consistencia, mejor fallar
+                throw new Error("No se pudo subir la imagen.");
             }
+        } catch (uploadError) {
+            console.error("Error al subir imagen:", uploadError);
+            showToast('Error al subir la imagen del producto.', 'error');
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = 'Guardar Producto';
+            return;
         }
+    } else {
+        // Ni nueva imagen ni imagen original (en edición) ni archivo nuevo. Dejar como estaba o null.
+        if (isEditing) {
+            // Si estamos editando y no hay nueva imagen ni archivo, usar la original
+            imageUrl = editingProductOriginalImage;
+            imageStoragePath = editingProductOriginalImagePath;
+        }
+        // Si es creación y no hay imagen, imageUrl y imageStoragePath serán null
+    }
+    // --- FIN MODIFICADO ---
+
+    try {
         const dbProduct = {
             name: productData.name,
             price: productData.price,
@@ -371,15 +424,19 @@ window.saveProduct = async function() {
             category: productData.category,
             vendor_id: productData.vendorId,
             vendor_name: productData.vendorName,
-            image_url: imageUrl,
-            image_storage_path: imageStoragePath,
+            image_url: imageUrl, // Usar el valor determinado arriba
+            image_storage_path: imageStoragePath, // Usar el valor determinado arriba
             published: true
         };
+
         if (!isEditing) dbProduct.created_at = new Date().toISOString();
+
         if (!(await ensureSupabaseAvailable())) {
             throw new Error('No se puede conectar a Supabase.');
         }
+
         const supabaseClient = getSupabase();
+
         if (isEditing) {
             const productId = document.getElementById('productModal').dataset.productId;
             const { error } = await supabaseClient.from('products').update(dbProduct).eq('id', productId);
@@ -388,15 +445,24 @@ window.saveProduct = async function() {
             const { error } = await supabaseClient.from('products').insert([dbProduct]);
             if (error) throw error;
         }
-        showToast('Producto guardado.', 'success');
+
+        showToast(isEditing ? 'Producto actualizado.' : 'Producto guardado.', 'success');
         hideModal('productModal');
         loadMyProducts();
         if (document.getElementById('products').classList.contains('active-section')) {
             loadProducts();
         }
+
+        // ✅ Limpiar variables de edición y subida después de guardar exitosamente
+        editingProductOriginalId = null;
+        editingProductOriginalImage = null;
+        editingProductOriginalImagePath = null;
+        selectedProductFile = null;
+        selectedProductUpload = null;
+
     } catch (error) {
         console.error("Error saving product:", error);
-        showToast(`Error al guardar el producto. ${error.message || ''}`, 'error');
+        showToast(`Error al ${isEditing ? 'actualizar' : 'guardar'} el producto. ${error.message || ''}`, 'error');
     } finally {
         // ✅ Siempre rehabilitar el botón al final
         saveBtn.disabled = false;
@@ -465,28 +531,23 @@ window.showImageLightbox = async function(imageBase64, productData = null) {
 async function showCurrentProductInLightbox(isMyProduct = false) {
     const product = currentVendorProducts[currentProductIndex];
     if (!product) return;
-
     const img = document.getElementById('lightboxImg');
     const productNameEl = document.getElementById('lightboxProductName');
     const productPriceEl = document.getElementById('lightboxProductPrice');
     const overlayInfo = document.getElementById('lightboxOverlayInfo');
     const lightbox = document.getElementById('imageLightbox');
-
     if (!img || !productNameEl || !productPriceEl || !overlayInfo || !lightbox) {
         console.error('❌ Elementos del lightbox no encontrados');
         return;
     }
-
     // Mostrar nombre y precio
     productNameEl.textContent = product.name || 'Producto sin nombre';
     productPriceEl.textContent = `$${(product.price || 0).toFixed(2)}`;
-
     // === LIMPIAR CONTENIDO ANTERIOR ===
     overlayInfo.innerHTML = `
         <h2 id="lightboxProductName" class="lightbox-product-name">${product.name || 'Producto sin nombre'}</h2>
         <div class="lightbox-product-price" id="lightboxProductPrice">$${(product.price || 0).toFixed(2)}</div>
     `;
-
     // === CREAR BOTÓN "Leer descripción" SIEMPRE ===
     const leerBtn = document.createElement('button');
     leerBtn.className = 'lightbox-ver-mas-btn';
@@ -496,11 +557,9 @@ async function showCurrentProductInLightbox(isMyProduct = false) {
         showFullDescriptionModal(product.description || 'Sin descripción');
     };
     overlayInfo.appendChild(leerBtn);
-
     // Mostrar el panel
     overlayInfo.style.display = 'block';
     overlayInfo.classList.add('visible');
-
     // Cargar imagen
     img.classList.remove('lightbox-img-visible');
     img.classList.add('lightbox-img-fade');
@@ -512,13 +571,11 @@ async function showCurrentProductInLightbox(isMyProduct = false) {
             img.classList.add('lightbox-img-visible');
         };
     }, 50);
-
     // Reiniciar zoom
     currentZoomLevel = 2;
     img.style.transform = 'scale(1)';
     img.style.transformOrigin = 'center center';
     lightbox.style.display = 'flex';
-
     // === BOTÓN DE CARRITO (solo si no es mi producto) ===
     const existingCartBtn = lightbox.querySelector('.floating-cart-btn');
     if (existingCartBtn) existingCartBtn.remove();
@@ -533,7 +590,6 @@ async function showCurrentProductInLightbox(isMyProduct = false) {
         };
         lightbox.appendChild(floatingCartBtn);
     }
-
     // === BOTÓN DE FAVORITOS ===
     const existingFavBtn = lightbox.querySelector('.floating-favorite-btn');
     if (existingFavBtn) existingFavBtn.remove();
@@ -553,7 +609,6 @@ async function showCurrentProductInLightbox(isMyProduct = false) {
         floatingFavBtn.title = isNowFav ? 'Quitar de favoritos' : 'Agregar a favoritos';
     };
     lightbox.appendChild(floatingFavBtn);
-
     // === BOTÓN "IR A ESTE PUESTO" ===
     const storeBtn = document.getElementById('lightboxStoreBtn');
     if (storeBtn) {
@@ -571,7 +626,6 @@ async function showCurrentProductInLightbox(isMyProduct = false) {
             storeBtn.style.display = 'none';
         }
     }
-
     // === BOTÓN DE WHATSAPP ===
     const whatsappBtn = document.getElementById('lightboxWhatsappBtn');
     if (!whatsappBtn) return;
