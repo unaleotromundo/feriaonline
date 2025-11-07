@@ -102,19 +102,6 @@
             margin-bottom: 0.25rem;
         }
 
-        .stat-change {
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .stat-change.positive {
-            color: var(--success);
-        }
-
-        .stat-change.negative {
-            color: var(--error);
-        }
-
         .chart-container {
             background: var(--bg-primary);
             border-radius: 1rem;
@@ -242,6 +229,20 @@
             margin-bottom: 1rem;
         }
 
+        .error-banner {
+            background: var(--error-bg);
+            border: 1px solid var(--error);
+            color: var(--error);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .error-banner.visible {
+            display: block;
+        }
+
         @media (max-width: 768px) {
             .dashboard-container {
                 padding: 1rem;
@@ -290,6 +291,12 @@
             <p>Monitorea el rendimiento y el comportamiento de los usuarios en tiempo real</p>
         </div>
 
+        <!-- Error Banner -->
+        <div id="errorBanner" class="error-banner">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span id="errorMessage">Error al cargar datos</span>
+        </div>
+
         <!-- Filtros -->
         <div class="filters-bar">
             <select id="periodFilter" class="filter-select">
@@ -312,16 +319,14 @@
                 </div>
                 <div class="stat-label">Total de Visitas</div>
                 <div class="stat-value" id="totalVisits">-</div>
-                <div class="stat-change positive" id="visitsChange">-</div>
             </div>
 
             <div class="stat-card">
                 <div class="stat-icon success">
                     <i class="fas fa-user-plus"></i>
                 </div>
-                <div class="stat-label">Registros</div>
+                <div class="stat-label">Clics en Registrar</div>
                 <div class="stat-value" id="totalRegistrations">-</div>
-                <div class="stat-change positive" id="registrationsChange">-</div>
             </div>
 
             <div class="stat-card">
@@ -330,7 +335,6 @@
                 </div>
                 <div class="stat-label">Clicks en WhatsApp</div>
                 <div class="stat-value" id="totalWhatsapp">-</div>
-                <div class="stat-change positive" id="whatsappChange">-</div>
             </div>
 
             <div class="stat-card">
@@ -339,7 +343,6 @@
                 </div>
                 <div class="stat-label">Productos al Carrito</div>
                 <div class="stat-value" id="totalCart">-</div>
-                <div class="stat-change positive" id="cartChange">-</div>
             </div>
         </div>
 
@@ -396,6 +399,15 @@
 
         let visitsChart, eventsChart;
 
+        // Mostrar error
+        function showError(message) {
+            const banner = document.getElementById('errorBanner');
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            banner.classList.add('visible');
+            setTimeout(() => banner.classList.remove('visible'), 5000);
+        }
+
         // Inicializar tema
         const savedTheme = localStorage.getItem('theme') || 'light';
         document.body.setAttribute('data-theme', savedTheme);
@@ -442,48 +454,64 @@
             const { start, end } = getDateRange(period);
 
             try {
+                console.log('🔍 Cargando estadísticas...');
+                console.log('📅 Rango:', start, 'a', end);
+
                 // Total de visitas
-                const { count: visits } = await supabase
+                const { count: visits, error: visitsError } = await supabase
                     .from('analytics_events')
                     .select('*', { count: 'exact', head: true })
                     .eq('event_type', 'page_view')
                     .gte('created_at', start)
                     .lte('created_at', end);
 
+                if (visitsError) {
+                    console.error('❌ Error en visitas:', visitsError);
+                    throw visitsError;
+                }
+
+                console.log('✅ Visitas:', visits);
                 document.getElementById('totalVisits').textContent = visits || 0;
 
                 // Registros
-                const { count: registrations } = await supabase
+                const { count: registrations, error: regsError } = await supabase
                     .from('analytics_events')
                     .select('*', { count: 'exact', head: true })
                     .eq('event_type', 'click_register')
                     .gte('created_at', start)
                     .lte('created_at', end);
 
+                if (regsError) throw regsError;
+                console.log('✅ Registros:', registrations);
                 document.getElementById('totalRegistrations').textContent = registrations || 0;
 
                 // WhatsApp clicks
-                const { count: whatsapp } = await supabase
+                const { count: whatsapp, error: waError } = await supabase
                     .from('analytics_events')
                     .select('*', { count: 'exact', head: true })
                     .eq('event_type', 'click_whatsapp')
                     .gte('created_at', start)
                     .lte('created_at', end);
 
+                if (waError) throw waError;
+                console.log('✅ WhatsApp:', whatsapp);
                 document.getElementById('totalWhatsapp').textContent = whatsapp || 0;
 
                 // Productos al carrito
-                const { count: cart } = await supabase
+                const { count: cart, error: cartError } = await supabase
                     .from('analytics_events')
                     .select('*', { count: 'exact', head: true })
                     .eq('event_type', 'add_to_cart')
                     .gte('created_at', start)
                     .lte('created_at', end);
 
+                if (cartError) throw cartError;
+                console.log('✅ Carrito:', cart);
                 document.getElementById('totalCart').textContent = cart || 0;
 
             } catch (error) {
-                console.error('Error cargando estadísticas:', error);
+                console.error('❌ Error cargando estadísticas:', error);
+                showError('Error al cargar estadísticas: ' + error.message);
             }
         }
 
@@ -502,6 +530,8 @@
                     .order('created_at');
 
                 if (error) throw error;
+
+                console.log('📊 Datos del gráfico de visitas:', data?.length || 0, 'registros');
 
                 // Agrupar por fecha
                 const grouped = {};
@@ -548,7 +578,8 @@
                 });
 
             } catch (error) {
-                console.error('Error cargando gráfico de visitas:', error);
+                console.error('❌ Error cargando gráfico de visitas:', error);
+                showError('Error al cargar gráfico: ' + error.message);
             }
         }
 
@@ -565,6 +596,8 @@
                     .lte('created_at', end);
 
                 if (error) throw error;
+
+                console.log('📊 Datos del gráfico de eventos:', data?.length || 0, 'registros');
 
                 // Contar eventos por tipo
                 const counts = {};
@@ -614,7 +647,8 @@
                 });
 
             } catch (error) {
-                console.error('Error cargando gráfico de eventos:', error);
+                console.error('❌ Error cargando gráfico de eventos:', error);
+                showError('Error al cargar gráfico: ' + error.message);
             }
         }
 
@@ -629,9 +663,11 @@
 
                 if (error) throw error;
 
+                console.log('📋 Eventos recientes:', data?.length || 0, 'registros');
+
                 const tbody = document.getElementById('eventsTableBody');
 
-                if (data.length === 0) {
+                if (!data || data.length === 0) {
                     tbody.innerHTML = `
                         <tr>
                             <td colspan="5" class="empty-state">
@@ -661,25 +697,31 @@
                 }).join('');
 
             } catch (error) {
-                console.error('Error cargando eventos recientes:', error);
+                console.error('❌ Error cargando eventos recientes:', error);
+                showError('Error al cargar eventos: ' + error.message);
             }
         }
 
         // Refrescar dashboard completo
         async function refreshDashboard() {
+            console.log('🔄 Refrescando dashboard...');
             await Promise.all([
                 loadStats(),
                 loadVisitsChart(),
                 loadEventsChart(),
                 loadRecentEvents()
             ]);
+            console.log('✅ Dashboard actualizado');
         }
 
         // Event listeners
         document.getElementById('periodFilter').addEventListener('change', refreshDashboard);
 
         // Cargar al inicio
-        window.addEventListener('DOMContentLoaded', refreshDashboard);
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Iniciando dashboard...');
+            refreshDashboard();
+        });
 
         // Auto-refresh cada 30 segundos
         setInterval(refreshDashboard, 30000);

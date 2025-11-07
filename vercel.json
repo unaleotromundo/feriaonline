@@ -3,6 +3,25 @@
     {
       "src": "/dashboard",
       "dest": "/dashboard.html"
+    },
+    {
+      "src": "/dashboard/(.*)",
+      "dest": "/dashboard.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        }
+      ]
     }
   ]
 }
