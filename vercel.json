@@ -1,36 +1,8 @@
 {
-  "github": {
-    "silent": true
-  },
-  "buildCommand": null,
-  "cleanUrls": true,
   "routes": [
     {
       "src": "/dashboard",
       "dest": "/dashboard.html"
-    },
-    {
-      "src": "/dashboard/(.*)",
-      "dest": "/dashboard.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        },
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        }
-      ]
     }
   ]
 }
