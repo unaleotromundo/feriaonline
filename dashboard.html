@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Analytics - Feria Virtual</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary), var(--cyan));
+            color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .dashboard-header h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 2.5rem;
+            font-weight: 800;
+        }
+
+        .dashboard-header p {
+            margin: 0;
+            opacity: 0.95;
+            font-size: 1.1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-primary);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-muted);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon.primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .stat-icon.success {
+            background: linear-gradient(135deg, var(--success), #15803d);
+            color: white;
+        }
+
+        .stat-icon.cyan {
+            background: linear-gradient(135deg, var(--cyan), var(--cyan-dark));
+            color: white;
+        }
+
+        .stat-icon.warning {
+            background: linear-gradient(135deg, var(--warning), #d97706);
+            color: white;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-change {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .stat-change.positive {
+            color: var(--success);
+        }
+
+        .stat-change.negative {
+            color: var(--error);
+        }
+
+        .chart-container {
+            background: var(--bg-primary);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-muted);
+            margin-bottom: 2rem;
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .events-table {
+            width: 100%;
+            background: var(--bg-primary);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-muted);
+        }
+
+        .events-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .events-table th {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .events-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-muted);
+            color: var(--text-secondary);
+        }
+
+        .events-table tr:hover {
+            background: var(--bg-secondary);
+        }
+
+        .event-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .event-badge.view {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .event-badge.click {
+            background: linear-gradient(135deg, var(--cyan), var(--cyan-dark));
+            color: white;
+        }
+
+        .event-badge.conversion {
+            background: linear-gradient(135deg, var(--success), #15803d);
+            color: white;
+        }
+
+        .filters-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .loading i {
+            font-size: 2rem;
+            animation: spin 1s linear infinite;
+            margin-right: 1rem;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-tertiary);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            opacity: 0.3;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 1rem;
+            }
+
+            .dashboard-header h1 {
+                font-size: 1.8rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-bar {
+                flex-direction: column;
+            }
+
+            .filter-select {
+                width: 100%;
+            }
+
+            .events-table {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <a href="index.html" class="logo">
+            <i class="fas fa-store"></i>
+            <span class="brand-name">Feria Virtual</span>
+        </a>
+        <nav class="nav-container">
+            <a href="index.html" class="nav-link">
+                <i class="fas fa-home"></i>
+                <span>Volver al Sitio</span>
+            </a>
+        </nav>
+    </header>
+
+    <main class="dashboard-container">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <h1><i class="fas fa-chart-line"></i> Dashboard de Analytics</h1>
+            <p>Monitorea el rendimiento y el comportamiento de los usuarios en tiempo real</p>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filters-bar">
+            <select id="periodFilter" class="filter-select">
+                <option value="today">Hoy</option>
+                <option value="yesterday">Ayer</option>
+                <option value="7days" selected>Últimos 7 días</option>
+                <option value="30days">Últimos 30 días</option>
+                <option value="90days">Últimos 90 días</option>
+            </select>
+            <button class="btn btn-secondary" onclick="refreshDashboard()">
+                <i class="fas fa-sync-alt"></i> Actualizar
+            </button>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon primary">
+                    <i class="fas fa-eye"></i>
+                </div>
+                <div class="stat-label">Total de Visitas</div>
+                <div class="stat-value" id="totalVisits">-</div>
+                <div class="stat-change positive" id="visitsChange">-</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <div class="stat-label">Registros</div>
+                <div class="stat-value" id="totalRegistrations">-</div>
+                <div class="stat-change positive" id="registrationsChange">-</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon cyan">
+                    <i class="fab fa-whatsapp"></i>
+                </div>
+                <div class="stat-label">Clicks en WhatsApp</div>
+                <div class="stat-value" id="totalWhatsapp">-</div>
+                <div class="stat-change positive" id="whatsappChange">-</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="stat-label">Productos al Carrito</div>
+                <div class="stat-value" id="totalCart">-</div>
+                <div class="stat-change positive" id="cartChange">-</div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="chart-container">
+            <h3 class="chart-title">Visitas en el Tiempo</h3>
+            <canvas id="visitsChart"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <h3 class="chart-title">Eventos por Tipo</h3>
+            <canvas id="eventsChart"></canvas>
+        </div>
+
+        <!-- Tabla de Eventos Recientes -->
+        <div class="events-table">
+            <h3 class="chart-title" style="padding: 1.5rem 1.5rem 0;">Eventos Recientes</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo de Evento</th>
+                        <th>Categoría</th>
+                        <th>Dispositivo</th>
+                        <th>Navegador</th>
+                    </tr>
+                </thead>
+                <tbody id="eventsTableBody">
+                    <tr>
+                        <td colspan="5" class="loading">
+                            <i class="fas fa-spinner"></i>
+                            <span>Cargando eventos...</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Feria Virtual. Todos los derechos reservados.</p>
+    </footer>
+
+    <button class="theme-toggle" id="themeToggle">
+        <i class="fas fa-moon"></i>
+        <i class="fas fa-sun"></i>
+    </button>
+
+    <script>
+        // Configuración de Supabase
+        const SUPABASE_URL = 'https://xrbwnjgwqdnujnxoivjg.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhyYnduamd3cWRudWpueG9pdmpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU2ODQyODQsImV4cCI6MjA1MTI2MDI4NH0.DXCKOy4LSUZpAy9fwi2BEJ0_4bnVGk-7l_TuWVVDXwg';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let visitsChart, eventsChart;
+
+        // Inicializar tema
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.body.setAttribute('data-theme', savedTheme);
+
+        document.getElementById('themeToggle').addEventListener('click', function() {
+            const currentTheme = document.body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+
+        // Obtener rango de fechas según filtro
+        function getDateRange(period) {
+            const end = new Date();
+            let start = new Date();
+
+            switch(period) {
+                case 'today':
+                    start.setHours(0, 0, 0, 0);
+                    break;
+                case 'yesterday':
+                    start.setDate(start.getDate() - 1);
+                    start.setHours(0, 0, 0, 0);
+                    end.setDate(end.getDate() - 1);
+                    end.setHours(23, 59, 59, 999);
+                    break;
+                case '7days':
+                    start.setDate(start.getDate() - 7);
+                    break;
+                case '30days':
+                    start.setDate(start.getDate() - 30);
+                    break;
+                case '90days':
+                    start.setDate(start.getDate() - 90);
+                    break;
+            }
+
+            return { start: start.toISOString(), end: end.toISOString() };
+        }
+
+        // Cargar estadísticas principales
+        async function loadStats() {
+            const period = document.getElementById('periodFilter').value;
+            const { start, end } = getDateRange(period);
+
+            try {
+                // Total de visitas
+                const { count: visits } = await supabase
+                    .from('analytics_events')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('event_type', 'page_view')
+                    .gte('created_at', start)
+                    .lte('created_at', end);
+
+                document.getElementById('totalVisits').textContent = visits || 0;
+
+                // Registros
+                const { count: registrations } = await supabase
+                    .from('analytics_events')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('event_type', 'click_register')
+                    .gte('created_at', start)
+                    .lte('created_at', end);
+
+                document.getElementById('totalRegistrations').textContent = registrations || 0;
+
+                // WhatsApp clicks
+                const { count: whatsapp } = await supabase
+                    .from('analytics_events')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('event_type', 'click_whatsapp')
+                    .gte('created_at', start)
+                    .lte('created_at', end);
+
+                document.getElementById('totalWhatsapp').textContent = whatsapp || 0;
+
+                // Productos al carrito
+                const { count: cart } = await supabase
+                    .from('analytics_events')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('event_type', 'add_to_cart')
+                    .gte('created_at', start)
+                    .lte('created_at', end);
+
+                document.getElementById('totalCart').textContent = cart || 0;
+
+            } catch (error) {
+                console.error('Error cargando estadísticas:', error);
+            }
+        }
+
+        // Cargar gráfico de visitas
+        async function loadVisitsChart() {
+            const period = document.getElementById('periodFilter').value;
+            const { start, end } = getDateRange(period);
+
+            try {
+                const { data, error } = await supabase
+                    .from('analytics_events')
+                    .select('created_at')
+                    .eq('event_type', 'page_view')
+                    .gte('created_at', start)
+                    .lte('created_at', end)
+                    .order('created_at');
+
+                if (error) throw error;
+
+                // Agrupar por fecha
+                const grouped = {};
+                data.forEach(event => {
+                    const date = new Date(event.created_at).toLocaleDateString('es-ES');
+                    grouped[date] = (grouped[date] || 0) + 1;
+                });
+
+                const labels = Object.keys(grouped);
+                const values = Object.values(grouped);
+
+                if (visitsChart) visitsChart.destroy();
+
+                const ctx = document.getElementById('visitsChart').getContext('2d');
+                visitsChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Visitas',
+                            data: values,
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                }
+                            }
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error cargando gráfico de visitas:', error);
+            }
+        }
+
+        // Cargar gráfico de eventos
+        async function loadEventsChart() {
+            const period = document.getElementById('periodFilter').value;
+            const { start, end } = getDateRange(period);
+
+            try {
+                const { data, error } = await supabase
+                    .from('analytics_events')
+                    .select('event_type')
+                    .gte('created_at', start)
+                    .lte('created_at', end);
+
+                if (error) throw error;
+
+                // Contar eventos por tipo
+                const counts = {};
+                data.forEach(event => {
+                    counts[event.event_type] = (counts[event.event_type] || 0) + 1;
+                });
+
+                const labels = Object.keys(counts);
+                const values = Object.values(counts);
+
+                if (eventsChart) eventsChart.destroy();
+
+                const ctx = document.getElementById('eventsChart').getContext('2d');
+                eventsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Cantidad',
+                            data: values,
+                            backgroundColor: [
+                                '#6366f1',
+                                '#06b6d4',
+                                '#10b981',
+                                '#f59e0b',
+                                '#d946ef',
+                                '#f87171'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                }
+                            }
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error cargando gráfico de eventos:', error);
+            }
+        }
+
+        // Cargar tabla de eventos recientes
+        async function loadRecentEvents() {
+            try {
+                const { data, error } = await supabase
+                    .from('analytics_events')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+
+                if (error) throw error;
+
+                const tbody = document.getElementById('eventsTableBody');
+
+                if (data.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="empty-state">
+                                <i class="fas fa-chart-bar"></i>
+                                <p>No hay eventos registrados aún</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = data.map(event => {
+                    const date = new Date(event.created_at).toLocaleString('es-ES');
+                    let badgeClass = 'view';
+                    if (event.event_type.includes('click')) badgeClass = 'click';
+                    if (event.event_type.includes('registration') || event.event_type.includes('cart')) badgeClass = 'conversion';
+
+                    return `
+                        <tr>
+                            <td>${date}</td>
+                            <td><span class="event-badge ${badgeClass}">${event.event_type}</span></td>
+                            <td>${event.event_category || '-'}</td>
+                            <td>${event.device_type || '-'}</td>
+                            <td>${event.browser || '-'}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error cargando eventos recientes:', error);
+            }
+        }
+
+        // Refrescar dashboard completo
+        async function refreshDashboard() {
+            await Promise.all([
+                loadStats(),
+                loadVisitsChart(),
+                loadEventsChart(),
+                loadRecentEvents()
+            ]);
+        }
+
+        // Event listeners
+        document.getElementById('periodFilter').addEventListener('change', refreshDashboard);
+
+        // Cargar al inicio
+        window.addEventListener('DOMContentLoaded', refreshDashboard);
+
+        // Auto-refresh cada 30 segundos
+        setInterval(refreshDashboard, 30000);
+    </script>
+</body>
+</html>
